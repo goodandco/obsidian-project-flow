@@ -1,0 +1,116 @@
+---
+alwaysApply: false
+---
+This plugin allows to manage and simplify creating of the new projects inside Obsidian Vault.
+
+The code of this project will be located inside the obsidian vault as `automator` plugin:  `<Obsidian Vault>/.obsidian/plugins/automator`.
+
+### Settings
+
+It should contain settings page. In the settings we should have a projects types configuration.
+Each project has it's own Dimension. There are must be next default dimensions: 
+- "1. Business"
+- "2. Family"
+- "3. Friends"
+- "4. Personal"
+- "5. Health"
+- "6. Residence"
+
+But the settings must allow a user to create additional dimensions. For that there must be a button "Add" after clicking which it includes new input text and aligned button "Save". Once user specified new Dimension and pressed save -> it must be stored and appeared in the list of dimensions.
+
+Also, each Dimension has its own list of categories. There are some default categories for default dimensions:
+
+For "1. Business":
+- R&D
+- Jobs
+- OpenSource
+- Education
+
+For "2. Family":
+- Vacations
+- Parenting
+- Common
+
+For "4. Personal":
+- R&D
+- Languages
+- SelfManagement
+- Writing
+- Reading
+- Music
+- Sports
+
+For "5. Health":
+- Clinics
+- Issues
+- R&D
+
+
+### Functionality 
+When plugin is invoked, it must ask Name of the project. This name must be stored as $_PROJECT_NAME variable.
+Then ask for a project tag. Store that info as $_PROJECT_TAG variable.
+Then it must display a list of types of the project: here it must use defined project types from the configuration. Depends of selected project type, the plugin knows in what place it must create new files and directories. 
+
+So, after phase of collecting the infromation from user you must have next variables:
+
+$_PROJECT_NAME -> name of the project
+$_PROJECT_PARENT -> parent name
+$_PROJECT_TAG -> main tag which must be included to each project related file
+$_PARENT_TAG -> must be included to the Project file.
+
+Also, there are some variables must be generated:
+
+$_YEAR -> Current date year
+$_DATE -> Current Date in format YYYY-MM-DD
+$_PROJECT_FULL_NAME -> `<$_YEAR>.<$_PROJECT_PARENT>.<$_PROJECT_NAME>`
+$_PROJECT_RELATIVE_PATH -> `<$_DIMENSION>/<$_CATEGORY>/<$_PROJECT_FULL_NAME>`
+$_PROJECT_PATH -> `<Obsidian Value path>/<$_DIMENSION>/<$_CATEGORY>/<$_PROJECT_FULL_NAME>/<$_PROJECT_FULL_NAME>`
+
+
+So eventually it must create next structure in the specified directory:
+
+```
+<$_PROJECT_PATH>/
+-- /Knowledge Base/
+-- /Meetings/
+-- /Work/
+-- /People/
+-- /<$_PROJECT_FULL_NAME>.md
+-- /<$_PROJECT_NAME> Meetings.md
+-- /<$_PROJECT_NAME> People.md
+-- /<$_PROJECT_NAME> Work.md
+```
+
+For `/<$_PROJECT_FULL_NAME>.md` use `templates/project.md` template
+For `/<$_PROJECT_NAME> Meetings.md` use `templates/meetings.md` template
+For `/<$_PROJECT_NAME> People.md` use `templates/people.md` template
+For `/<$_PROJECT_NAME> Work.md` use `template/work.md` teamplate
+
+
+### Templates
+
+Also it must create a template folder for the project inside `<Obsidian Vault>/Templates/<$_PROJECT_NAME>_Templates`. It must include next templates:
+
+
+<$_PROJECT_NAME>_Meeting_Template.md -> use 'templates/meeting.md
+<$_PROJECT_NAME>_Meeting_Daily_Template.md -> use 'templates/meeting-daily.md
+<$_PROJECT_NAME>_Meeting_Discusion_Template.md -> use 'templates/meeting-discussion.md
+<$_PROJECT_NAME>_Meeting_Knowledge_Template.md -> use 'templates/meeting-knowledge.md
+<$_PROJECT_NAME>_Meeting_Planning_Template.md -> use 'templates/meeting-planning.md
+<$_PROJECT_NAME>_Meeting_Refinement_Template.md -> use 'templates/meeting-refinement.md
+<$_PROJECT_NAME>_Meeting_Retro_Template.md -> use 'templates/meeting-retro.md
+<$_PROJECT_NAME>_Meeting_Demo_Template.md -> use 'templates/meeting-demo.md
+<$_PROJECT_NAME>_Sprint_Template.md -> use 'templates/sprint.md
+<$_PROJECT_NAME>_Task_Template.md -> use 'templates/task.md
+<$_PROJECT_NAME>_idea_Template.md -> use 'templates/idea.md
+
+
+Each template contains defined above variables. Which must be repalced with actual values.
+
+
+
+
+
+
+
+
