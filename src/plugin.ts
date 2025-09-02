@@ -274,7 +274,7 @@ export class AutomatorPlugin extends Plugin {
   settings: AutomatorSettings;
 
   async onload() {
-    console.log('Automator plugin loaded');
+    console.log('ProjectFlow plugin loaded');
     await this.loadSettings();
     this.addSettingTab(new AutomatorSettingTab(this.app, this));
 

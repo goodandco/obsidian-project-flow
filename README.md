@@ -1,6 +1,6 @@
-# Automator (Obsidian Plugin)
+# ProjectFlow (Obsidian Plugin)
 
-Automator helps you quickly create a well-structured project workspace inside your Obsidian vault. It asks for a few details (project name, tag, parent, dimension, and category), then generates a folder tree, main project notes, and a set of reusable templates. You can fully customize dimensions and categories in the plugin settings.
+ProjectFlow helps you quickly create a well-structured project workspace inside your Obsidian vault. It asks for a few details (project name, tag, parent, dimension, and category), then generates a folder tree, main project notes, and a set of reusable templates. You can fully customize dimensions and categories in the plugin settings.
 
 
 ## Features
@@ -17,32 +17,32 @@ Automator helps you quickly create a well-structured project workspace inside yo
 ## Installation
 This plugin is intended to live inside your Obsidian vault under:
 
-- <vault>/.obsidian/plugins/automator
+- <vault>/.obsidian/plugins/project-flow
 
 Steps:
-1. Copy or clone this repository into the folder above (folder name must be `automator`).
+1. Copy or clone this repository into the folder above (folder name must be `project-flow`).
 2. Build the plugin (see Development below) so `main.js`, `manifest.json`, and `styles.css` are present in the plugin folder.
-3. In Obsidian, go to Settings → Community plugins → Enable community plugins → then enable “Automator”.
+3. In Obsidian, go to Settings → Community plugins → Enable community plugins → then enable “ProjectFlow”.
 
 
 ## Usage
 Run the command:
 - Command palette → “Add Project Info”
 
-Automator will ask:
+ProjectFlow will ask:
 1. Project name → stored as $_PROJECT_NAME
 2. Project tag → stored as $_PROJECT_TAG
 3. Parent name → stored as $_PROJECT_PARENT
 4. Dimension → choose from your configured list
 5. Category → choose from the selected dimension
 
-After collecting these inputs, Automator creates the project structure and files and fills template variables accordingly.
+After collecting these inputs, ProjectFlow creates the project structure and files and fills template variables accordingly.
 
 
 ## What gets created
 By default, projects are created under `1. Projects/<Dimension>/<Category>/<$_PROJECT_FULL_NAME>`.
 
-Within that folder, Automator creates:
+Within that folder, ProjectFlow creates:
 - Knowledge Base/
 - Meetings/
 - Work/
@@ -52,7 +52,7 @@ Within that folder, Automator creates:
 - <$_PROJECT_NAME> People.md
 - <$_PROJECT_NAME> Work.md
 
-Template sources are located in the plugin at `.obsidian/plugins/automator/src/templates/` and include base files like `project.md`, `meetings.md`, `people.md`, `work.md`.
+Template sources are located in the plugin at `.obsidian/plugins/project-flow/src/templates/` and include base files like `project.md`, `meetings.md`, `people.md`, `work.md`.
 
 
 ## Variables available in templates
@@ -71,11 +71,11 @@ Generated automatically:
 - $_DIMENSION
 - $_CATEGORY
 
-Automator replaces any `$_VARIABLE` tokens it finds in the template files before creating notes.
+ProjectFlow replaces any `$_VARIABLE` tokens it finds in the template files before creating notes.
 
 
 ## Project templates per project
-Automator also creates a project-specific template folder:
+ProjectFlow also creates a project-specific template folder:
 - `Templates/<$_PROJECT_NAME>_Templates`
 
 It populates it with these files (names vary by project):
@@ -94,7 +94,7 @@ Each of those uses the same variable substitution described above.
 
 
 ## Settings
-Open Settings → Community plugins → Automator.
+Open Settings → Community plugins → ProjectFlow.
 
 You can manage your Dimensions and Categories:
 - Add a new dimension (inline input + Add button)
@@ -123,12 +123,12 @@ Files of interest:
 
 To try in Obsidian:
 1. Build the project (npm run build).
-2. Ensure `main.js`, `manifest.json`, and `styles.css` are present under `<vault>/.obsidian/plugins/automator/`.
+2. Ensure `main.js`, `manifest.json`, and `styles.css` are present under `<vault>/.obsidian/plugins/project-flow/`.
 3. Toggle the plugin off/on or use View → Force reload.
 
 
 ## Troubleshooting
-- Templates not found: The plugin reads from `.obsidian/plugins/automator/src/templates/`. Ensure those files exist in your vault folder where the plugin resides.
+- Templates not found: The plugin reads from `.obsidian/plugins/project-flow/src/templates/`. Ensure those files exist in your vault folder where the plugin resides.
 - Styles not applied: Verify `styles.css` is in the plugin root and that the settings tab has `.automator-settings` elements (added by the plugin).
 - No categories for a dimension: Add categories in settings first; the project creation flow requires choosing a category.
 

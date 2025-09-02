@@ -1,10 +1,10 @@
 {
-  "id": "automator",
-  "name": "Automator",
+  "id": "project-flow",
+  "name": "ProjectFlow",
   "version": "1.0.0",
   "minAppVersion": "0.12.0",
-  "description": "My Automator",
+  "description": "ProjectFlow for managing projects in Obsidian.",
   "author": "Oleksandr Hudenko",
-  "authorUrl": "https://yourwebsite.com",
+  "authorUrl": "https://github.com/goodandco",
   "isDesktopOnly": true
 }
