@@ -1,0 +1,48 @@
+/* Scope to the settings tab */
+.automator-settings {
+  --gc-block-bg: var(--background-secondary);
+  --gc-block-border: var(--background-modifier-border);
+  --gc-hover: var(--background-modifier-hover);
+  --gc-muted: var(--text-muted);
+}
+
+/* Layout primitives */
+.automator-settings .gc-row { display: flex; align-items: center; gap: 8px; }
+.automator-settings .gc-spacer { flex: 1; }
+
+/* Dimension card */
+.automator-settings .dimension-setting {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--gc-block-bg);
+  border: 1px solid var(--gc-block-border);
+  border-radius: var(--radius-s);
+}
+.automator-settings .dimension-header b { font-weight: 600; }
+
+/* Categories list */
+.automator-settings .gc-list { margin-top: 6px; }
+.automator-settings .gc-list-item { padding: 4px 6px; border-radius: 6px; }
+.automator-settings .gc-list-item:hover { background: var(--gc-hover); }
+
+/* Input rows */
+.automator-settings .add-category,
+.automator-settings .add-dimension .gc-row { margin-top: 8px; }
+.automator-settings .add-category input,
+.automator-settings .add-dimension input { min-width: 220px; }
+
+/* Icon-only buttons */
+.automator-settings .gc-icon-button {
+  width: 24px; height: 24px; display: inline-flex;
+  align-items: center; justify-content: center;
+  padding: 0; border: none; background: transparent;
+  color: var(--gc-muted); border-radius: 6px; cursor: var(--cursor);
+}
+.automator-settings .gc-icon-button:hover { color: var(--text-normal); background: var(--gc-hover); }
+
+/* Keep Add buttons aligned nicely when used with gc-spacer */
+.automator-settings .add-category button,
+.automator-settings .add-dimension button { margin-left: 4px; }
+
+/* Inline rename input sizing */
+.automator-settings .gc-rename { min-width: 240px; }

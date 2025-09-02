@@ -1,4 +1,4 @@
- ---
+---
 Type: "[[2. Areas/Abstracts/Types/Meeting|Meeting]]"
 MeetingType: Demo
 Parent: "[[$_PROJECT_NAME Meeting]]"
