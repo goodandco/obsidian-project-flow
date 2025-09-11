@@ -5,7 +5,7 @@ export interface ProjectFlowSettings {
 export interface ProjectInfo {
   name: string;
   tag: string;
-  parent: string;
+  parent?: string | null;
   dimension: string;
   category: string;
 }

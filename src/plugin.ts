@@ -42,12 +42,10 @@ export class AutomatorPlugin extends Plugin {
       return;
     }
 
-    // Step 3: Parent name
-    const projectParent = await this.promptForText('Enter parent name:');
-    if (!projectParent) {
-      new Notice('Project creation cancelled. No parent name provided.');
-      return;
-    }
+    // Step 3: Parent name (optional)
+    const projectParent = await this.promptForText('Enter parent name (optional):');
+    // Parent can be empty; treat empty or whitespace-only as undefined
+    const normalizedParent = projectParent && projectParent.trim().length > 0 ? projectParent.trim() : null;
 
     // Step 4: Dimension selection
     const dimensionChoices = this.settings.dimensions.map(d => d.name);
@@ -74,7 +72,7 @@ export class AutomatorPlugin extends Plugin {
     const projectInfo: ProjectInfo = {
       name: projectName,
       tag: projectTag,
-      parent: projectParent,
+      parent: normalizedParent,
       dimension: selectedDimension,
       category: selectedCategory
     };
@@ -102,15 +100,16 @@ export class AutomatorPlugin extends Plugin {
     const year = now.getFullYear().toString();
     const date = now.toISOString().split('T')[0]; // YYYY-MM-DD
     const projectsDir = '1. Projects';
-    const projectFullName = `${year}.${projectInfo.parent}.${projectInfo.name}`;
+    const parentSegment = projectInfo.parent && projectInfo.parent.trim().length > 0 ? `.${projectInfo.parent.trim()}` : '';
+    const projectFullName = `${year}${parentSegment}.${projectInfo.name}`;
     const projectRelativePath = `${projectsDir}/${projectInfo.dimension}/${projectInfo.category}/${projectFullName}`;
     const projectPath = `${projectRelativePath}`;
 
     return {
       PROJECT_NAME: projectInfo.name,
       PROJECT_TAG: projectInfo.tag,
-      PROJECT_PARENT: projectInfo.parent,
-      PARENT_TAG: projectInfo.tag, // Using project tag as parent tag
+      PROJECT_PARENT: projectInfo.parent ? projectInfo.parent : '',
+      PARENT_TAG: projectInfo.parent ? projectInfo.tag : '', // Only set parent-related tag if parent exists
       YEAR: year,
       DATE: date,
       PROJECT_FULL_NAME: projectFullName,
