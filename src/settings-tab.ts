@@ -4,16 +4,17 @@ import {ProjectFlowSettings} from "./interfaces";
 import {ConfirmResetModal} from "./confirm-reset-modal";
 
 const DEFAULT_DIMENSIONS = [
-  {name: '1. Business', categories: ['R&D', 'Jobs', 'OpenSource', 'Education']},
-  {name: '2. Family', categories: ['Vacations', 'Parenting', 'Common']},
-  {name: '3. Friends', categories: []},
-  {name: '4. Health', categories: ['Clinics', 'Issues', 'R&D']},
-  {name: '5. Personal', categories: ['R&D', 'Languages', 'SelfManagement', 'Writing', 'Reading', 'Music', 'Sports']},
-  {name: '6. Residence', categories: []},
+  {name: 'Business', order: 1, categories: ['R&D', 'Jobs', 'OpenSource', 'Education']},
+  {name: 'Family', order: 2, categories: ['Vacations', 'Parenting', 'Common']},
+  {name: 'Friends', order: 3, categories: []},
+  {name: 'Health', order: 4, categories: ['Clinics', 'Issues', 'R&D']},
+  {name: 'Personal', order: 5, categories: ['R&D', 'Languages', 'SelfManagement', 'Writing', 'Reading', 'Music', 'Sports']},
+  {name: 'Residence', order: 6, categories: []},
 ];
 
 export const DEFAULT_SETTINGS: ProjectFlowSettings = {
   dimensions: JSON.parse(JSON.stringify(DEFAULT_DIMENSIONS)),
+  projectsRoot: '1. Projects',
 };
 
 export class ProjectFlowSettingTab extends PluginSettingTab {
@@ -50,13 +51,49 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
     // Dimensions section
     containerEl.createEl('h2', {text: 'Dimensions'});
 
-    this.plugin.settings.dimensions.forEach((dim, dimIdx) => {
+    // Sort dimensions by order ascending for display
+        const dims = [...this.plugin.settings.dimensions].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        dims.forEach((dim, dimIdx) => {
       const dimDiv = containerEl.createDiv({cls: 'dimension-setting'});
       const headerDiv = dimDiv.createDiv({cls: 'dimension-header'});
 
       headerDiv.addClass('gc-row');
+      // Order label
+      headerDiv.createSpan({ text: `${dim.order}. ` });
       const nameEl = headerDiv.createEl('b', {text: dim.name});
       headerDiv.createDiv({cls: 'gc-spacer'});
+
+      // Reorder buttons
+      const moveUpBtn = headerDiv.createEl('button', {cls: ['gc-icon-button', 'clickable-icon']});
+      moveUpBtn.setAttr('aria-label', `Move up`);
+      moveUpBtn.setAttr('title', `Move up`);
+      try { setIcon(moveUpBtn, 'arrow-up'); } catch (e) { moveUpBtn.setText('Up'); }
+      moveUpBtn.onclick = async () => {
+        const items = this.plugin.settings.dimensions;
+        // find neighbor with immediately smaller order
+        const prev = [...items].filter(d => (d.order ?? 0) < (dim.order ?? 0)).sort((a,b)=> (b.order??0)-(a.order??0))[0];
+        if (!prev) return;
+        const tmp = prev.order;
+        prev.order = dim.order;
+        dim.order = tmp;
+        await this.plugin.saveSettings();
+        this.display();
+      };
+
+      const moveDownBtn = headerDiv.createEl('button', {cls: ['gc-icon-button', 'clickable-icon']});
+      moveDownBtn.setAttr('aria-label', `Move down`);
+      moveDownBtn.setAttr('title', `Move down`);
+      try { setIcon(moveDownBtn, 'arrow-down'); } catch (e) { moveDownBtn.setText('Down'); }
+      moveDownBtn.onclick = async () => {
+        const items = this.plugin.settings.dimensions;
+        const next = [...items].filter(d => (d.order ?? 0) > (dim.order ?? 0)).sort((a,b)=> (a.order??0)-(b.order??0))[0];
+        if (!next) return;
+        const tmp = next.order;
+        next.order = dim.order;
+        dim.order = tmp;
+        await this.plugin.saveSettings();
+        this.display();
+      };
 
       // Remove dimension button (aligned right) - declared before edit handler uses it
       const removeBtn = headerDiv.createEl('button', {cls: ['gc-icon-button', 'clickable-icon']});
@@ -64,7 +101,8 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
       removeBtn.setAttr('title', `Delete ${dim.name}`);
       try { setIcon(removeBtn, 'trash'); } catch (e) { removeBtn.setText('Remove'); }
       removeBtn.onclick = async () => {
-        this.plugin.settings.dimensions.splice(dimIdx, 1);
+        const idx = this.plugin.settings.dimensions.findIndex(d => d === dim);
+        if (idx >= 0) this.plugin.settings.dimensions.splice(idx, 1);
         await this.plugin.saveSettings();
         this.display();
       };
@@ -101,7 +139,7 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
         const commit = async (val: string) => {
           const next = val.trim();
           if (!next || next === current) { cleanup(); return; }
-          if (this.plugin.settings.dimensions.some((d, i) => i !== dimIdx && d.name === next)) {
+          if (this.plugin.settings.dimensions.some((d) => d !== dim && d.name === next)) {
             new Notice('A dimension with this name already exists.');
             return; // keep input to let user fix
           }
@@ -213,7 +251,10 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
     saveBtn.onclick = async () => {
       const val = newDimInput.value.trim();
       if (val && !this.plugin.settings.dimensions.some(d => d.name === val)) {
-        this.plugin.settings.dimensions.push({name: val, categories: []});
+        {
+                const maxOrder = this.plugin.settings.dimensions.reduce((m, d) => Math.max(m, d.order ?? 0), 0);
+                this.plugin.settings.dimensions.push({name: val, order: maxOrder + 1, categories: []});
+                }
         await this.plugin.saveSettings();
         this.display();
       }

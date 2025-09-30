@@ -1,7 +1,7 @@
 {
   "id": "project-flow",
   "name": "ProjectFlow",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "0.12.0",
   "description": "ProjectFlow for managing projects in Obsidian.",
   "author": "Oleksandr Hudenko",

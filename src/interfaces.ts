@@ -1,5 +1,14 @@
+export interface Dimension {
+  id?: string; // optional stable id for future migrations
+  name: string;
+  order: number; // explicit ordering for UI and path
+  categories: string[];
+}
+
 export interface ProjectFlowSettings {
-  dimensions: { name: string; categories: string[] }[];
+  dimensions: Dimension[];
+  projectsRoot?: string; // root folder where projects are created (default: "1. Projects")
+  schemaVersion?: number; // lightweight settings schema version
 }
 
 export interface ProjectInfo {
@@ -22,4 +31,5 @@ export interface ProjectVariables {
   PROJECT_PATH: string;
   DIMENSION: string;
   CATEGORY: string;
+  PROJECT_DIMENSION?: string; // legacy alias used by some templates
 }
