@@ -7,6 +7,40 @@ import {DEFAULT_SETTINGS, ProjectFlowSettingTab} from "./settings-tab";
 export class AutomatorPlugin extends Plugin {
   settings: ProjectFlowSettings;
 
+  async deleteProjectById(dimension: string, category: string, projectId: string): Promise<void> {
+    const rec = (this.settings.projectRecords as any)?.[dimension]?.[category]?.[projectId] as ProjectRecord | undefined;
+    if (!rec) return;
+    const variables = rec.variables;
+    const { sanitizePath } = await import('./core/path-sanitizer');
+    const { SafeFileManager } = await import('./services/file-manager');
+    const fm = new SafeFileManager(this.app);
+    // Determine project dir and template dir
+    const projectDir = sanitizePath(variables.PROJECT_PATH);
+    const templateDir = sanitizePath(`Templates/${rec.info.name}_Templates`);
+    try {
+      // Delete project folder (recursively) and template folder if exist
+      const vault: any = this.app.vault;
+      const proj = vault.getAbstractFileByPath(projectDir);
+      if (proj && vault.delete) await vault.delete(proj, true);
+      const tdir = vault.getAbstractFileByPath(templateDir);
+      if (tdir && vault.delete) await vault.delete(tdir, true);
+    } catch (e) {
+      console.warn('Failed to delete some files for project', projectId, e);
+    }
+    // Remove from records
+    try {
+      const map = this.settings.projectRecords as any;
+      if (map?.[dimension]?.[category]?.[projectId]) {
+        delete map[dimension][category][projectId];
+        if (Object.keys(map[dimension][category]).length === 0) delete map[dimension][category];
+        if (Object.keys(map[dimension]).length === 0) delete map[dimension];
+      }
+      await this.saveSettings();
+    } catch (e) {
+      console.warn('Failed to update projectRecords after delete', e);
+    }
+  }
+
   async onload() {
     console.log('ProjectFlow plugin loaded');
     await this.loadSettings();

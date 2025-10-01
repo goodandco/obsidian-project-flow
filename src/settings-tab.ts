@@ -18,6 +18,15 @@ export const DEFAULT_SETTINGS: ProjectFlowSettings = {
   projectRecords: {},
 };
 
+function hashString(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) - h) + str.charCodeAt(i);
+    h |= 0;
+  }
+  return h;
+}
+
 export class ProjectFlowSettingTab extends PluginSettingTab {
   plugin: AutomatorPlugin;
 
@@ -164,7 +173,27 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
         const catList = dimDiv.createDiv({cls: 'categories-list gc-list'});
         dim.categories.forEach((cat, catIdx) => {
           const item = catList.createDiv({cls: 'gc-list-item gc-row'});
-          const catLabel = item.createSpan({text: cat});
+          // Compute project IDs for this category from stored projectRecords
+          const recs = (this.plugin.settings.projectRecords || {}) as Record<string, Record<string, Record<string, any>>>;
+          const dimName = dim.name;
+          const ids = Object.keys(recs?.[dimName]?.[cat] || {});
+          // Render category name first (bold), then space-separated IDs with random colors
+          const catLabel = item.createEl('b', { text: cat });
+          // container for IDs
+          const idsWrap = item.createDiv({ cls: 'gc-id-wrap' });
+          if (ids.length > 0) {
+            // prepend a space between category and ids list for readability
+            idsWrap.createSpan({ text: ' ' });
+            ids.forEach((pid, idx) => {
+              const tag = idsWrap.createSpan({ cls: 'gc-id-tag', text: pid });
+              // Apply a deterministic pseudo-random color based on ID to keep stable across renders
+              const hue = Math.abs(hashString(pid)) % 360;
+              tag.style.backgroundColor = `hsl(${hue}, 70%, 90%)`;
+              tag.style.color = `hsl(${hue}, 70%, 25%)`;
+              // add space between tags (space-separated)
+              if (idx < ids.length - 1) idsWrap.createSpan({ text: ' ' });
+            });
+          }
           item.createDiv({cls: 'gc-spacer'});
           // Prepare remove before edit to toggle visibility during edit
           const removeCatBtn = item.createEl('button', {cls: ['remove-category','gc-icon-button', 'clickable-icon']});
