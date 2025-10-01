@@ -1,7 +1,7 @@
 import {Notice, Plugin} from 'obsidian';
 import {InputPromptModal} from "./input-modal";
 import {ChoicePromptModal} from "./choice-modal";
-import {ProjectFlowSettings, ProjectInfo, ProjectVariables} from "./interfaces";
+import {ProjectFlowSettings, ProjectInfo, ProjectVariables, ProjectRecord} from "./interfaces";
 import {DEFAULT_SETTINGS, ProjectFlowSettingTab} from "./settings-tab";
 
 export class AutomatorPlugin extends Plugin {
@@ -48,7 +48,14 @@ export class AutomatorPlugin extends Plugin {
       return;
     }
 
-    // Step 3: Parent name (optional)
+    // Step 3: Project ID
+    const projectId = await this.promptForText('Enter Project ID (used for task prefixes):');
+    if (!projectId) {
+      new Notice('Project creation cancelled. No Project ID provided.');
+      return;
+    }
+
+    // Step 4: Parent name (optional)
     const projectParent = await this.promptForText('Enter parent name (optional):');
     // Parent can be empty; treat empty or whitespace-only as undefined
     const normalizedParent = projectParent && projectParent.trim().length > 0 ? projectParent.trim() : null;
@@ -78,16 +85,32 @@ export class AutomatorPlugin extends Plugin {
     const projectInfo: ProjectInfo = {
       name: projectName,
       tag: projectTag,
+      id: projectId,
       parent: normalizedParent,
       dimension: selectedDimension,
       category: selectedCategory
     };
+
+    // Check for duplicate ID inside selected dimension/category
+    try {
+      const recs = this.settings.projectRecords as any;
+      if (recs && !Array.isArray(recs)) {
+        const existing = recs[selectedDimension]?.[selectedCategory]?.[projectId];
+        if (existing) {
+          new Notice(`Project with ID "${projectId}" already exists in ${selectedDimension}:${selectedCategory}. Choose a different ID.`);
+          return;
+        }
+      }
+    } catch (_e) {
+      // ignore lookup errors and proceed to general validation
+    }
 
     // Validate inputs (lightweight)
     try {
       const { validateProjectName, validateTag, ensureValidOrThrow } = await import('./core/input-validator');
       ensureValidOrThrow(() => validateProjectName(projectInfo.name), 'Invalid project name');
       ensureValidOrThrow(() => validateTag(projectInfo.tag), 'Invalid tag');
+      ensureValidOrThrow(() => validateTag(projectInfo.id), 'Invalid Project ID');
     } catch (e) {
       const message = (e as Error).message || 'Invalid input';
       console.error('Validation error:', e);
@@ -138,6 +161,7 @@ export class AutomatorPlugin extends Plugin {
       PROJECT_PATH: projectPath,
       DIMENSION: dimMeta ? dimMeta.name : projectInfo.dimension,
       CATEGORY: projectInfo.category,
+      PROJECT_ID: projectInfo.id,
       PROJECT_DIMENSION: dimMeta ? dimMeta.name : projectInfo.dimension
     };
   }
@@ -178,7 +202,7 @@ export class AutomatorPlugin extends Plugin {
       const safeProjectDir = sanitizePath(`${safeProjectsDir}/${safeDimension}/${safeCategory}/${variables.PROJECT_FULL_NAME}`);
 
       // Prepare subfolders
-      const subdirs = ['Knowledge Base', 'Meetings', 'Work', 'People'];
+      const subdirs = ['Knowledge Base', 'Meetings', 'Work', 'Work/Tasks', 'People'];
       const folderOps = [
         { type: 'folder' as const, path: safeProjectDir },
         ...subdirs.map(s => ({ type: 'folder' as const, path: sanitizePath(`${safeProjectDir}/${s}`) })),
@@ -215,10 +239,52 @@ export class AutomatorPlugin extends Plugin {
       // Create template folder and its files using existing helper (non-critical)
       await this.createProjectTemplates(projectInfo.name, variables);
 
+      // Record project creation in plugin data
+      await this.recordProjectCreation(projectInfo, variables);
+
       new Notice(`Project "${projectInfo.name}" created successfully!`);
     } catch (error) {
       new Notice(`Error creating project: ${error}`);
       console.error('Project creation error:', error);
+    }
+  }
+
+  private async recordProjectCreation(info: ProjectInfo, variables: ProjectVariables) {
+    try {
+      const record: ProjectRecord = {
+        info,
+        variables,
+        createdAt: new Date().toISOString(),
+      };
+      // Ensure nested map exists
+      const dim = info.dimension;
+      const cat = info.category;
+      const id = info.id;
+      if (!this.settings.projectRecords || Array.isArray(this.settings.projectRecords)) {
+        // migrate any array to map
+        const migrated: Record<string, Record<string, Record<string, ProjectRecord>>> = {};
+        const arr = Array.isArray(this.settings.projectRecords) ? this.settings.projectRecords as any as ProjectRecord[] : [];
+        for (const rec of arr) {
+          const d = rec.info.dimension;
+          const c = rec.info.category;
+          const pid = rec.info.id;
+          migrated[d] = migrated[d] || {};
+          migrated[d][c] = migrated[d][c] || {};
+          migrated[d][c][pid] = rec;
+        }
+        (this.settings as any).projectRecords = migrated;
+      }
+      const map = this.settings.projectRecords as Record<string, Record<string, Record<string, ProjectRecord>>>;
+      map[dim] = map[dim] || {};
+      map[dim][cat] = map[dim][cat] || {};
+      if (map[dim][cat][id]) {
+        throw new Error(`Project with id "${id}" already exists in ${dim}:${cat}`);
+      }
+      map[dim][cat][id] = record;
+      await this.saveSettings();
+    } catch (e) {
+      console.warn('Failed to record project creation:', e);
+      throw e;
     }
   }
 

@@ -36,9 +36,10 @@ Run the command from the Command Palette:
 You’ll be asked for:
 1. Project name → stored as $_PROJECT_NAME
 2. Project tag → stored as $_PROJECT_TAG
-3. Parent name (optional) → stored as $_PROJECT_PARENT
-4. Dimension → select from your configured list
-5. Category → select from the chosen dimension
+3. Project ID (used as task prefix) → stored as $_PROJECT_ID
+4. Parent name (optional) → stored as $_PROJECT_PARENT
+5. Dimension → select from your configured list
+6. Category → select from the chosen dimension
 
 After collecting inputs, ProjectFlow creates the project structure and files, filling template variables accordingly.
 
@@ -55,6 +56,7 @@ Within the project folder, ProjectFlow creates:
 - Knowledge Base/
 - Meetings/
 - Work/
+  - Tasks/
 - People/
 - <$_PROJECT_FULL_NAME>.md (Project)
 - <$_PROJECT_NAME> Meetings.md
@@ -79,6 +81,7 @@ Generated automatically:
 - $_PROJECT_PATH = same as relative path inside your vault
 - $_DIMENSION (dimension display name)
 - $_CATEGORY
+- $_PROJECT_ID (provided during setup; used to prefix task names as <ID>-N)
 - $_PROJECT_DIMENSION (alias of $_DIMENSION for legacy templates)
 
 Token syntaxes supported in templates:

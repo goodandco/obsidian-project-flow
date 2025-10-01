@@ -4,6 +4,7 @@
 export interface ProjectInfoLite {
   name: string;
   tag: string;
+  id: string;
   parent: string | null;
   dimension: string;
   category: string;
@@ -33,6 +34,7 @@ export function generateProjectVariables(info: ProjectInfoLite, now: Date = new 
     PROJECT_PATH: projectPath,
     DIMENSION: info.dimension,
     CATEGORY: info.category,
+    PROJECT_ID: info.id,
     PROJECT_DIMENSION: info.dimension,
   };
 }

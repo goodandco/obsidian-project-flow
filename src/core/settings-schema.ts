@@ -11,7 +11,29 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
     dimensions: (input?.dimensions as any) ?? [],
     projectsRoot: input?.projectsRoot ?? '1. Projects',
     schemaVersion: input?.schemaVersion ?? 0,
+    projectRecords: {} as any,
   } as any;
+
+  // Normalize projectRecords to nested map
+  const pr = (input as any)?.projectRecords;
+  if (pr && typeof pr === 'object' && !Array.isArray(pr)) {
+    s.projectRecords = pr as any;
+  } else if (Array.isArray(pr)) {
+    const migrated: Record<string, Record<string, Record<string, any>>> = {};
+    for (const rec of pr) {
+      if (!rec || !rec.info) continue;
+      const d = rec.info.dimension;
+      const c = rec.info.category;
+      const id = rec.info.id;
+      if (!d || !c || !id) continue;
+      migrated[d] = migrated[d] || {};
+      migrated[d][c] = migrated[d][c] || {};
+      migrated[d][c][id] = rec;
+    }
+    s.projectRecords = migrated as any;
+  } else {
+    s.projectRecords = {} as any;
+  }
 
   // Migrate dimensions from name-with-order to structured { name, order }
   if (Array.isArray(s.dimensions)) {

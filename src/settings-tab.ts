@@ -15,6 +15,7 @@ const DEFAULT_DIMENSIONS = [
 export const DEFAULT_SETTINGS: ProjectFlowSettings = {
   dimensions: JSON.parse(JSON.stringify(DEFAULT_DIMENSIONS)),
   projectsRoot: '1. Projects',
+  projectRecords: {},
 };
 
 export class ProjectFlowSettingTab extends PluginSettingTab {

@@ -1,5 +1,5 @@
 ---
-ID: 
+ID: ""
 Type: "[[Task|Task]]"
 Status: New
 Project: "[[$_PROJECT_FULL_NAME]]"
@@ -15,7 +15,25 @@ Sprint:
 TaskType: 
 StoryPoints: 
 ---
-<% await tp.file.move("$_PROJECT_PATH/Work/Tasks/" + "Task " + tp.file.title) %>
+<%*
+const projectId = "$_PROJECT_ID".split('/').join('-');
+const targetDir = "$_PROJECT_PATH/Work/Tasks";
+let next = 1;
+try {
+  const listing = await app.vault.adapter.list(targetDir);
+  const files = (listing && listing.files) ? listing.files : [];
+  const nums = files
+    .map(f => f.split('/').pop())
+    .filter(name => name && name.startsWith(projectId + '-'))
+    .map(name => parseInt(name.substring(projectId.length + 1)))
+    .filter(n => !isNaN(n));
+  next = nums.length ? Math.max(...nums) + 1 : 1;
+} catch (e) {
+  console.warn('Could not list tasks folder, defaulting to 1', e);
+}
+const newName = `${projectId}-${next} ${tp.file.title}`;
+await tp.file.move(`${targetDir}/${newName}`);
+%>
 
 ## Description
 
