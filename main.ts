@@ -1,3 +1,3 @@
-import {AutomatorPlugin} from "./src/plugin";
+import {ProjectFlowPlugin} from "./src/plugin";
 
-export default AutomatorPlugin;
+export default ProjectFlowPlugin;

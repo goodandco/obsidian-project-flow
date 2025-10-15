@@ -9,7 +9,7 @@ export class ConfirmResetModal extends Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.addClass('automator-settings');
+    contentEl.addClass('project-flow-settings');
     contentEl.createEl('p', { text: 'Do you want skip settings to defaults? This will override all custom settings.' });
     const row = contentEl.createDiv({ cls: 'gc-row' });
     row.createDiv({ cls: 'gc-spacer' });

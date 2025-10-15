@@ -3,7 +3,7 @@ alwaysApply: false
 ---
 This plugin allows to manage and simplify creating of the new projects inside Obsidian Vault.
 
-The code of this project will be located inside the obsidian vault as `automator` plugin:  `<Obsidian Vault>/.obsidian/plugins/automator`.
+The code of this project will be located inside the obsidian vault as `project-flow` plugin:  `<Obsidian Vault>/.obsidian/plugins/project-flow`.
 
 ### Settings
 

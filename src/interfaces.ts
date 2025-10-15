@@ -1,3 +1,5 @@
+import { Plugin } from "obsidian";
+
 export interface Dimension {
   id?: string; // optional stable id for future migrations
   name: string;
@@ -42,4 +44,8 @@ export interface ProjectRecord {
   info: ProjectInfo;
   variables: ProjectVariables;
   createdAt: string; // ISO timestamp
+}
+
+export interface IProjectFlowPlugin extends Plugin {
+  settings: ProjectFlowSettings
 }

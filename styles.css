@@ -1,5 +1,5 @@
 /* Scope to the settings tab */
-.automator-settings {
+.project-flow-settings {
   --gc-block-bg: var(--background-secondary);
   --gc-block-border: var(--background-modifier-border);
   --gc-hover: var(--background-modifier-hover);
@@ -7,49 +7,49 @@
 }
 
 /* Layout primitives */
-.automator-settings .gc-row { display: flex; align-items: center; gap: 8px; }
-.automator-settings .gc-spacer { flex: 1; }
+.project-flow-settings .gc-row { display: flex; align-items: center; gap: 8px; }
+.project-flow-settings .gc-spacer { flex: 1; }
 
 /* Dimension card */
-.automator-settings .dimension-setting {
+.project-flow-settings .dimension-setting {
   margin-top: 12px;
   padding: 10px 12px;
   background: var(--gc-block-bg);
   border: 1px solid var(--gc-block-border);
   border-radius: var(--radius-s);
 }
-.automator-settings .dimension-header b { font-weight: 600; }
+.project-flow-settings .dimension-header b { font-weight: 600; }
 
 /* Categories list */
-.automator-settings .gc-list { margin-top: 6px; }
-.automator-settings .gc-list-item { padding: 4px 6px; border-radius: 6px; }
-.automator-settings .gc-list-item:hover { background: var(--gc-hover); }
+.project-flow-settings .gc-list { margin-top: 6px; }
+.project-flow-settings .gc-list-item { padding: 4px 6px; border-radius: 6px; }
+.project-flow-settings .gc-list-item:hover { background: var(--gc-hover); }
 
 /* Input rows */
-.automator-settings .add-category,
-.automator-settings .add-dimension .gc-row { margin-top: 8px; }
-.automator-settings .add-category input,
-.automator-settings .add-dimension input { min-width: 220px; }
+.project-flow-settings .add-category,
+.project-flow-settings .add-dimension .gc-row { margin-top: 8px; }
+.project-flow-settings .add-category input,
+.project-flow-settings .add-dimension input { min-width: 220px; }
 
 /* Icon-only buttons */
-.automator-settings .gc-icon-button {
+.project-flow-settings .gc-icon-button {
   width: 24px; height: 24px; display: inline-flex;
   align-items: center; justify-content: center;
   padding: 0; border: none; background: transparent;
   color: var(--gc-muted); border-radius: 6px; cursor: var(--cursor);
 }
-.automator-settings .gc-icon-button:hover { color: var(--text-normal); background: var(--gc-hover); }
+.project-flow-settings .gc-icon-button:hover { color: var(--text-normal); background: var(--gc-hover); }
 
 /* Keep Add buttons aligned nicely when used with gc-spacer */
-.automator-settings .add-category button,
-.automator-settings .add-dimension button { margin-left: 4px; }
+.project-flow-settings .add-category button,
+.project-flow-settings .add-dimension button { margin-left: 4px; }
 
 /* Inline rename input sizing */
-.automator-settings .gc-rename { min-width: 240px; }
+.project-flow-settings .gc-rename { min-width: 240px; }
 
 /* ID chips (random color per ID) */
-.automator-settings .gc-id-wrap { display: inline; margin-left: 4px; }
-.automator-settings .gc-id-tag {
+.project-flow-settings .gc-id-wrap { display: inline; margin-left: 4px; }
+.project-flow-settings .gc-id-tag {
   display: inline-block;
   padding: 1px 6px;
   border-radius: 10px;
