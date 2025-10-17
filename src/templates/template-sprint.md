@@ -1,14 +1,12 @@
 ---
-Type: "[[Board]]"
+Type: "Sprint"
 Parent: "[[$_PROJECT_NAME Work]]"
 Status: Plan
 Project: "[[$_PROJECT_FULL_NAME]]"
-Category: "[[$_CATEGORY]]"
-Dimension: "[[$_DIMENSION]]"
 StartedAt: ""
 FinishedAt: ""
 tags:
-  - board
+  - type/sprint
   - sprint
   - $_PROJECT_TAG
 ---

@@ -1,12 +1,12 @@
 ---
-Type: "[[2. Areas/Abstracts/Types/Meeting|Meeting]]"
-MeetingType: Retro
+Type: "Meeting"
+MeetingType: "Retro"
 Parent: "[[$_PROJECT_NAME Meetings]]"
 DateTime: <% tp.date.now("YYYY-MM-DD") %>T09:30:00
 Duration: 30 min
-Dimension: "$_PROJECT_DIMENSION"
 Project: "[[$_PROJECT_FULL_NAME]]"
 tags:
+  - type/meeting
   - meeting
   - $_PROJECT_TAG
 ---

@@ -1,57 +1,64 @@
-import { Notice, Plugin } from "obsidian";
-import { InputPromptModal } from "./input-modal";
-import { ChoicePromptModal } from "./choice-modal";
+import {Notice, Plugin} from "obsidian";
+import {InputPromptModal} from "./input-modal";
+import {ChoicePromptModal} from "./choice-modal";
 import {
   ProjectFlowSettings,
   ProjectInfo,
   ProjectVariables,
   ProjectRecord,
 } from "./interfaces";
-import { DEFAULT_SETTINGS, ProjectFlowSettingTab } from "./settings-tab";
+import {DEFAULT_SETTINGS, ProjectFlowSettingTab} from "./settings-tab";
 
 export class ProjectFlowPlugin extends Plugin {
   settings: ProjectFlowSettings;
 
-  // async deleteProjectById(
-  //   dimension: string,
-  //   category: string,
-  //   projectId: string,
-  // ): Promise<void> {
-  //   const rec = (this.settings.projectRecords as any)?.[dimension]?.[
-  //     category
-  //   ]?.[projectId] as ProjectRecord | undefined;
-  //   if (!rec) return;
-  //   const variables = rec.variables;
-  //   const { sanitizePath } = await import("./core/path-sanitizer");
-  //   const { SafeFileManager } = await import("./services/file-manager");
-  //   const fm = new SafeFileManager(this.app);
-  //   // Determine project dir and template dir
-  //   const projectDir = sanitizePath(variables.PROJECT_PATH);
-  //   const templateDir = sanitizePath(`Templates/${rec.info.name}_Templates`);
-  //   try {
-  //     // Delete project folder (recursively) and template folder if exist
-  //     const vault: any = this.app.vault;
-  //     const proj = vault.getAbstractFileByPath(projectDir);
-  //     if (proj && vault.delete) await vault.delete(proj, true);
-  //     const tdir = vault.getAbstractFileByPath(templateDir);
-  //     if (tdir && vault.delete) await vault.delete(tdir, true);
-  //   } catch (e) {
-  //     console.warn("Failed to delete some files for project", projectId, e);
-  //   }
-  //   // Remove from records
-  //   try {
-  //     const map = this.settings.projectRecords as any;
-  //     if (map?.[dimension]?.[category]?.[projectId]) {
-  //       delete map[dimension][category][projectId];
-  //       if (Object.keys(map[dimension][category]).length === 0)
-  //         delete map[dimension][category];
-  //       if (Object.keys(map[dimension]).length === 0) delete map[dimension];
-  //     }
-  //     await this.saveSettings();
-  //   } catch (e) {
-  //     console.warn("Failed to update projectRecords after delete", e);
-  //   }
-  // }
+  async deleteProjectById(
+    dimension: string,
+    category: string,
+    projectId: string,
+  ): Promise<[boolean, string]> {
+    let msg = "";
+    const projectRecords = this.settings.projectRecords as Record<
+      string,
+      Record<string, Record<string, ProjectRecord>>
+    >;
+    const projectData = projectRecords[dimension][category][projectId];
+    console.log(projectData);
+
+    const {SafeFileManager} = await import("./services/file-manager");
+    const fm = new SafeFileManager(this.app);
+    const {sanitizePath} = await import("./core/path-sanitizer");
+    const projectDir = sanitizePath(projectData.variables.PROJECT_PATH);
+    const templatesDir = sanitizePath(`Templates/${projectData.info.name}_Templates`);
+
+    try {
+      console.debug("Removing project dir: " + projectDir);
+      await fm.removeDir(projectDir);
+      console.debug("Removing templates dir: " + templatesDir);
+      await fm.removeDir(templatesDir);
+
+      try {
+        console.debug("Removing project record from settings");
+        if (projectRecords[dimension][category][projectId]) {
+          delete projectRecords[dimension][category][projectId];
+          if (Object.keys(projectRecords[dimension][category]).length === 0)
+            delete projectRecords[dimension][category];
+          if (Object.keys(projectRecords[dimension]).length === 0) delete projectRecords[dimension];
+        }
+        await this.saveSettings();
+        msg = "Project deleted successfully.";
+      } catch (e) {
+        msg = "Failed to update projectRecords after delete";
+        console.warn(msg, e);
+      }
+      return [true, msg];
+    } catch (e) {
+      msg = "Error removing project: " + e.message;
+      console.error("Error removing project:", e);
+    }
+
+    return [false, msg];
+  }
 
   async onload() {
     console.log("ProjectFlow plugin loaded");
@@ -74,7 +81,7 @@ export class ProjectFlowPlugin extends Plugin {
   async loadSettings() {
     const raw = await this.loadData();
     try {
-      const { migrateSettings } = await import("./core/settings-schema");
+      const {migrateSettings} = await import("./core/settings-schema");
       this.settings = Object.assign({}, DEFAULT_SETTINGS, migrateSettings(raw));
     } catch {
       this.settings = Object.assign({}, DEFAULT_SETTINGS, raw);
@@ -95,7 +102,6 @@ export class ProjectFlowPlugin extends Plugin {
       Record<string, Record<string, ProjectRecord>>
     >;
 
-    // Step 4: Dimension selection
     const dimensionChoices = [...this.settings.dimensions]
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       .map((d) => d.name);
@@ -108,7 +114,6 @@ export class ProjectFlowPlugin extends Plugin {
       return;
     }
 
-    // Step 5: Category selection
     const selectedDim = this.settings.dimensions.find(
       (d) => d.name === selectedDimension,
     );
@@ -137,7 +142,13 @@ export class ProjectFlowPlugin extends Plugin {
       return;
     }
 
-    new Notice("Project " + projectId + " has been successfully removed.");
+    const [result, msg] = await this.deleteProjectById(selectedDimension, selectedCategory, projectId);
+
+    if (result) {
+      new Notice("Project " + projectId + " has been successfully removed.");
+    }
+
+    console.log(msg);
   }
 
   async showProjectPrompt() {
@@ -174,7 +185,7 @@ export class ProjectFlowPlugin extends Plugin {
         ? projectParent.trim()
         : null;
 
-    // Step 4: Dimension selection
+    // Step 5: Dimension selection
     const dimensionChoices = [...this.settings.dimensions]
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       .map((d) => d.name);
@@ -187,7 +198,7 @@ export class ProjectFlowPlugin extends Plugin {
       return;
     }
 
-    // Step 5: Category selection
+    // Step 6: Category selection
     const selectedDim = this.settings.dimensions.find(
       (d) => d.name === selectedDimension,
     );
@@ -236,7 +247,7 @@ export class ProjectFlowPlugin extends Plugin {
 
     // Validate inputs (lightweight)
     try {
-      const { validateProjectName, validateTag, ensureValidOrThrow } =
+      const {validateProjectName, validateTag, ensureValidOrThrow} =
         await import("./core/input-validator");
       ensureValidOrThrow(
         () => validateProjectName(projectInfo.name),
@@ -319,7 +330,7 @@ export class ProjectFlowPlugin extends Plugin {
     // Use pure helper with dual-syntax support
     try {
       // dynamic import to avoid bundling issues if needed; but it's a local pure module
-      const { processTemplate } = await import("./core/template-processor");
+      const {processTemplate} = await import("./core/template-processor");
       return processTemplate(templateContent, variables as any);
     } catch (_e) {
       // Fallback to legacy replacement to preserve runtime if import fails
@@ -343,10 +354,10 @@ export class ProjectFlowPlugin extends Plugin {
       const variables = this.generateProjectVariables(projectInfo);
       const projectsDir = this.settings.projectsRoot || "1. Projects";
 
-      const { sanitizePath, sanitizeFileName } = await import(
+      const {sanitizePath, sanitizeFileName} = await import(
         "./core/path-sanitizer"
-      );
-      const { SafeFileManager } = await import("./services/file-manager");
+        );
+      const {SafeFileManager} = await import("./services/file-manager");
       const fm = new SafeFileManager(this.app);
 
       // Build sanitized paths
@@ -372,7 +383,7 @@ export class ProjectFlowPlugin extends Plugin {
         "People",
       ];
       const folderOps = [
-        { type: "folder" as const, path: safeProjectDir },
+        {type: "folder" as const, path: safeProjectDir},
         ...subdirs.map((s) => ({
           type: "folder" as const,
           path: sanitizePath(`${safeProjectDir}/${s}`),
@@ -391,8 +402,9 @@ export class ProjectFlowPlugin extends Plugin {
           fileName: `${projectInfo.name} Meetings.md`,
           template: "meetings.md",
         },
-        { fileName: `${projectInfo.name} People.md`, template: "people.md" },
-        { fileName: `${projectInfo.name} Work.md`, template: "work.md" },
+        {fileName: `${projectInfo.name} People.md`, template: "people.md"},
+        {fileName: `${projectInfo.name} Work.md`, template: "work.md"},
+        {fileName: `${projectInfo.name} Knowledge Base.md`, template: "knowledge-base.md"},
       ];
 
       const fileOps = [] as Array<{ type: "file"; path: string; data: string }>;
@@ -409,7 +421,7 @@ export class ProjectFlowPlugin extends Plugin {
         const safeFilePath = sanitizePath(
           `${safeProjectDir}/${sanitizeFileName(spec.fileName)}`,
         );
-        fileOps.push({ type: "file", path: safeFilePath, data: processed });
+        fileOps.push({type: "file", path: safeFilePath, data: processed});
       }
 
       // Batch create folders and files with rollback on file errors
@@ -489,7 +501,7 @@ export class ProjectFlowPlugin extends Plugin {
   }
 
   async ensureDirectoryExists(path: string) {
-    const { SafeFileManager } = await import("./services/file-manager");
+    const {SafeFileManager} = await import("./services/file-manager");
     const fm = new SafeFileManager(this.app);
     await fm.ensureFolder(path);
   }
@@ -516,7 +528,7 @@ export class ProjectFlowPlugin extends Plugin {
       );
 
       const filePath = `${projectDir}/${fileName}`;
-      const { SafeFileManager } = await import("./services/file-manager");
+      const {SafeFileManager} = await import("./services/file-manager");
       const fm = new SafeFileManager(this.app);
       await fm.createIfAbsent(filePath, processedContent);
     } catch (error) {
@@ -529,9 +541,9 @@ export class ProjectFlowPlugin extends Plugin {
     projectName: string,
     variables: ProjectVariables,
   ) {
-    const { sanitizePath, sanitizeFileName } = await import(
+    const {sanitizePath, sanitizeFileName} = await import(
       "./core/path-sanitizer"
-    );
+      );
     const templateDir = sanitizePath(`Templates/${projectName}_Templates`);
     await this.ensureDirectoryExists(templateDir);
 
@@ -568,8 +580,9 @@ export class ProjectFlowPlugin extends Plugin {
         source: "template-sprint.md",
         target: `${projectName}_Sprint_Template.md`,
       },
-      { source: "template-task.md", target: `${projectName}_Task_Template.md` },
-      { source: "template-idea.md", target: `${projectName}_Idea_Template.md` },
+      {source: "template-task.md", target: `${projectName}_Task_Template.md`},
+      {source: "template-idea.md", target: `${projectName}_Idea_Template.md`},
+      {source: "template-knowledge-base-item.md", target: `${projectName}_Knowledge_Item_Template.md`},
     ];
 
     for (const mapping of templateMappings) {

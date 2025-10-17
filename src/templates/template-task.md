@@ -1,14 +1,12 @@
 ---
-ID: ""
-Type: "[[Task|Task]]"
-Status: New
+ID: "$_PROJECT_ID-N"
+Type: "Task"
+Status: "New"
 Project: "[[$_PROJECT_FULL_NAME]]"
-Category: "[[$_CATEGORY]]"
-Dimension: "[[$_DIMENSION]]"
 StartedAt: ""
 FinishedAt: ""
 tags:
-  - task
+  - type/task
   - $_PROJECT_TAG
 Parent: "[[$_PROJECT_NAME Work]]"
 Sprint: 

@@ -1,8 +1,7 @@
 ---
-Type: "[[Section]]"
-Date: $_DATE
-Dimension: "[[$_DIMENSION]]"
+Type: "Section"
 Project: "[[$_PROJECT_FULL_NAME]]"
+Date: $_DATE
 tags:
   - section
   - meetings

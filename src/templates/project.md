@@ -1,16 +1,18 @@
 ---
-Type: "[[Project]]"
+Type: "Project"
 Parent: "$_PROJECT_PARENT"
-Status: "[[Active]]"
+Status: "Active"
 Category: "$_CATEGORY"
 Dimension: "$_DIMENSION"
 ProjectID: "$_PROJECT_ID"
+ProjectTag: "$_PROJECT_TAG"
 Date: "$_DATE"
 StartedAt: "$_DATE"
 FinishedAt: ""
 tags:
   - project
   - dashboard
+  - type/project
   - $_PROJECT_TAG
 Deadline: ""
 ---
@@ -22,11 +24,9 @@ Deadline: ""
 > - some link
 
 
-
 ```dataviewjs
 
-const sections = dv.pages('#section')  
-  .where(b => dv.func.contains(b.Project, dv.current().file.link))  
+const sections = dv.pages('#section and #$_PROJECT_TAG')  
   .sort(p => p.Date, 'asc')
   .map((p) => ([ p.file.link ]));
 
@@ -35,10 +35,8 @@ dv.table(['File'],  sections);
 
 ```
 
-### Timeline
-
-
 ---
+
 ## Journal
 
 

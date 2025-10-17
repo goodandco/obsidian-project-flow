@@ -1,4 +1,4 @@
-import type { App, Vault } from 'obsidian';
+import type {App, Vault} from 'obsidian';
 
 /**
  * Minimal SafeFileManager: non-throwing helpers for common FS ops.
@@ -17,7 +17,11 @@ export class SafeFileManager {
    * Create multiple files/folders in a best-effort batch.
    * On any failure, attempts to rollback already-created files (not folders).
    */
-  async createBatch(ops: Array<{ type: 'folder'; path: string } | { type: 'file'; path: string; data: string }>): Promise<{ ok: true } | { ok: false; error: unknown }> {
+  async createBatch(ops: Array<{ type: 'folder'; path: string } | {
+    type: 'file';
+    path: string;
+    data: string
+  }>): Promise<{ ok: true } | { ok: false; error: unknown }> {
     const createdFiles: string[] = [];
     try {
       for (const op of ops) {
@@ -28,7 +32,7 @@ export class SafeFileManager {
           if (res === 'created') createdFiles.push(op.path);
         }
       }
-      return { ok: true } as const;
+      return {ok: true} as const;
     } catch (e) {
       // rollback: try to delete files that we created in this batch
       for (const path of createdFiles.reverse()) {
@@ -37,9 +41,10 @@ export class SafeFileManager {
           if (file && (this.vault as any).delete) {
             await (this.vault as any).delete(file);
           }
-        } catch { /* ignore rollback errors */ }
+        } catch { /* ignore rollback errors */
+        }
       }
-      return { ok: false, error: e } as const;
+      return {ok: false, error: e} as const;
     }
   }
 
@@ -70,7 +75,10 @@ export class SafeFileManager {
           for (const seg of segments) {
             cur = cur ? `${cur}/${seg}` : seg;
             if (!this.vault.getAbstractFileByPath(cur)) {
-              try { await this.vault.createFolder(cur); } catch { /* ignore */ }
+              try {
+                await this.vault.createFolder(cur);
+              } catch { /* ignore */
+              }
             }
           }
         }
@@ -88,6 +96,21 @@ export class SafeFileManager {
     } catch {
       // If create failed, treat as skipped to avoid throwing per minimal safe semantics
       return (await this.has(path)) ? 'skipped' : 'skipped';
+    }
+  }
+
+  async removeDir(path: string): Promise<void> {
+    const file = this.vault.getAbstractFileByPath(path);
+    if (file && (this.vault as any)) {
+      // await (this.vault as any).delete(file);
+      try {
+        await this.vault.trash(file, true);
+        await new Promise(r => setTimeout(r, 200));
+      } catch (e) {
+        console.warn(`removeDir: failed to trash ${path}: ${e}`);
+      }
+    } else {
+      console.warn(`removeDir: file not found: ${path}. File: ${file?.path}`);
     }
   }
 }

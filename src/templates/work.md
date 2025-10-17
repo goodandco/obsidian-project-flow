@@ -1,14 +1,11 @@
 ---
-Type: "[[Section]]"
+Type: "Section"
 Project: "[[$_PROJECT_FULL_NAME]]"
-Category: "$_CATEGORY"
-Dimension: "$_DIMENSION"
 Date: "$_DATE"
 tags:
   - section
   - work
   - $_PROJECT_TAG
-  - $_PARENT_TAG
 ---
 
 ## Sprints
