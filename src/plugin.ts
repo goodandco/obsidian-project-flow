@@ -5,7 +5,7 @@ import {
   ProjectFlowSettings,
   ProjectInfo,
   ProjectVariables,
-  ProjectRecord,
+  ProjectRecord, ProjectInfoFromPrompt,
 } from "./interfaces";
 import {DEFAULT_SETTINGS, ProjectFlowSettingTab} from "./settings-tab";
 
@@ -60,6 +60,59 @@ export class ProjectFlowPlugin extends Plugin {
     return [false, msg];
   }
 
+  async deleteArchivedProject(
+    dimension: string,
+    category: string,
+    projectId: string,
+  ): Promise<[boolean, string]> {
+    try {
+      const archived = this.settings.archivedRecords as Record<string, Record<string, Record<string, ProjectRecord>>>;
+      const rec = archived?.[dimension]?.[category]?.[projectId];
+      if (!rec) {
+        return [false, "Archived project not found."];
+      }
+      const { sanitizePath } = await import("./core/path-sanitizer");
+      const { SafeFileManager } = await import("./services/file-manager");
+      const fm = new SafeFileManager(this.app);
+      const adapter: any = (this.app.vault as any).adapter;
+
+      const archiveRoot = this.settings.archiveRoot || "4. Archive";
+      const year = rec.variables.YEAR;
+      const dim = rec.variables.DIMENSION || rec.info.dimension;
+      const cat = rec.info.category;
+      const parent = (rec.info.parent && rec.info.parent.trim().length > 0) ? rec.info.parent.trim() : null;
+      const baseName = rec.info.name;
+      const archivedName = parent ? `${year}.${dim}.${cat}.${parent}.${baseName}` : `${year}.${dim}.${cat}.${baseName}`;
+      const archivedDir = sanitizePath(`${archiveRoot}/${archivedName}`);
+
+      // Remove archived folder (best-effort)
+      if (await adapter.exists(archivedDir)) {
+        await fm.removeDir(archivedDir);
+      }
+
+      // Update settings
+      try {
+        if (archived?.[dimension]?.[category]?.[projectId]) {
+          delete archived[dimension][category][projectId];
+          if (Object.keys(archived[dimension][category]).length === 0) {
+            delete archived[dimension][category];
+          }
+          if (Object.keys(archived[dimension] || {}).length === 0) {
+            delete archived[dimension];
+          }
+        }
+        await this.saveSettings();
+      } catch (e) {
+        console.warn("Failed to update archivedRecords after delete:", e);
+      }
+
+      return [true, "Archived project deleted."];
+    } catch (e: any) {
+      console.error("deleteArchivedProject error:", e);
+      return [false, e?.message ?? "Failed to delete archived project."];
+    }
+  }
+
   async onload() {
     console.log("ProjectFlow plugin loaded");
     await this.loadSettings();
@@ -75,6 +128,12 @@ export class ProjectFlowPlugin extends Plugin {
       id: "remove-project-by-id",
       name: "Remove Project",
       callback: () => this.showProjectRemovePrompt(),
+    });
+
+    this.addCommand({
+      id: "archive-project-by-id",
+      name: "Archive Project",
+      callback: () => this.showProjectArchivePrompt(),
     });
   }
 
@@ -92,10 +151,9 @@ export class ProjectFlowPlugin extends Plugin {
     await this.saveData(this.settings);
   }
 
-  async showProjectRemovePrompt() {
+  async getProjectDetailsWithPrompt(): Promise<[ProjectInfoFromPrompt | null, string]> {
     if (!this.settings.projectRecords) {
-      new Notice("You don't have any projects yet.");
-      return;
+      return [null, "You don't have any projects yet."];
     }
     const projectRecords = this.settings.projectRecords as Record<
       string,
@@ -105,50 +163,167 @@ export class ProjectFlowPlugin extends Plugin {
     const dimensionChoices = [...this.settings.dimensions]
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       .map((d) => d.name);
-    const selectedDimension = await this.promptForChoice(
+    const dimension = await this.promptForChoice(
       "Select dimension of your project:",
       dimensionChoices,
     );
-    if (!selectedDimension) {
-      new Notice("Project removal cancelled. No dimension selected.");
-      return;
+    if (!dimension) {
+      return [null, "Project removal cancelled. No dimension selected."];
     }
 
     const selectedDim = this.settings.dimensions.find(
-      (d) => d.name === selectedDimension,
+      (d) => d.name === dimension,
     );
     if (!selectedDim || selectedDim.categories.length === 0) {
-      new Notice("Selected dimension has no categories. No project to remove.");
-      return;
+      return [null, "Selected dimension has no categories. No project to remove."];
     }
 
     const categoryChoices = selectedDim.categories;
-    const selectedCategory = await this.promptForChoice(
+    const category = await this.promptForChoice(
       "Select category:",
       categoryChoices,
     );
-    if (!selectedCategory) {
-      new Notice("Project removal cancelled. No category selected.");
-      return;
+    if (!category) {
+      return [null, "Project removal cancelled. No category selected."];
     }
 
     const projectId = await this.promptForChoice(
       "Select Project to remove:",
-      Object.keys(projectRecords[selectedDimension][selectedCategory]),
+      Object.keys(projectRecords[dimension][category]),
     );
 
     if (!projectId) {
-      new Notice("Project deletion cancelled. No project was provided.");
+      return [null, "Project removal cancelled. No project selected."];
+    }
+
+    return [{dimension, category, projectId}, "Project removal confirmed."];
+  }
+
+  async showProjectRemovePrompt() {
+    const [projectInfo, promptMessage] = await this.getProjectDetailsWithPrompt();
+    if (projectInfo === null) {
+      new Notice(promptMessage);
       return;
     }
+    const {dimension, category, projectId} = projectInfo as ProjectInfoFromPrompt;
+    const [, deleteMessage] = await this.deleteProjectById(dimension, category, projectId);
 
-    const [result, msg] = await this.deleteProjectById(selectedDimension, selectedCategory, projectId);
+    new Notice(deleteMessage);
+    console.log(deleteMessage);
+  }
 
-    if (result) {
-      new Notice("Project " + projectId + " has been successfully removed.");
+  async showProjectArchivePrompt() {
+    const [projectInfo, promptMessage] = await this.getProjectDetailsWithPrompt();
+    if (projectInfo === null) {
+      new Notice(promptMessage);
+      return;
     }
+    const {dimension, category, projectId} = projectInfo as ProjectInfoFromPrompt;
+    const [, archiveMessage] = await this.archiveProjectByPromptInfo(dimension, category, projectId);
 
-    console.log(msg);
+    new Notice(archiveMessage);
+    console.log(archiveMessage);
+  }
+
+  async archiveProjectByPromptInfo(dimension: string, category: string, projectId: string): Promise<[boolean, string]> {
+    try {
+      const projectRecords = this.settings.projectRecords as Record<
+        string,
+        Record<string, Record<string, ProjectRecord>>
+      >;
+      const projectRecord = projectRecords?.[dimension]?.[category]?.[projectId];
+      if (!projectRecord) {
+        return [false, "Project not found."];
+      }
+
+      const { sanitizePath } = await import("./core/path-sanitizer");
+      const { SafeFileManager } = await import("./services/file-manager");
+      const fm = new SafeFileManager(this.app);
+      const adapter: any = (this.app.vault as any).adapter;
+
+      const srcProjectDir = sanitizePath(projectRecord.variables.PROJECT_PATH);
+      const srcTemplatesDir = sanitizePath(`Templates/${projectRecord.info.name}_Templates`);
+
+      // Build archive destination path at root with renamed project: <ArchiveRoot>/<YEAR>.<DIMENSION>.<CATEGORY>.<PARENT?>.<NAME>
+      const archiveRoot = this.settings.archiveRoot || "4. Archive";
+      const year = projectRecord.variables.YEAR;
+      const dim = projectRecord.variables.DIMENSION || projectRecord.info.dimension;
+      const cat = projectRecord.info.category;
+      const parent = (projectRecord.info.parent && projectRecord.info.parent.trim().length > 0) ? projectRecord.info.parent.trim() : null;
+      const baseName = projectRecord.info.name;
+      const newArchivedName = parent ? `${year}.${dim}.${cat}.${parent}.${baseName}` : `${year}.${dim}.${cat}.${baseName}`;
+      const destProjectDir = sanitizePath(`${archiveRoot}/${newArchivedName}`);
+
+      // Ensure destination parent exists
+      const parentOf = (p: string) => {
+        const parts = p.split('/').filter(Boolean);
+        parts.pop();
+        return parts.join('/');
+      };
+      await fm.ensureFolder(parentOf(destProjectDir));
+
+      // Validate source exists and destination not taken
+      if (!(await adapter.exists(srcProjectDir))) {
+        return [false, `Project directory not found: ${srcProjectDir}`];
+      }
+      if (await adapter.exists(destProjectDir)) {
+        return [false, `Archive destination already exists: ${destProjectDir}`];
+      }
+
+      // Move project directory
+      await adapter.rename(srcProjectDir, destProjectDir);
+
+      // Move Templates into archived project directory under a Templates subfolder (best-effort)
+      try {
+        if (await adapter.exists(srcTemplatesDir)) {
+          const destTemplatesParent = sanitizePath(`${destProjectDir}/Templates`);
+          await fm.ensureFolder(destTemplatesParent);
+          const destTemplatesDir = sanitizePath(`${destTemplatesParent}/${projectRecord.info.name}_Templates`);
+          // If destination exists (unlikely), append suffix
+          if (await adapter.exists(destTemplatesDir)) {
+            const altDir = sanitizePath(`${destTemplatesParent}/${projectRecord.info.name}_Templates_archived`);
+            await adapter.rename(srcTemplatesDir, altDir);
+          } else {
+            await adapter.rename(srcTemplatesDir, destTemplatesDir);
+          }
+        }
+      } catch (e) {
+        console.warn("Archiving templates failed:", e);
+        // Continue; project itself is archived
+      }
+
+      // Move the record from active projectRecords to archivedRecords
+      try {
+        const active = this.settings.projectRecords as Record<string, Record<string, Record<string, ProjectRecord>>>;
+        // Ensure archived map initialized
+        if (!this.settings.archivedRecords || Array.isArray(this.settings.archivedRecords)) {
+          (this.settings as any).archivedRecords = (this.settings.archivedRecords && Array.isArray(this.settings.archivedRecords)) ? {} : (this.settings.archivedRecords || {});
+        }
+        const archived = this.settings.archivedRecords as Record<string, Record<string, Record<string, ProjectRecord>>>;
+        // Create nested structure in archived
+        archived[dimension] = archived[dimension] || {};
+        archived[dimension][category] = archived[dimension][category] || {};
+        archived[dimension][category][projectId] = projectRecord;
+        // Remove from active
+        if (active?.[dimension]?.[category]?.[projectId]) {
+          delete active[dimension][category][projectId];
+          if (Object.keys(active[dimension][category]).length === 0) {
+            delete active[dimension][category];
+          }
+          if (Object.keys(active[dimension] || {}).length === 0) {
+            delete active[dimension];
+          }
+        }
+        await this.saveSettings();
+      } catch (e) {
+        console.warn("Failed to move project record to archive in settings:", e);
+      }
+
+      return [true, "Project archived successfully." ];
+    } catch (e: any) {
+      console.error("Archive failed:", e);
+      return [false, e?.message ?? "Failed to archive project." ];
+    }
   }
 
   async showProjectPrompt() {

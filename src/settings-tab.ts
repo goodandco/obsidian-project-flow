@@ -35,7 +35,9 @@ const DEFAULT_DIMENSIONS = [
 export const DEFAULT_SETTINGS: ProjectFlowSettings = {
   dimensions: JSON.parse(JSON.stringify(DEFAULT_DIMENSIONS)),
   projectsRoot: "1. Projects",
+  archiveRoot: "4. Archive",
   projectRecords: {},
+  archivedRecords: {},
 };
 
 function hashString(str: string): number {
@@ -83,6 +85,30 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
         }
       });
       modal.open();
+    };
+
+    // Roots section
+    containerEl.createEl("h2", { text: "Folders" });
+
+    const rootsRow = containerEl.createDiv({ cls: "gc-column" });
+    const projectsRootDiv = rootsRow.createDiv({ cls: "setting-item" });
+    projectsRootDiv.createEl("label", { text: "Projects root" });
+    const projectsInput = projectsRootDiv.createEl("input", { type: "text" });
+    projectsInput.value = this.plugin.settings.projectsRoot || "1. Projects";
+    projectsInput.placeholder = "e.g. 1. Projects";
+    projectsInput.onchange = async () => {
+      this.plugin.settings.projectsRoot = projectsInput.value.trim() || "1. Projects";
+      await this.plugin.saveSettings();
+    };
+
+    const archiveRootDiv = rootsRow.createDiv({ cls: "setting-item" });
+    archiveRootDiv.createEl("label", { text: "Archive root" });
+    const archiveInput = archiveRootDiv.createEl("input", { type: "text" });
+    archiveInput.value = this.plugin.settings.archiveRoot || "4. Archive";
+    archiveInput.placeholder = "e.g. 4. Archive";
+    archiveInput.onchange = async () => {
+      this.plugin.settings.archiveRoot = archiveInput.value.trim() || "4. Archive";
+      await this.plugin.saveSettings();
     };
 
     // Dimensions section
@@ -270,12 +296,47 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
             // prepend a space between category and ids list for readability
             idsWrap.createSpan({ text: " " });
             ids.forEach((pid, idx) => {
-              const tag = idsWrap.createSpan({ cls: "gc-id-tag", text: pid });
-              // Apply a deterministic pseudo-random color based on ID to keep stable across renders
+              // Wrap each tag with actions that appear on hover
+              const wrap = idsWrap.createSpan({ cls: "gc-id-chip" });
+              wrap.style.display = 'inline-flex';
+              wrap.style.alignItems = 'center';
+              wrap.style.gap = '4px';
+
+              const tag = wrap.createSpan({ cls: "gc-id-tag", text: pid });
               const hue = Math.abs(hashString(pid)) % 360;
               tag.style.backgroundColor = `hsl(${hue}, 70%, 90%)`;
               tag.style.color = `hsl(${hue}, 70%, 25%)`;
-              // add space between tags (space-separated)
+
+              // Actions (hidden until hover)
+              const actions = wrap.createSpan({ cls: 'gc-id-actions' });
+              actions.style.display = 'none';
+
+              const delBtn = actions.createEl('button', { cls: ['gc-icon-button', 'clickable-icon'] });
+              delBtn.setAttr('aria-label', `Delete ${pid}`);
+              delBtn.setAttr('title', `Delete ${pid}`);
+              try { setIcon(delBtn, 'trash'); } catch { delBtn.setText('Del'); }
+              delBtn.onclick = async (ev: MouseEvent) => {
+                ev.stopPropagation();
+                const [, msg] = await this.plugin.deleteProjectById(dimName, cat, pid);
+                new Notice(msg);
+                this.display();
+              };
+
+              const archBtn = actions.createEl('button', { cls: ['gc-icon-button', 'clickable-icon'] });
+              archBtn.setAttr('aria-label', `Archive ${pid}`);
+              archBtn.setAttr('title', `Archive ${pid}`);
+              try { setIcon(archBtn, 'archive'); } catch { archBtn.setText('Arc'); }
+              archBtn.onclick = async (ev: MouseEvent) => {
+                ev.stopPropagation();
+                const [, msg] = await this.plugin.archiveProjectByPromptInfo(dimName, cat, pid);
+                new Notice(msg);
+                this.display();
+              };
+
+              wrap.onmouseenter = () => { actions.style.display = 'inline-flex'; };
+              wrap.onmouseleave = () => { actions.style.display = 'none'; };
+
+              // add space between chips (space-separated)
               if (idx < ids.length - 1) idsWrap.createSpan({ text: " " });
             });
           }
@@ -420,5 +481,81 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
         this.display();
       }
     };
+
+    // Archive section
+    containerEl.createEl("h2", { text: "Archive" });
+    const archivedRaw = (this.plugin.settings.archivedRecords || {}) as Record<string, Record<string, Record<string, any>>>;
+    const archived = archivedRaw && !Array.isArray(archivedRaw) ? archivedRaw : {};
+
+    // Build dimension list from archived records, but order using dimensions metadata when available
+    const orderByDim: Record<string, number> = {};
+    for (const d of this.plugin.settings.dimensions) {
+      orderByDim[d.name] = d.order ?? Number.MAX_SAFE_INTEGER;
+    }
+    const dimEntries = Object.keys(archived).map((name) => ({
+      name,
+      order: orderByDim[name] ?? Number.MAX_SAFE_INTEGER,
+    })).sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
+
+    let archiveHasAny = false;
+    dimEntries.forEach(({ name: dimName, order }) => {
+      const catMap = archived[dimName] || {};
+      const catNames = Object.keys(catMap).filter((c) => Object.keys(catMap[c] || {}).length > 0).sort();
+      if (catNames.length === 0) return;
+      archiveHasAny = true;
+
+      const dimDiv = containerEl.createDiv({ cls: "dimension-setting" });
+      const headerDiv = dimDiv.createDiv({ cls: "dimension-header gc-row" });
+      const dimMeta = this.plugin.settings.dimensions.find(d => d.name === dimName);
+      if (dimMeta) headerDiv.createSpan({ text: `${dimMeta.order}. ` });
+      headerDiv.createEl("b", { text: dimName });
+      headerDiv.createDiv({ cls: "gc-spacer" });
+
+      const catList = dimDiv.createDiv({ cls: "categories-list gc-list" });
+      catNames.forEach((cat) => {
+        const item = catList.createDiv({ cls: "gc-list-item gc-row" });
+        const ids = Object.keys(catMap?.[cat] || {}).sort();
+        const catLabel = item.createEl("b", { text: cat });
+        const idsWrap = item.createDiv({ cls: "gc-id-wrap" });
+        if (ids.length > 0) {
+          idsWrap.createSpan({ text: " " });
+          ids.forEach((pid, idx) => {
+            const wrap = idsWrap.createSpan({ cls: 'gc-id-chip' });
+            wrap.style.display = 'inline-flex';
+            wrap.style.alignItems = 'center';
+            wrap.style.gap = '4px';
+
+            const tag = wrap.createSpan({ cls: 'gc-id-tag', text: pid });
+            const hue = Math.abs(hashString(pid)) % 360;
+            tag.style.backgroundColor = `hsl(${hue}, 70%, 90%)`;
+            tag.style.color = `hsl(${hue}, 70%, 25%)`;
+
+            const actions = wrap.createSpan({ cls: 'gc-id-actions' });
+            actions.style.display = 'none';
+            const delBtn = actions.createEl('button', { cls: ['gc-icon-button', 'clickable-icon'] });
+            delBtn.setAttr('aria-label', `Delete ${pid}`);
+            delBtn.setAttr('title', `Delete ${pid}`);
+            try { setIcon(delBtn, 'trash'); } catch { delBtn.setText('Del'); }
+            delBtn.onclick = async (ev: MouseEvent) => {
+              ev.stopPropagation();
+              const [, msg] = await (this.plugin as any).deleteArchivedProject(dimName, cat, pid);
+              new Notice(msg);
+              this.display();
+            };
+
+            wrap.onmouseenter = () => { actions.style.display = 'inline-flex'; };
+            wrap.onmouseleave = () => { actions.style.display = 'none'; };
+
+            if (idx < ids.length - 1) idsWrap.createSpan({ text: ' ' });
+          });
+        }
+        item.createDiv({ cls: "gc-spacer" });
+      });
+    });
+
+    if (!archiveHasAny) {
+      const hint = containerEl.createDiv({ cls: "setting-item" });
+      hint.createSpan({ text: "No archived projects yet." });
+    }
   }
 }

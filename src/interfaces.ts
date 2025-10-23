@@ -10,9 +10,11 @@ export interface Dimension {
 export interface ProjectFlowSettings {
   dimensions: Dimension[];
   projectsRoot?: string; // root folder where projects are created (default: "1. Projects")
+  archiveRoot?: string; // root folder where archives are stored (default: "4. Archive")
   schemaVersion?: number; // lightweight settings schema version
   // Nested map: dimension -> category -> projectId -> ProjectRecord
   projectRecords?: Record<string, Record<string, Record<string, ProjectRecord>>>;
+  archivedRecords?: Record<string, Record<string, Record<string, ProjectRecord>>>; // archived projects map
 }
 
 export interface ProjectInfo {
@@ -20,6 +22,12 @@ export interface ProjectInfo {
   tag: string;
   id: string; // Project ID specified during setup
   parent?: string | null;
+  dimension: string;
+  category: string;
+}
+
+export interface ProjectInfoFromPrompt {
+  projectId: string;
   dimension: string;
   category: string;
 }
