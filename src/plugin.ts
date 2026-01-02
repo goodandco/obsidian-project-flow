@@ -12,107 +12,6 @@ import {DEFAULT_SETTINGS, ProjectFlowSettingTab} from "./settings-tab";
 export class ProjectFlowPlugin extends Plugin {
   settings: ProjectFlowSettings;
 
-  async deleteProjectById(
-    dimension: string,
-    category: string,
-    projectId: string,
-  ): Promise<[boolean, string]> {
-    let msg = "";
-    const projectRecords = this.settings.projectRecords as Record<
-      string,
-      Record<string, Record<string, ProjectRecord>>
-    >;
-    const projectData = projectRecords[dimension][category][projectId];
-    console.log(projectData);
-
-    const {SafeFileManager} = await import("./services/file-manager");
-    const fm = new SafeFileManager(this.app);
-    const {sanitizePath} = await import("./core/path-sanitizer");
-    const projectDir = sanitizePath(projectData.variables.PROJECT_PATH);
-    const templatesDir = sanitizePath(`Templates/${projectData.info.name}_Templates`);
-
-    try {
-      console.debug("Removing project dir: " + projectDir);
-      await fm.removeDir(projectDir);
-      console.debug("Removing templates dir: " + templatesDir);
-      await fm.removeDir(templatesDir);
-
-      try {
-        console.debug("Removing project record from settings");
-        if (projectRecords[dimension][category][projectId]) {
-          delete projectRecords[dimension][category][projectId];
-          if (Object.keys(projectRecords[dimension][category]).length === 0)
-            delete projectRecords[dimension][category];
-          if (Object.keys(projectRecords[dimension]).length === 0) delete projectRecords[dimension];
-        }
-        await this.saveSettings();
-        msg = "Project deleted successfully.";
-      } catch (e) {
-        msg = "Failed to update projectRecords after delete";
-        console.warn(msg, e);
-      }
-      return [true, msg];
-    } catch (e) {
-      msg = "Error removing project: " + e.message;
-      console.error("Error removing project:", e);
-    }
-
-    return [false, msg];
-  }
-
-  async deleteArchivedProject(
-    dimension: string,
-    category: string,
-    projectId: string,
-  ): Promise<[boolean, string]> {
-    try {
-      const archived = this.settings.archivedRecords as Record<string, Record<string, Record<string, ProjectRecord>>>;
-      const rec = archived?.[dimension]?.[category]?.[projectId];
-      if (!rec) {
-        return [false, "Archived project not found."];
-      }
-      const { sanitizePath } = await import("./core/path-sanitizer");
-      const { SafeFileManager } = await import("./services/file-manager");
-      const fm = new SafeFileManager(this.app);
-      const adapter: any = (this.app.vault as any).adapter;
-
-      const archiveRoot = this.settings.archiveRoot || "4. Archive";
-      const year = rec.variables.YEAR;
-      const dim = rec.variables.DIMENSION || rec.info.dimension;
-      const cat = rec.info.category;
-      const parent = (rec.info.parent && rec.info.parent.trim().length > 0) ? rec.info.parent.trim() : null;
-      const baseName = rec.info.name;
-      const archivedName = parent ? `${year}.${dim}.${cat}.${parent}.${baseName}` : `${year}.${dim}.${cat}.${baseName}`;
-      const archivedDir = sanitizePath(`${archiveRoot}/${archivedName}`);
-
-      // Remove archived folder (best-effort)
-      if (await adapter.exists(archivedDir)) {
-        await fm.removeDir(archivedDir);
-      }
-
-      // Update settings
-      try {
-        if (archived?.[dimension]?.[category]?.[projectId]) {
-          delete archived[dimension][category][projectId];
-          if (Object.keys(archived[dimension][category]).length === 0) {
-            delete archived[dimension][category];
-          }
-          if (Object.keys(archived[dimension] || {}).length === 0) {
-            delete archived[dimension];
-          }
-        }
-        await this.saveSettings();
-      } catch (e) {
-        console.warn("Failed to update archivedRecords after delete:", e);
-      }
-
-      return [true, "Archived project deleted."];
-    } catch (e: any) {
-      console.error("deleteArchivedProject error:", e);
-      return [false, e?.message ?? "Failed to delete archived project."];
-    }
-  }
-
   async onload() {
     console.log("ProjectFlow plugin loaded");
     await this.loadSettings();
@@ -149,54 +48,6 @@ export class ProjectFlowPlugin extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings);
-  }
-
-  async getProjectDetailsWithPrompt(): Promise<[ProjectInfoFromPrompt | null, string]> {
-    if (!this.settings.projectRecords) {
-      return [null, "You don't have any projects yet."];
-    }
-    const projectRecords = this.settings.projectRecords as Record<
-      string,
-      Record<string, Record<string, ProjectRecord>>
-    >;
-
-    const dimensionChoices = [...this.settings.dimensions]
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-      .map((d) => d.name);
-    const dimension = await this.promptForChoice(
-      "Select dimension of your project:",
-      dimensionChoices,
-    );
-    if (!dimension) {
-      return [null, "Project removal cancelled. No dimension selected."];
-    }
-
-    const selectedDim = this.settings.dimensions.find(
-      (d) => d.name === dimension,
-    );
-    if (!selectedDim || selectedDim.categories.length === 0) {
-      return [null, "Selected dimension has no categories. No project to remove."];
-    }
-
-    const categoryChoices = selectedDim.categories;
-    const category = await this.promptForChoice(
-      "Select category:",
-      categoryChoices,
-    );
-    if (!category) {
-      return [null, "Project removal cancelled. No category selected."];
-    }
-
-    const projectId = await this.promptForChoice(
-      "Select Project to remove:",
-      Object.keys(projectRecords[dimension][category]),
-    );
-
-    if (!projectId) {
-      return [null, "Project removal cancelled. No project selected."];
-    }
-
-    return [{dimension, category, projectId}, "Project removal confirmed."];
   }
 
   async showProjectRemovePrompt() {
@@ -327,18 +178,29 @@ export class ProjectFlowPlugin extends Plugin {
   }
 
   async showProjectPrompt() {
+    const [projectInfo, promptMessage] = await this.getNewProjectDetailsWithPrompt();
+    if (projectInfo === null) {
+      new Notice(promptMessage);
+      return;
+    }
+    const {dimension, category, id: projectId, name, tag, parent} = projectInfo as ProjectInfo;
+    const [, projectMessage] = await this.createProject(projectInfo);
+
+    new Notice(projectMessage);
+    console.log(projectMessage);
+  }
+
+  async getNewProjectDetailsWithPrompt(): Promise<[ProjectInfo | null, string]> {
     // Step 1: Project name
     const projectName = await this.promptForText("Enter project name:");
     if (!projectName) {
-      new Notice("Project creation cancelled. No project name provided.");
-      return;
+      return [null, "Project creation cancelled. No project name provided."];
     }
 
     // Step 2: Project tag
     const projectTag = await this.promptForText("Enter project tag:");
     if (!projectTag) {
-      new Notice("Project creation cancelled. No project tag provided.");
-      return;
+      return [null, "Project creation cancelled. No project tag provided."];
     }
 
     // Step 3: Project ID
@@ -346,8 +208,7 @@ export class ProjectFlowPlugin extends Plugin {
       "Enter Project ID (used for task prefixes):",
     );
     if (!projectId) {
-      new Notice("Project creation cancelled. No Project ID provided.");
-      return;
+      return [null, "Project creation cancelled. No Project ID provided."];
     }
 
     // Step 4: Parent name (optional)
@@ -369,8 +230,7 @@ export class ProjectFlowPlugin extends Plugin {
       dimensionChoices,
     );
     if (!selectedDimension) {
-      new Notice("Project creation cancelled. No dimension selected.");
-      return;
+      return [null, "Project creation cancelled. No dimension selected."];
     }
 
     // Step 6: Category selection
@@ -378,10 +238,7 @@ export class ProjectFlowPlugin extends Plugin {
       (d) => d.name === selectedDimension,
     );
     if (!selectedDim || selectedDim.categories.length === 0) {
-      new Notice(
-        "Selected dimension has no categories. Please add categories in settings first.",
-      );
-      return;
+      return [null, "Selected dimension has no categories. Please add categories in settings first."];
     }
 
     const categoryChoices = selectedDim.categories;
@@ -390,8 +247,7 @@ export class ProjectFlowPlugin extends Plugin {
       categoryChoices,
     );
     if (!selectedCategory) {
-      new Notice("Project creation cancelled. No category selected.");
-      return;
+      return [null, "Project creation cancelled. No category selected."];
     }
 
     const projectInfo: ProjectInfo = {
@@ -410,10 +266,7 @@ export class ProjectFlowPlugin extends Plugin {
         const existing =
           recs[selectedDimension]?.[selectedCategory]?.[projectId];
         if (existing) {
-          new Notice(
-            `Project with ID "${projectId}" already exists in ${selectedDimension}:${selectedCategory}. Choose a different ID.`,
-          );
-          return;
+          return [null, `Project with ID "${projectId}" already exists in ${selectedDimension}:${selectedCategory}. Choose a different ID.`];
         }
       }
     } catch (_e) {
@@ -436,12 +289,10 @@ export class ProjectFlowPlugin extends Plugin {
     } catch (e) {
       const message = (e as Error).message || "Invalid input";
       console.error("Validation error:", e);
-      new Notice(message);
-      return;
+      return [null, message];
     }
 
-    // Create project
-    await this.createProject(projectInfo);
+    return [projectInfo, "Project details collected."];
   }
 
   async promptForText(prompt: string): Promise<string | null> {
@@ -459,6 +310,54 @@ export class ProjectFlowPlugin extends Plugin {
       const modal = new ChoicePromptModal(this.app, prompt, choices, resolve);
       modal.open();
     });
+  }
+
+  async getProjectDetailsWithPrompt(): Promise<[ProjectInfoFromPrompt | null, string]> {
+    if (!this.settings.projectRecords) {
+      return [null, "You don't have any projects yet."];
+    }
+    const projectRecords = this.settings.projectRecords as Record<
+      string,
+      Record<string, Record<string, ProjectRecord>>
+    >;
+
+    const dimensionChoices = [...this.settings.dimensions]
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map((d) => d.name);
+    const dimension = await this.promptForChoice(
+      "Select dimension of your project:",
+      dimensionChoices,
+    );
+    if (!dimension) {
+      return [null, "Project removal cancelled. No dimension selected."];
+    }
+
+    const selectedDim = this.settings.dimensions.find(
+      (d) => d.name === dimension,
+    );
+    if (!selectedDim || selectedDim.categories.length === 0) {
+      return [null, "Selected dimension has no categories. No project to remove."];
+    }
+
+    const categoryChoices = selectedDim.categories;
+    const category = await this.promptForChoice(
+      "Select category:",
+      categoryChoices,
+    );
+    if (!category) {
+      return [null, "Project removal cancelled. No category selected."];
+    }
+
+    const projectId = await this.promptForChoice(
+      "Select Project to remove:",
+      Object.keys(projectRecords[dimension][category]),
+    );
+
+    if (!projectId) {
+      return [null, "Project removal cancelled. No project selected."];
+    }
+
+    return [{dimension, category, projectId}, "Project removal confirmed."];
   }
 
   // Deprecated inline; kept for backward-compat. Use core/generateProjectVariables for pure logic.
@@ -524,7 +423,7 @@ export class ProjectFlowPlugin extends Plugin {
     }
   }
 
-  async createProject(projectInfo: ProjectInfo) {
+  async createProject(projectInfo: ProjectInfo): Promise<[boolean, string]> {
     try {
       const variables = this.generateProjectVariables(projectInfo);
       const projectsDir = this.settings.projectsRoot || "1. Projects";
@@ -613,10 +512,9 @@ export class ProjectFlowPlugin extends Plugin {
       // Record project creation in plugin data
       await this.recordProjectCreation(projectInfo, variables);
 
-      new Notice(`Project "${projectInfo.name}" created successfully!`);
+      return [true, `Project "${projectInfo.name}" created successfully!`];
     } catch (error) {
-      new Notice(`Error creating project: ${error}`);
-      console.error("Project creation error:", error);
+      return [false, `Error creating project: ${error}`];
     }
   }
 
@@ -772,6 +670,107 @@ export class ProjectFlowPlugin extends Plugin {
       } catch (error) {
         console.warn(`Failed to create template ${mapping.target}: ${error}`);
       }
+    }
+  }
+
+    async deleteProjectById(
+    dimension: string,
+    category: string,
+    projectId: string,
+  ): Promise<[boolean, string]> {
+    let msg = "";
+    const projectRecords = this.settings.projectRecords as Record<
+      string,
+      Record<string, Record<string, ProjectRecord>>
+    >;
+    const projectData = projectRecords[dimension][category][projectId];
+    console.log(projectData);
+
+    const {SafeFileManager} = await import("./services/file-manager");
+    const fm = new SafeFileManager(this.app);
+    const {sanitizePath} = await import("./core/path-sanitizer");
+    const projectDir = sanitizePath(projectData.variables.PROJECT_PATH);
+    const templatesDir = sanitizePath(`Templates/${projectData.info.name}_Templates`);
+
+    try {
+      console.debug("Removing project dir: " + projectDir);
+      await fm.removeDir(projectDir);
+      console.debug("Removing templates dir: " + templatesDir);
+      await fm.removeDir(templatesDir);
+
+      try {
+        console.debug("Removing project record from settings");
+        if (projectRecords[dimension][category][projectId]) {
+          delete projectRecords[dimension][category][projectId];
+          if (Object.keys(projectRecords[dimension][category]).length === 0)
+            delete projectRecords[dimension][category];
+          if (Object.keys(projectRecords[dimension]).length === 0) delete projectRecords[dimension];
+        }
+        await this.saveSettings();
+        msg = "Project deleted successfully.";
+      } catch (e) {
+        msg = "Failed to update projectRecords after delete";
+        console.warn(msg, e);
+      }
+      return [true, msg];
+    } catch (e) {
+      msg = "Error removing project: " + e.message;
+      console.error("Error removing project:", e);
+    }
+
+    return [false, msg];
+  }
+
+  async deleteArchivedProject(
+    dimension: string,
+    category: string,
+    projectId: string,
+  ): Promise<[boolean, string]> {
+    try {
+      const archived = this.settings.archivedRecords as Record<string, Record<string, Record<string, ProjectRecord>>>;
+      const rec = archived?.[dimension]?.[category]?.[projectId];
+      if (!rec) {
+        return [false, "Archived project not found."];
+      }
+      const { sanitizePath } = await import("./core/path-sanitizer");
+      const { SafeFileManager } = await import("./services/file-manager");
+      const fm = new SafeFileManager(this.app);
+      const adapter: any = (this.app.vault as any).adapter;
+
+      const archiveRoot = this.settings.archiveRoot || "4. Archive";
+      const year = rec.variables.YEAR;
+      const dim = rec.variables.DIMENSION || rec.info.dimension;
+      const cat = rec.info.category;
+      const parent = (rec.info.parent && rec.info.parent.trim().length > 0) ? rec.info.parent.trim() : null;
+      const baseName = rec.info.name;
+      const archivedName = parent ? `${year}.${dim}.${cat}.${parent}.${baseName}` : `${year}.${dim}.${cat}.${baseName}`;
+      const archivedDir = sanitizePath(`${archiveRoot}/${archivedName}`);
+
+      // Remove archived folder (best-effort)
+      if (await adapter.exists(archivedDir)) {
+        await fm.removeDir(archivedDir);
+      }
+
+      // Update settings
+      try {
+        if (archived?.[dimension]?.[category]?.[projectId]) {
+          delete archived[dimension][category][projectId];
+          if (Object.keys(archived[dimension][category]).length === 0) {
+            delete archived[dimension][category];
+          }
+          if (Object.keys(archived[dimension] || {}).length === 0) {
+            delete archived[dimension];
+          }
+        }
+        await this.saveSettings();
+      } catch (e) {
+        console.warn("Failed to update archivedRecords after delete:", e);
+      }
+
+      return [true, "Archived project deleted."];
+    } catch (e: any) {
+      console.error("deleteArchivedProject error:", e);
+      return [false, e?.message ?? "Failed to delete archived project."];
     }
   }
 }
