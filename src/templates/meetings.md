@@ -3,7 +3,7 @@ Type: "Section"
 Project: "[[$_PROJECT_FULL_NAME]]"
 Date: $_DATE
 tags:
-  - section
+  - type/section
   - meetings
   - $_PROJECT_TAG
 ---
@@ -21,7 +21,7 @@ const {
 const CAT_LIMIT = 15;
 const map = {};
 
-const meetings = dv.pages('#meeting AND #$_PROJECT_TAG')  
+const meetings = dv.pages('#type/meeting AND #$_PROJECT_TAG')  
   .where(b => b.DateTime && !dv.func.contains(b.file.name, "Template"))
   .sort(p => p['DateTime'], 'desc')
   .slice(0, 50);

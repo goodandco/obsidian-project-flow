@@ -41,7 +41,7 @@ await tp.file.move(`${targetDir}/${newName}`);
 
 ```dataviewjs
 
-const tasks = dv.pages('#task')  
+const tasks = dv.pages('#type/task')  
   .where(b => dv.func.contains(b.Parent, dv.current().file.link))
   .sort(p => [p.StartedAt, p.file.name], 'asc')   
   .map(p => ([  

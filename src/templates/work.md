@@ -3,7 +3,7 @@ Type: "Section"
 Project: "[[$_PROJECT_FULL_NAME]]"
 Date: "$_DATE"
 tags:
-  - section
+  - type/section
   - work
   - $_PROJECT_TAG
 ---
@@ -20,11 +20,11 @@ const f = (d) => moment(new Date(d))
   .format("YYYY-MM-DD");
   
 const sprints = getList(
-  dv.pages("#sprint and #$_PROJECT_TAG"),
+  dv.pages("#type/sprint and #$_PROJECT_TAG"),
   "desc"
 );  
 const tasks = getList(
-  dv.pages("#task and #$_PROJECT_TAG"),
+  dv.pages("#type/task and #$_PROJECT_TAG"),
   "desc"
 );  
 

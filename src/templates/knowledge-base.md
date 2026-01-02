@@ -3,7 +3,7 @@ Type: "Section"
 Project: "[[$_PROJECT_FULL_NAME]]"
 Date: $_DATE
 tags:
-  - section
+  - type/section
   - knowledge-base
   - $_PROJECT_TAG
 ---

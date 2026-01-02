@@ -1,6 +1,6 @@
 ---
 Type: "Meeting"
-MeetingType: KnowledgeSharing
+MeetingType: "KnowledgeSharing"
 Parent: "[[$_PROJECT_NAME Meetings]]"
 DateTime: <% tp.date.now("YYYY-MM-DD") %>T09:30:00
 Duration: 30 min
