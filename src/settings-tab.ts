@@ -2,6 +2,7 @@ import { Notice, PluginSettingTab, setIcon } from "obsidian";
 import { ProjectFlowPlugin } from "./plugin";
 import { ProjectFlowSettings } from "./interfaces";
 import { ConfirmResetModal } from "./confirm-reset-modal";
+import { deleteProjectById, archiveProjectByPromptInfo } from "./services/project-management-service";
 
 const DEFAULT_DIMENSIONS = [
   {
@@ -317,7 +318,7 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
               try { setIcon(delBtn, 'trash'); } catch { delBtn.setText('Del'); }
               delBtn.onclick = async (ev: MouseEvent) => {
                 ev.stopPropagation();
-                const [, msg] = await this.plugin.deleteProjectById(dimName, cat, pid);
+                const [, msg] = await deleteProjectById(this.plugin, dimName, cat, pid);
                 new Notice(msg);
                 this.display();
               };
@@ -328,7 +329,7 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
               try { setIcon(archBtn, 'archive'); } catch { archBtn.setText('Arc'); }
               archBtn.onclick = async (ev: MouseEvent) => {
                 ev.stopPropagation();
-                const [, msg] = await this.plugin.archiveProjectByPromptInfo(dimName, cat, pid);
+                const [, msg] = await archiveProjectByPromptInfo(this.plugin, dimName, cat, pid);
                 new Notice(msg);
                 this.display();
               };
