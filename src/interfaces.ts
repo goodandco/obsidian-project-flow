@@ -14,6 +14,7 @@ export interface ProjectFlowSettings {
   templatesRoot?: string; // vault-level templates root (default: "Templates/ProjectFlow")
   schemaVersion?: number; // lightweight settings schema version
   projectIndex?: ProjectIndex;
+  projectGraph?: ProjectGraph;
   entityTypes?: EntityTypesRegistry;
   projectTypes?: ProjectTypesRegistry;
   // Nested map: dimension -> category -> projectId -> ProjectRecord
@@ -102,6 +103,17 @@ export interface ProjectIndex {
   byFullName: Record<string, ProjectIndexEntry>;
   byId: Record<string, ProjectIndexEntry>;
   byTag: Record<string, ProjectIndexEntry>;
+}
+
+export interface ProjectGraphNode {
+  parent?: string | null;
+  children: string[];
+}
+
+export interface ProjectGraph {
+  version: number;
+  byFullName: Record<string, ProjectGraphNode>;
+  archivedByFullName: Record<string, ProjectGraphNode>;
 }
 
 export interface IProjectFlowPlugin extends Plugin {

@@ -32,10 +32,21 @@ export async function deleteProjectById(
       }
       try {
         const { ensureProjectIndex, removeFromProjectIndex, toIndexEntry } = await import("../core/project-index");
+        const { ensureProjectGraph, removeProjectFromGraph } = await import("../core/project-graph");
         const { index } = ensureProjectIndex(plugin.settings.projectIndex, projectRecords);
         plugin.settings.projectIndex = removeFromProjectIndex(
           index,
           toIndexEntry(projectData, projectId, dimension, category),
+        );
+        const { graph } = ensureProjectGraph(
+          plugin.settings.projectGraph,
+          projectRecords,
+          plugin.settings.archivedRecords,
+        );
+        plugin.settings.projectGraph = removeProjectFromGraph(
+          graph,
+          projectData.variables.PROJECT_FULL_NAME,
+          false,
         );
       } catch (e) {
         console.warn("Failed to update projectIndex after delete:", e);
@@ -141,10 +152,26 @@ export async function archiveProjectByPromptInfo(
       }
       try {
         const { ensureProjectIndex, removeFromProjectIndex, toIndexEntry } = await import("../core/project-index");
+        const { ensureProjectGraph, removeProjectFromGraph, addProjectToGraph } = await import("../core/project-graph");
         const { index } = ensureProjectIndex(plugin.settings.projectIndex, active);
         plugin.settings.projectIndex = removeFromProjectIndex(
           index,
           toIndexEntry(projectRecord, projectId, dimension, category),
+        );
+        const { graph } = ensureProjectGraph(
+          plugin.settings.projectGraph,
+          active,
+          archived,
+        );
+        plugin.settings.projectGraph = removeProjectFromGraph(
+          graph,
+          projectRecord.variables.PROJECT_FULL_NAME,
+          false,
+        );
+        plugin.settings.projectGraph = addProjectToGraph(
+          plugin.settings.projectGraph,
+          projectRecord,
+          true,
         );
       } catch (e) {
         console.warn("Failed to update projectIndex after archive:", e);
@@ -200,6 +227,21 @@ export async function deleteArchivedProject(
         if (Object.keys(archived[dimension] || {}).length === 0) {
           delete archived[dimension];
         }
+      }
+      try {
+        const { ensureProjectGraph, removeProjectFromGraph } = await import("../core/project-graph");
+        const { graph } = ensureProjectGraph(
+          plugin.settings.projectGraph,
+          plugin.settings.projectRecords,
+          archived,
+        );
+        plugin.settings.projectGraph = removeProjectFromGraph(
+          graph,
+          rec.variables.PROJECT_FULL_NAME,
+          true,
+        );
+      } catch (e) {
+        console.warn("Failed to update projectGraph after archived delete:", e);
       }
       await plugin.saveData(plugin.settings);
     } catch (e) {

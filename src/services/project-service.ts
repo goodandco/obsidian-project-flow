@@ -108,6 +108,7 @@ async function recordProjectCreation(
 ) {
   try {
     const { ensureProjectIndex, addToProjectIndex } = await import("../core/project-index");
+    const { ensureProjectGraph, addProjectToGraph } = await import("../core/project-graph");
     const record: ProjectRecord = {
       info,
       variables,
@@ -153,6 +154,12 @@ async function recordProjectCreation(
     map[dim][cat][id] = record;
     const { index } = ensureProjectIndex(plugin.settings.projectIndex, map);
     plugin.settings.projectIndex = addToProjectIndex(index, record, id, dim, cat);
+    const { graph } = ensureProjectGraph(
+      plugin.settings.projectGraph,
+      map,
+      plugin.settings.archivedRecords,
+    );
+    plugin.settings.projectGraph = addProjectToGraph(graph, record, false);
     await plugin.saveData(plugin.settings);
   } catch (e) {
     console.warn("Failed to record project creation:", e);

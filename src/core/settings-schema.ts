@@ -19,6 +19,7 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
     entityTypes: (input as any)?.entityTypes ?? ({} as any),
     projectTypes: (input as any)?.projectTypes ?? ({} as any),
     projectIndex: (input as any)?.projectIndex,
+    projectGraph: (input as any)?.projectGraph,
   } as any;
 
   // Normalize projectRecords to nested map

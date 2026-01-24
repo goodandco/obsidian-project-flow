@@ -41,6 +41,7 @@ export class ProjectFlowPlugin extends Plugin {
       const { migrateSettings, CURRENT_SETTINGS_SCHEMA_VERSION } = await import("./core/settings-schema");
       const { DEFAULT_ENTITY_TYPES, DEFAULT_PROJECT_TYPES } = await import("./core/registry-defaults");
       const { ensureProjectIndex } = await import("./core/project-index");
+      const { ensureProjectGraph } = await import("./core/project-graph");
       this.settings = Object.assign({}, DEFAULT_SETTINGS, migrateSettings(raw));
       let changed = false;
 
@@ -64,6 +65,16 @@ export class ProjectFlowPlugin extends Plugin {
       const { index, updated } = ensureProjectIndex(this.settings.projectIndex, this.settings.projectRecords);
       if (updated) {
         this.settings.projectIndex = index;
+        changed = true;
+      }
+
+      const { graph, updated: graphUpdated } = ensureProjectGraph(
+        this.settings.projectGraph,
+        this.settings.projectRecords,
+        this.settings.archivedRecords,
+      );
+      if (graphUpdated) {
+        this.settings.projectGraph = graph;
         changed = true;
       }
 

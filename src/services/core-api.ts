@@ -3,7 +3,8 @@ import { mergeEntityTypes, mergeProjectTypes } from "../core/registry-merge";
 import { createProject } from "./project-service";
 import { createEntity } from "./entity-service";
 import { patchMarkerInFile, patchSectionInFile } from "../core/markdown-patcher";
-import { listProjects, resolveProject } from "./resolve-service";
+import { listProjects, resolveProject, resolveArchivedProject } from "./resolve-service";
+import { cleanArchivedGraph, ensureProjectGraph, getChildren, getParents } from "../core/project-graph";
 
 export function createCoreApi(plugin: IProjectFlowPlugin) {
   const apiVersion = "1.0.0";
@@ -17,6 +18,7 @@ export function createCoreApi(plugin: IProjectFlowPlugin) {
       createProject: true,
       createEntity: true,
       patching: true,
+      projectGraph: true,
     },
     resolveProject: (ref: string | { fullName?: string; id?: string; tag?: string }) => {
       return resolveProject(plugin, ref);
@@ -49,6 +51,39 @@ export function createCoreApi(plugin: IProjectFlowPlugin) {
     },
     patchSection: async (req: any) => {
       return patchSectionInFile(plugin.app, req);
+    },
+    getChildren: (ref: string | { fullName?: string; id?: string; tag?: string }, archived?: boolean) => {
+      const resolved = archived ? resolveArchivedProject(plugin, ref) : resolveProject(plugin, ref);
+      if (!resolved) return [];
+      const { graph } = ensureProjectGraph(
+        plugin.settings.projectGraph,
+        plugin.settings.projectRecords,
+        plugin.settings.archivedRecords,
+      );
+      return getChildren(graph, resolved.entry.fullName, Boolean(archived));
+    },
+    getParents: (ref: string | { fullName?: string; id?: string; tag?: string }, archived?: boolean) => {
+      const resolved = archived ? resolveArchivedProject(plugin, ref) : resolveProject(plugin, ref);
+      if (!resolved) return [];
+      const { graph } = ensureProjectGraph(
+        plugin.settings.projectGraph,
+        plugin.settings.projectRecords,
+        plugin.settings.archivedRecords,
+      );
+      return getParents(graph, resolved.entry.fullName, Boolean(archived));
+    },
+    clearArchivedProjectGraph: async () => {
+      const { graph } = ensureProjectGraph(
+        plugin.settings.projectGraph,
+        plugin.settings.projectRecords,
+        plugin.settings.archivedRecords,
+      );
+      plugin.settings.projectGraph = cleanArchivedGraph(
+        graph,
+        plugin.settings.archivedRecords,
+      );
+      await plugin.saveData(plugin.settings);
+      return { ok: true };
     },
   };
 }

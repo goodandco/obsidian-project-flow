@@ -41,6 +41,11 @@ export const DEFAULT_SETTINGS: ProjectFlowSettings = {
   templatesRoot: "Templates/ProjectFlow",
   projectRecords: {},
   archivedRecords: {},
+  projectGraph: {
+    version: 1,
+    byFullName: {},
+    archivedByFullName: {},
+  },
   entityTypes: DEFAULT_ENTITY_TYPES,
   projectTypes: DEFAULT_PROJECT_TYPES,
 };

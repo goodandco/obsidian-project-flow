@@ -28,6 +28,28 @@ export function resolveProject(
   return { entry, record };
 }
 
+export function resolveArchivedProject(
+  plugin: IProjectFlowPlugin,
+  ref: ProjectRef,
+): ResolvedProject | null {
+  const lookup = normalizeProjectRef(ref);
+  const record = findRecordByRef(plugin.settings.archivedRecords, lookup);
+  if (!record) return null;
+  return {
+    entry: {
+      fullName: record.variables.PROJECT_FULL_NAME,
+      projectId: record.info.id,
+      projectTag: record.variables.PROJECT_TAG,
+      path: record.variables.PROJECT_PATH,
+      dimension: record.info.dimension,
+      category: record.info.category,
+      projectName: record.info.name,
+      parent: record.info.parent ?? null,
+    },
+    record,
+  };
+}
+
 export function listProjects(
   plugin: IProjectFlowPlugin,
 ): ProjectIndexEntry[] {
@@ -49,4 +71,28 @@ function normalizeProjectRef(ref: ProjectRef): { fullName?: string; id?: string;
     id: ref.id?.trim(),
     tag: ref.tag?.trim(),
   };
+}
+
+function findRecordByRef(
+  records: Record<string, Record<string, Record<string, ProjectRecord>>> | undefined,
+  lookup: { fullName?: string; id?: string; tag?: string },
+): ProjectRecord | null {
+  if (!records) return null;
+  for (const categories of Object.values(records)) {
+    for (const projects of Object.values(categories)) {
+      for (const record of Object.values(projects)) {
+        if (!record) continue;
+        if (lookup.fullName && record.variables.PROJECT_FULL_NAME === lookup.fullName) {
+          return record;
+        }
+        if (lookup.id && record.info.id === lookup.id) {
+          return record;
+        }
+        if (lookup.tag && record.variables.PROJECT_TAG === lookup.tag) {
+          return record;
+        }
+      }
+    }
+  }
+  return null;
 }
