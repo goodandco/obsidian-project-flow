@@ -4,6 +4,12 @@ import { generateProjectVariables, processTemplate } from "../core/project-utils
 
 export async function createProject(plugin: IProjectFlowPlugin, projectInfo: ProjectInfo): Promise<[boolean, string]> {
   try {
+    const { mergeProjectTypes } = await import("../core/registry-merge");
+    const projectTypes = mergeProjectTypes(plugin.settings.projectTypes);
+    const projectTypeId = projectInfo.projectTypeId || "operational";
+    const projectType = projectTypes[projectTypeId] || projectTypes.operational;
+    projectInfo.projectTypeId = projectTypeId;
+
     const variables = generateProjectVariables(projectInfo, plugin.settings);
     const projectsDir = plugin.settings.projectsRoot || "1. Projects";
 
@@ -25,8 +31,7 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
       `${safeProjectsDir}/${safeDimension}/${safeCategory}/${variables.PROJECT_FULL_NAME}`,
     );
 
-    // Prepare subfolders
-    const subdirs = [
+    const subdirs = projectType?.folderStructure ?? [
       "Knowledge Base",
       "Meetings",
       "Work",
@@ -44,7 +49,7 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
     // Prepare files by loading templates first
     const adapter = plugin.app.vault.adapter;
     const templateBase = `.obsidian/plugins/${plugin.manifest.id}/src/templates`;
-    const filesSpec = [
+    const filesSpec = projectType?.initialNotes ?? [
       {
         fileName: `${variables.PROJECT_FULL_NAME}.md`,
         template: "project.md",
@@ -60,6 +65,9 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
 
     const fileOps = [] as Array<{ type: "file"; path: string; data: string }>;
     for (const spec of filesSpec) {
+      const resolvedFileName = spec.fileName
+        ? await processTemplate(spec.fileName, variables as any)
+        : spec.fileName;
       const templatePath = `${templateBase}/${spec.template}`;
       if (!(await adapter.exists(templatePath))) {
         throw new Error(`Template file not found: ${spec.template}`);
@@ -70,7 +78,7 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
         variables,
       );
       const safeFilePath = sanitizePath(
-        `${safeProjectDir}/${sanitizeFileName(spec.fileName)}`,
+        `${safeProjectDir}/${sanitizeFileName(resolvedFileName)}`,
       );
       fileOps.push({type: "file", path: safeFilePath, data: processed});
     }
@@ -101,6 +109,7 @@ async function recordProjectCreation(
   variables: ProjectVariables,
 ) {
   try {
+    const { ensureProjectIndex, addToProjectIndex } = await import("../core/project-index");
     const record: ProjectRecord = {
       info,
       variables,
@@ -144,6 +153,8 @@ async function recordProjectCreation(
       );
     }
     map[dim][cat][id] = record;
+    const { index } = ensureProjectIndex(plugin.settings.projectIndex, map);
+    plugin.settings.projectIndex = addToProjectIndex(index, record, id, dim, cat);
     await plugin.saveData(plugin.settings);
   } catch (e) {
     console.warn("Failed to record project creation:", e);
@@ -206,6 +217,17 @@ async function createProjectTemplates(
     { source: "template-task.md", target: `${projectName}_Task_Template.md` },
     { source: "template-idea.md", target: `${projectName}_Idea_Template.md` },
     { source: "template-knowledge-base-item.md", target: `${projectName}_Knowledge_Item_Template.md` },
+    { source: "template-meeting-daily.md", target: "template-meeting-daily.md" },
+    { source: "template-meeting-discussion.md", target: "template-meeting-discussion.md" },
+    { source: "template-meeting-knowledge.md", target: "template-meeting-knowledge.md" },
+    { source: "template-meeting-planning.md", target: "template-meeting-planning.md" },
+    { source: "template-meeting-refinement.md", target: "template-meeting-refinement.md" },
+    { source: "template-meeting-retro.md", target: "template-meeting-retro.md" },
+    { source: "template-meeting-demo.md", target: "template-meeting-demo.md" },
+    { source: "template-sprint.md", target: "template-sprint.md" },
+    { source: "template-task.md", target: "template-task.md" },
+    { source: "template-idea.md", target: "template-idea.md" },
+    { source: "template-knowledge-base-item.md", target: "template-knowledge-base-item.md" },
   ];
 
   for (const mapping of templateMappings) {

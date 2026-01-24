@@ -1,6 +1,7 @@
 import { Notice, PluginSettingTab, setIcon } from "obsidian";
 import { ProjectFlowPlugin } from "./plugin";
 import { ProjectFlowSettings } from "./interfaces";
+import { DEFAULT_ENTITY_TYPES, DEFAULT_PROJECT_TYPES } from "./core/registry-defaults";
 import { ConfirmResetModal } from "./confirm-reset-modal";
 import { deleteProjectById, archiveProjectByPromptInfo } from "./services/project-management-service";
 
@@ -37,8 +38,11 @@ export const DEFAULT_SETTINGS: ProjectFlowSettings = {
   dimensions: JSON.parse(JSON.stringify(DEFAULT_DIMENSIONS)),
   projectsRoot: "1. Projects",
   archiveRoot: "4. Archive",
+  templatesRoot: "Templates/ProjectFlow",
   projectRecords: {},
   archivedRecords: {},
+  entityTypes: DEFAULT_ENTITY_TYPES,
+  projectTypes: DEFAULT_PROJECT_TYPES,
 };
 
 function hashString(str: string): number {
@@ -109,6 +113,16 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
     archiveInput.placeholder = "e.g. 4. Archive";
     archiveInput.onchange = async () => {
       this.plugin.settings.archiveRoot = archiveInput.value.trim() || "4. Archive";
+      await this.plugin.saveSettings();
+    };
+
+    const templatesRootDiv = rootsRow.createDiv({ cls: "setting-item" });
+    templatesRootDiv.createEl("label", { text: "Templates root" });
+    const templatesInput = templatesRootDiv.createEl("input", { type: "text" });
+    templatesInput.value = this.plugin.settings.templatesRoot || "Templates/ProjectFlow";
+    templatesInput.placeholder = "e.g. Templates/ProjectFlow";
+    templatesInput.onchange = async () => {
+      this.plugin.settings.templatesRoot = templatesInput.value.trim() || "Templates/ProjectFlow";
       await this.plugin.saveSettings();
     };
 

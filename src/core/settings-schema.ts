@@ -1,6 +1,7 @@
 import type { ProjectFlowSettings } from '../interfaces';
+import { DEFAULT_ENTITY_TYPES, DEFAULT_PROJECT_TYPES } from './registry-defaults';
 
-export const CURRENT_SETTINGS_SCHEMA_VERSION = 2;
+export const CURRENT_SETTINGS_SCHEMA_VERSION = 3;
 
 export interface VersionedSettings extends ProjectFlowSettings {
   schemaVersion?: number;
@@ -10,8 +11,14 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
   const s: VersionedSettings = {
     dimensions: (input?.dimensions as any) ?? [],
     projectsRoot: input?.projectsRoot ?? '1. Projects',
+    archiveRoot: (input as any)?.archiveRoot ?? '4. Archive',
+    templatesRoot: (input as any)?.templatesRoot ?? 'Templates/ProjectFlow',
     schemaVersion: input?.schemaVersion ?? 0,
     projectRecords: {} as any,
+    archivedRecords: (input as any)?.archivedRecords ?? ({} as any),
+    entityTypes: (input as any)?.entityTypes ?? ({} as any),
+    projectTypes: (input as any)?.projectTypes ?? ({} as any),
+    projectIndex: (input as any)?.projectIndex,
   } as any;
 
   // Normalize projectRecords to nested map
@@ -65,6 +72,12 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
 
   // future migrations can transform s based on schemaVersion
   if (!s.schemaVersion || s.schemaVersion < CURRENT_SETTINGS_SCHEMA_VERSION) {
+    if (!s.entityTypes || Object.keys(s.entityTypes as any).length === 0) {
+      s.entityTypes = DEFAULT_ENTITY_TYPES as any;
+    }
+    if (!s.projectTypes || Object.keys(s.projectTypes as any).length === 0) {
+      s.projectTypes = DEFAULT_PROJECT_TYPES as any;
+    }
     s.schemaVersion = CURRENT_SETTINGS_SCHEMA_VERSION;
   }
   return s;

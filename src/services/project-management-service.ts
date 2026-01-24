@@ -30,6 +30,16 @@ export async function deleteProjectById(
           delete projectRecords[dimension][category];
         if (Object.keys(projectRecords[dimension]).length === 0) delete projectRecords[dimension];
       }
+      try {
+        const { ensureProjectIndex, removeFromProjectIndex, toIndexEntry } = await import("../core/project-index");
+        const { index } = ensureProjectIndex(plugin.settings.projectIndex, projectRecords);
+        plugin.settings.projectIndex = removeFromProjectIndex(
+          index,
+          toIndexEntry(projectData, projectId, dimension, category),
+        );
+      } catch (e) {
+        console.warn("Failed to update projectIndex after delete:", e);
+      }
       await plugin.saveData(plugin.settings);
       msg = "Project deleted successfully.";
     } catch (e) {
@@ -128,6 +138,16 @@ export async function archiveProjectByPromptInfo(
         if (Object.keys(active[dimension] || {}).length === 0) {
           delete active[dimension];
         }
+      }
+      try {
+        const { ensureProjectIndex, removeFromProjectIndex, toIndexEntry } = await import("../core/project-index");
+        const { index } = ensureProjectIndex(plugin.settings.projectIndex, active);
+        plugin.settings.projectIndex = removeFromProjectIndex(
+          index,
+          toIndexEntry(projectRecord, projectId, dimension, category),
+        );
+      } catch (e) {
+        console.warn("Failed to update projectIndex after archive:", e);
       }
       await plugin.saveData(plugin.settings);
     } catch (e) {
