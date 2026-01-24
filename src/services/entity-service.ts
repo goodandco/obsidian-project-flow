@@ -141,11 +141,11 @@ async function resolveTemplatePath(
     return { scope, path: `${builtinDir}/${templateName}` };
   });
 
-  const preferredScopes = entityType.templateScope
-    ? [entityType.templateScope, "builtin"].filter(
+  const preferredScopes: TemplateScope[] = entityType.templateScope
+    ? ([entityType.templateScope, "builtin"] as TemplateScope[]).filter(
         (v, i, arr) => arr.indexOf(v) === i,
       )
-    : ["project", "vault", "builtin"];
+    : (["project", "vault", "builtin"] as TemplateScope[]);
 
   for (const candidate of tryScopes(preferredScopes)) {
     if (await adapter.exists(candidate.path)) {

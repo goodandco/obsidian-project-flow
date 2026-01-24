@@ -535,7 +535,7 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
       catNames.forEach((cat) => {
         const item = catList.createDiv({ cls: "gc-list-item gc-row" });
         const ids = Object.keys(catMap?.[cat] || {}).sort();
-        const catLabel = item.createEl("b", { text: cat });
+        item.createEl("b", { text: cat });
         const idsWrap = item.createDiv({ cls: "gc-id-wrap" });
         if (ids.length > 0) {
           idsWrap.createSpan({ text: " " });

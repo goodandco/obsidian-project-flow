@@ -1,4 +1,3 @@
-import { App } from "obsidian";
 import { ProjectInfo, ProjectVariables, ProjectRecord, IProjectFlowPlugin } from "../interfaces";
 import { generateProjectVariables, processTemplate } from "../core/project-utils";
 
