@@ -4,10 +4,8 @@ import { generateProjectVariables, processTemplate } from "../core/project-utils
 
 export async function createProject(plugin: IProjectFlowPlugin, projectInfo: ProjectInfo): Promise<[boolean, string]> {
   try {
-    const { mergeProjectTypes } = await import("../core/registry-merge");
-    const projectTypes = mergeProjectTypes(plugin.settings.projectTypes);
-    const projectTypeId = projectInfo.projectTypeId || "operational";
-    const projectType = projectTypes[projectTypeId] || projectTypes.operational;
+    const { resolveProjectType } = await import("../core/project-types");
+    const { projectTypeId, projectType } = resolveProjectType(plugin.settings, projectInfo);
     projectInfo.projectTypeId = projectTypeId;
 
     const variables = generateProjectVariables(projectInfo, plugin.settings);
