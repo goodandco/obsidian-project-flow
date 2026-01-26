@@ -39,6 +39,13 @@ export const DEFAULT_SETTINGS: ProjectFlowSettings = {
   projectsRoot: "1. Projects",
   archiveRoot: "4. Archive",
   templatesRoot: "Templates/ProjectFlow",
+  ai: {
+    enabled: false,
+    provider: "openai",
+    apiKey: "",
+    model: "gpt-4o-mini",
+    baseUrl: "https://api.openai.com",
+  },
   projectRecords: {},
   archivedRecords: {},
   projectGraph: {
@@ -500,6 +507,76 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
         await this.plugin.saveSettings();
         this.display();
       }
+    };
+
+    // AI section
+    containerEl.createEl("h2", { text: "AI Module" });
+
+    const aiSection = containerEl.createDiv({ cls: "gc-column" });
+    const aiEnabled = aiSection.createDiv({ cls: "setting-item" });
+    aiEnabled.createEl("label", { text: "Enable AI module" });
+    const aiEnabledToggle = aiEnabled.createEl("input", { type: "checkbox" });
+    aiEnabledToggle.checked = Boolean(this.plugin.settings.ai?.enabled);
+    aiEnabledToggle.onchange = async () => {
+      if (!this.plugin.settings.ai) {
+        this.plugin.settings.ai = {
+          enabled: false,
+          provider: "openai",
+          apiKey: "",
+          model: "gpt-4o-mini",
+          baseUrl: "https://api.openai.com",
+        };
+      }
+      this.plugin.settings.ai.enabled = aiEnabledToggle.checked;
+      await this.plugin.saveSettings();
+      await (this.plugin as any).toggleAiView?.(aiEnabledToggle.checked);
+    };
+
+    const aiProvider = aiSection.createDiv({ cls: "setting-item" });
+    aiProvider.createEl("label", { text: "Provider" });
+    const providerSelect = aiProvider.createEl("select");
+    ["openai"].forEach((provider) => {
+      const opt = providerSelect.createEl("option", { text: provider });
+      opt.value = provider;
+    });
+    providerSelect.value = this.plugin.settings.ai?.provider || "openai";
+    providerSelect.onchange = async () => {
+      if (!this.plugin.settings.ai) return;
+      this.plugin.settings.ai.provider = providerSelect.value as any;
+      await this.plugin.saveSettings();
+    };
+
+    const aiKey = aiSection.createDiv({ cls: "setting-item" });
+    aiKey.createEl("label", { text: "API key" });
+    const apiKeyInput = aiKey.createEl("input", { type: "password" });
+    apiKeyInput.placeholder = "sk-...";
+    apiKeyInput.value = this.plugin.settings.ai?.apiKey || "";
+    apiKeyInput.onchange = async () => {
+      if (!this.plugin.settings.ai) return;
+      this.plugin.settings.ai.apiKey = apiKeyInput.value.trim();
+      await this.plugin.saveSettings();
+    };
+
+    const aiModel = aiSection.createDiv({ cls: "setting-item" });
+    aiModel.createEl("label", { text: "Model" });
+    const modelInput = aiModel.createEl("input", { type: "text" });
+    modelInput.placeholder = "gpt-4o-mini";
+    modelInput.value = this.plugin.settings.ai?.model || "gpt-4o-mini";
+    modelInput.onchange = async () => {
+      if (!this.plugin.settings.ai) return;
+      this.plugin.settings.ai.model = modelInput.value.trim() || "gpt-4o-mini";
+      await this.plugin.saveSettings();
+    };
+
+    const aiBaseUrl = aiSection.createDiv({ cls: "setting-item" });
+    aiBaseUrl.createEl("label", { text: "Base URL" });
+    const baseUrlInput = aiBaseUrl.createEl("input", { type: "text" });
+    baseUrlInput.placeholder = "https://api.openai.com";
+    baseUrlInput.value = this.plugin.settings.ai?.baseUrl || "https://api.openai.com";
+    baseUrlInput.onchange = async () => {
+      if (!this.plugin.settings.ai) return;
+      this.plugin.settings.ai.baseUrl = baseUrlInput.value.trim() || "https://api.openai.com";
+      await this.plugin.saveSettings();
     };
 
     // Archive section

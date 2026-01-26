@@ -57,3 +57,69 @@
   line-height: 1.6;
   border: 1px solid var(--gc-block-border);
 }
+
+/* AI Chat View */
+.pf-ai-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 8px;
+  padding: 8px;
+}
+
+.pf-ai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pf-ai-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 2px;
+}
+
+.pf-ai-message {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  white-space: pre-wrap;
+}
+
+.pf-ai-message.user {
+  align-self: flex-end;
+  background: var(--background-primary-alt);
+  border-color: var(--background-modifier-border-hover);
+}
+
+.pf-ai-message.assistant {
+  align-self: flex-start;
+}
+
+.pf-ai-message.tool {
+  align-self: flex-start;
+  background: var(--background-secondary-alt);
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+.pf-ai-input {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.pf-ai-input textarea {
+  flex: 1;
+  min-height: 54px;
+  max-height: 120px;
+  resize: vertical;
+}
+
+.pf-ai-input button {
+  min-width: 72px;
+}

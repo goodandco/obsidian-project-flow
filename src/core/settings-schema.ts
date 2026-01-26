@@ -1,7 +1,7 @@
 import type { ProjectFlowSettings } from '../interfaces';
 import { DEFAULT_ENTITY_TYPES, DEFAULT_PROJECT_TYPES } from './registry-defaults';
 
-export const CURRENT_SETTINGS_SCHEMA_VERSION = 3;
+export const CURRENT_SETTINGS_SCHEMA_VERSION = 4;
 
 export interface VersionedSettings extends ProjectFlowSettings {
   schemaVersion?: number;
@@ -13,6 +13,7 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
     projectsRoot: input?.projectsRoot ?? '1. Projects',
     archiveRoot: (input as any)?.archiveRoot ?? '4. Archive',
     templatesRoot: (input as any)?.templatesRoot ?? 'Templates/ProjectFlow',
+    ai: (input as any)?.ai,
     schemaVersion: input?.schemaVersion ?? 0,
     projectRecords: {} as any,
     archivedRecords: (input as any)?.archivedRecords ?? ({} as any),
@@ -78,6 +79,23 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
     }
     if (!s.projectTypes || Object.keys(s.projectTypes as any).length === 0) {
       s.projectTypes = DEFAULT_PROJECT_TYPES as any;
+    }
+    if (!s.ai) {
+      s.ai = {
+        enabled: false,
+        provider: "openai",
+        apiKey: "",
+        model: "gpt-4o-mini",
+        baseUrl: "https://api.openai.com",
+      } as any;
+    } else {
+      s.ai = {
+        enabled: Boolean((s.ai as any).enabled),
+        provider: ((s.ai as any).provider || "openai") as any,
+        apiKey: (s.ai as any).apiKey ?? "",
+        model: (s.ai as any).model ?? "gpt-4o-mini",
+        baseUrl: (s.ai as any).baseUrl ?? "https://api.openai.com",
+      } as any;
     }
     s.schemaVersion = CURRENT_SETTINGS_SCHEMA_VERSION;
   }

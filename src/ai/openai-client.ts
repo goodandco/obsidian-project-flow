@@ -1,0 +1,138 @@
+import type { ChatMessage } from "./types";
+import type { ToolDefinition, ToolCall } from "./types";
+
+export interface OpenAIClientConfig {
+  apiKey: string;
+  model: string;
+  baseUrl: string;
+}
+
+export interface OpenAIStreamEvent {
+  type: "content" | "tool_call_delta" | "done";
+  delta?: string;
+  toolCalls?: Array<{
+    index: number;
+    id?: string;
+    name?: string;
+    arguments?: string;
+  }>;
+}
+
+export async function* streamChatCompletion(
+  config: OpenAIClientConfig,
+  messages: ChatMessage[],
+  tools: ToolDefinition[],
+): AsyncGenerator<OpenAIStreamEvent> {
+  const url = `${config.baseUrl.replace(/\/$/, "")}/v1/chat/completions`;
+  const payload = {
+    model: config.model,
+    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    tools: tools.map((t) => ({
+      type: "function",
+      function: {
+        name: t.name,
+        description: t.description,
+        parameters: t.schema,
+      },
+    })),
+    tool_choice: "auto",
+    stream: true,
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok || !res.body) {
+    const text = await safeReadText(res);
+    throw new Error(`OpenAI request failed: ${res.status} ${text || res.statusText}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data:")) continue;
+      const data = trimmed.replace(/^data:\s*/, "");
+      if (data === "[DONE]") {
+        yield { type: "done" };
+        return;
+      }
+      let json: any;
+      try {
+        json = JSON.parse(data);
+      } catch {
+        continue;
+      }
+      const delta = json?.choices?.[0]?.delta;
+      if (!delta) continue;
+      if (delta.content) {
+        yield { type: "content", delta: delta.content };
+      }
+      if (delta.tool_calls) {
+        const toolCalls = delta.tool_calls.map((c: any) => ({
+          index: c.index,
+          id: c.id,
+          name: c.function?.name,
+          arguments: c.function?.arguments,
+        }));
+        yield { type: "tool_call_delta", toolCalls };
+      }
+    }
+  }
+  yield { type: "done" };
+}
+
+export function buildToolCallsFromDeltas(
+  deltas: Array<{ index: number; id?: string; name?: string; arguments?: string }>,
+  accumulator: Map<number, ToolCall>,
+): void {
+  for (const delta of deltas) {
+    const current = accumulator.get(delta.index) || { name: "", arguments: {} } as ToolCall;
+    if (delta.id) current.id = delta.id;
+    if (delta.name) current.name = delta.name;
+    if (typeof delta.arguments === "string") {
+      const prev = (current as any)._rawArgs || "";
+      (current as any)._rawArgs = prev + delta.arguments;
+    }
+    accumulator.set(delta.index, current);
+  }
+}
+
+export function finalizeToolCalls(accumulator: Map<number, ToolCall>): ToolCall[] {
+  const calls: ToolCall[] = [];
+  for (const [, call] of accumulator) {
+    const raw = (call as any)._rawArgs as string | undefined;
+    if (raw) {
+      try {
+        call.arguments = JSON.parse(raw);
+      } catch {
+        call.arguments = {};
+      }
+    }
+    delete (call as any)._rawArgs;
+    calls.push(call);
+  }
+  return calls;
+}
+
+async function safeReadText(res: Response): Promise<string> {
+  try {
+    return await res.text();
+  } catch {
+    return "";
+  }
+}

@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS, ProjectFlowSettingTab } from "./settings-tab";
 import { showAddProjectPrompt } from "./commands/add-project";
 import { showRemoveProjectPrompt } from "./commands/remove-project";
 import { showArchiveProjectPrompt } from "./commands/archive-project";
+import { AI_VIEW_TYPE, ProjectFlowAIChatView } from "./ai/chat-view";
 
 export class ProjectFlowPlugin extends Plugin {
   settings: ProjectFlowSettings;
@@ -13,6 +14,7 @@ export class ProjectFlowPlugin extends Plugin {
     console.log("ProjectFlow plugin loaded");
     await this.loadSettings();
     this.addSettingTab(new ProjectFlowSettingTab(this.app, this));
+    this.registerView(AI_VIEW_TYPE, (leaf) => new ProjectFlowAIChatView(leaf, this));
 
     this.addCommand({
       id: "add-project-info",
@@ -33,6 +35,11 @@ export class ProjectFlowPlugin extends Plugin {
     });
 
     await this.exposeCoreApi();
+    if (this.settings.ai?.enabled) {
+      this.app.workspace.onLayoutReady(() => {
+        this.toggleAiView(true);
+      });
+    }
   }
 
   async loadSettings() {
@@ -92,6 +99,25 @@ export class ProjectFlowPlugin extends Plugin {
 
   getApi() {
     return this.coreApi;
+  }
+
+  async toggleAiView(enabled: boolean) {
+    if (enabled) {
+      const leaves = this.app.workspace.getLeavesOfType(AI_VIEW_TYPE);
+      if (leaves.length > 0) {
+        await leaves[0].setViewState({ type: AI_VIEW_TYPE, active: true });
+        return;
+      }
+      const leaf = this.app.workspace.getRightLeaf(false);
+      if (!leaf) return;
+      await leaf.setViewState({ type: AI_VIEW_TYPE, active: true });
+    } else {
+      this.app.workspace.detachLeavesOfType(AI_VIEW_TYPE);
+    }
+  }
+
+  onunload() {
+    this.app.workspace.detachLeavesOfType(AI_VIEW_TYPE);
   }
 
   private async exposeCoreApi() {

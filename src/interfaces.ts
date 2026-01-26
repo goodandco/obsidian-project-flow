@@ -17,9 +17,20 @@ export interface ProjectFlowSettings {
   projectGraph?: ProjectGraph;
   entityTypes?: EntityTypesRegistry;
   projectTypes?: ProjectTypesRegistry;
+  ai?: AISettings;
   // Nested map: dimension -> category -> projectId -> ProjectRecord
   projectRecords?: Record<string, Record<string, Record<string, ProjectRecord>>>;
   archivedRecords?: Record<string, Record<string, Record<string, ProjectRecord>>>; // archived projects map
+}
+
+export type AIProvider = "openai";
+
+export interface AISettings {
+  enabled: boolean;
+  provider: AIProvider;
+  apiKey?: string;
+  model?: string;
+  baseUrl?: string;
 }
 
 export interface ProjectInfo {
