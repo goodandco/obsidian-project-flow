@@ -535,19 +535,35 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
     const aiProvider = aiSection.createDiv({ cls: "setting-item" });
     aiProvider.createEl("label", { text: "Provider" });
     const providerSelect = aiProvider.createEl("select");
-    ["openai"].forEach((provider) => {
+    ["openai", "anthropic", "ollama"].forEach((provider) => {
       const opt = providerSelect.createEl("option", { text: provider });
       opt.value = provider;
     });
     providerSelect.value = this.plugin.settings.ai?.provider || "openai";
     providerSelect.onchange = async () => {
       if (!this.plugin.settings.ai) return;
+      const defaults = {
+        openai: { baseUrl: "https://api.openai.com", model: "gpt-4o-mini" },
+        anthropic: { baseUrl: "https://api.anthropic.com", model: "claude-3-5-sonnet-latest" },
+        ollama: { baseUrl: "http://localhost:11434", model: "llama3.1" },
+      };
       this.plugin.settings.ai.provider = providerSelect.value as any;
+      const currentBaseUrl = this.plugin.settings.ai.baseUrl || "";
+      const currentModel = this.plugin.settings.ai.model || "";
+      const knownBaseUrls = Object.values(defaults).map((d) => d.baseUrl);
+      const knownModels = Object.values(defaults).map((d) => d.model);
+      if (!currentBaseUrl || knownBaseUrls.includes(currentBaseUrl)) {
+        this.plugin.settings.ai.baseUrl = defaults[providerSelect.value as "openai" | "anthropic" | "ollama"].baseUrl;
+      }
+      if (!currentModel || knownModels.includes(currentModel)) {
+        this.plugin.settings.ai.model = defaults[providerSelect.value as "openai" | "anthropic" | "ollama"].model;
+      }
       await this.plugin.saveSettings();
+      this.display();
     };
 
     const aiKey = aiSection.createDiv({ cls: "setting-item" });
-    aiKey.createEl("label", { text: "API key" });
+    aiKey.createEl("label", { text: "API key (not required for local providers)" });
     const apiKeyInput = aiKey.createEl("input", { type: "password" });
     apiKeyInput.placeholder = "sk-...";
     apiKeyInput.value = this.plugin.settings.ai?.apiKey || "";
@@ -560,8 +576,12 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
     const aiModel = aiSection.createDiv({ cls: "setting-item" });
     aiModel.createEl("label", { text: "Model" });
     const modelInput = aiModel.createEl("input", { type: "text" });
-    modelInput.placeholder = "gpt-4o-mini";
-    modelInput.value = this.plugin.settings.ai?.model || "gpt-4o-mini";
+    modelInput.placeholder = this.plugin.settings.ai?.provider === "anthropic"
+      ? "claude-3-5-sonnet-latest"
+      : this.plugin.settings.ai?.provider === "ollama"
+        ? "llama3.1"
+        : "gpt-4o-mini";
+    modelInput.value = this.plugin.settings.ai?.model || modelInput.placeholder;
     modelInput.onchange = async () => {
       if (!this.plugin.settings.ai) return;
       this.plugin.settings.ai.model = modelInput.value.trim() || "gpt-4o-mini";
@@ -571,8 +591,12 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
     const aiBaseUrl = aiSection.createDiv({ cls: "setting-item" });
     aiBaseUrl.createEl("label", { text: "Base URL" });
     const baseUrlInput = aiBaseUrl.createEl("input", { type: "text" });
-    baseUrlInput.placeholder = "https://api.openai.com";
-    baseUrlInput.value = this.plugin.settings.ai?.baseUrl || "https://api.openai.com";
+    baseUrlInput.placeholder = this.plugin.settings.ai?.provider === "anthropic"
+      ? "https://api.anthropic.com"
+      : this.plugin.settings.ai?.provider === "ollama"
+        ? "http://localhost:11434"
+        : "https://api.openai.com";
+    baseUrlInput.value = this.plugin.settings.ai?.baseUrl || baseUrlInput.placeholder;
     baseUrlInput.onchange = async () => {
       if (!this.plugin.settings.ai) return;
       this.plugin.settings.ai.baseUrl = baseUrlInput.value.trim() || "https://api.openai.com";

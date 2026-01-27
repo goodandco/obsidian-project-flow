@@ -1,5 +1,5 @@
-import type { ChatMessage } from "./types";
-import type { ToolDefinition, ToolCall } from "./types";
+import type { ChatMessage, ProviderStreamEvent, ToolCall, ToolCallDelta } from "./types";
+import type { ToolDefinition } from "./types";
 
 export interface OpenAIClientConfig {
   apiKey: string;
@@ -7,26 +7,31 @@ export interface OpenAIClientConfig {
   baseUrl: string;
 }
 
-export interface OpenAIStreamEvent {
-  type: "content" | "tool_call_delta" | "done";
-  delta?: string;
-  toolCalls?: Array<{
-    index: number;
-    id?: string;
-    name?: string;
-    arguments?: string;
-  }>;
-}
-
 export async function* streamChatCompletion(
   config: OpenAIClientConfig,
   messages: ChatMessage[],
   tools: ToolDefinition[],
-): AsyncGenerator<OpenAIStreamEvent> {
+): AsyncGenerator<ProviderStreamEvent> {
   const url = `${config.baseUrl.replace(/\/$/, "")}/v1/chat/completions`;
   const payload = {
     model: config.model,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    messages: messages.map((m) => {
+      const msg: any = { role: m.role, content: m.content };
+      if (m.role === "tool" && m.toolCallId) {
+        msg.tool_call_id = m.toolCallId;
+      }
+      if (m.role === "assistant" && m.toolCalls && m.toolCalls.length > 0) {
+        msg.tool_calls = m.toolCalls.map((tc) => ({
+          id: tc.id,
+          type: "function",
+          function: {
+            name: tc.name,
+            arguments: JSON.stringify(tc.arguments ?? {}),
+          },
+        }));
+      }
+      return msg;
+    }),
     tools: tools.map((t) => ({
       type: "function",
       function: {
@@ -39,12 +44,15 @@ export async function* streamChatCompletion(
     stream: true,
   };
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (config.apiKey) {
+    headers.Authorization = `Bearer ${config.apiKey}`;
+  }
   const res = await fetch(url, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.apiKey}`,
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify(payload),
   });
 
@@ -83,7 +91,7 @@ export async function* streamChatCompletion(
         yield { type: "content", delta: delta.content };
       }
       if (delta.tool_calls) {
-        const toolCalls = delta.tool_calls.map((c: any) => ({
+        const toolCalls: ToolCallDelta[] = delta.tool_calls.map((c: any) => ({
           index: c.index,
           id: c.id,
           name: c.function?.name,
@@ -97,7 +105,7 @@ export async function* streamChatCompletion(
 }
 
 export function buildToolCallsFromDeltas(
-  deltas: Array<{ index: number; id?: string; name?: string; arguments?: string }>,
+  deltas: ToolCallDelta[],
   accumulator: Map<number, ToolCall>,
 ): void {
   for (const delta of deltas) {

@@ -1,7 +1,7 @@
 import type { ProjectFlowSettings } from '../interfaces';
 import { DEFAULT_ENTITY_TYPES, DEFAULT_PROJECT_TYPES } from './registry-defaults';
 
-export const CURRENT_SETTINGS_SCHEMA_VERSION = 4;
+export const CURRENT_SETTINGS_SCHEMA_VERSION = 5;
 
 export interface VersionedSettings extends ProjectFlowSettings {
   schemaVersion?: number;

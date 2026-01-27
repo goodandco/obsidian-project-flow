@@ -23,7 +23,7 @@ export interface ProjectFlowSettings {
   archivedRecords?: Record<string, Record<string, Record<string, ProjectRecord>>>; // archived projects map
 }
 
-export type AIProvider = "openai";
+export type AIProvider = "openai" | "anthropic" | "ollama";
 
 export interface AISettings {
   enabled: boolean;
