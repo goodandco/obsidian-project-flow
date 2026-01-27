@@ -1,4 +1,5 @@
 import { Plugin } from "obsidian";
+import type { ChatMessage } from "./ai/types";
 
 export interface Dimension {
   id?: string; // optional stable id for future migrations
@@ -31,6 +32,36 @@ export interface AISettings {
   apiKey?: string;
   model?: string;
   baseUrl?: string;
+  strictExecution?: boolean;
+  memoryLimit?: number;
+  mcpServers?: MCPServerConfig[];
+  toolLog?: AIToolLogEntry[];
+  conversation?: Array<Pick<ChatMessage, "role" | "content" | "name" | "toolCallId">>;
+  pendingPlan?: PendingPlan | null;
+}
+
+export interface MCPServerConfig {
+  name: string;
+  url: string;
+  apiKey?: string;
+}
+
+export interface AIToolLogEntry {
+  ts: string;
+  toolName: string;
+  ok: boolean;
+  error?: string;
+}
+
+export interface PendingPlan {
+  originalInput: string;
+  plan?: string;
+  context?: string;
+  question?: string;
+  fields?: Record<string, string>;
+  createdAt: string;
+  status?: "clarifying" | "awaiting_confirmation";
+  clarifications?: string[];
 }
 
 export interface ProjectInfo {

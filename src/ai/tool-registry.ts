@@ -1,6 +1,7 @@
 import type { ProjectFlowPlugin } from "../plugin";
 import type { ToolDefinition } from "./types";
 import type { JSONSchema7 } from "./types-jsonschema";
+import { fetchMcpTools, toMcpToolDefinitions } from "./mcp-client";
 
 const projectRefSchema: JSONSchema7 = {
   type: "object",
@@ -11,6 +12,16 @@ const projectRefSchema: JSONSchema7 = {
     fullName: { type: "string" },
   },
   additionalProperties: false,
+};
+
+const fieldsSchema: JSONSchema7 = {
+  type: "object",
+  description: "Fields to set on the entity (camelCase, e.g. title, description).",
+  properties: {
+    title: { type: "string" },
+    description: { type: "string" },
+  },
+  additionalProperties: true,
 };
 
 export function createToolRegistry(plugin: ProjectFlowPlugin): ToolDefinition[] {
@@ -64,7 +75,7 @@ export function createToolRegistry(plugin: ProjectFlowPlugin): ToolDefinition[] 
         properties: {
           projectRef: projectRefSchema,
           entityTypeId: { type: "string" },
-          fields: { type: "object" },
+          fields: fieldsSchema,
         },
         required: ["projectRef", "entityTypeId"],
         additionalProperties: false,
@@ -132,4 +143,15 @@ export function createToolRegistry(plugin: ProjectFlowPlugin): ToolDefinition[] 
       handler: async (args) => api.getParents(args.projectRef, args.archived),
     },
   ];
+}
+
+export async function loadMcpToolRegistry(plugin: ProjectFlowPlugin): Promise<ToolDefinition[]> {
+  const servers = plugin.settings.ai?.mcpServers || [];
+  if (servers.length === 0) return [];
+  const fetched = await fetchMcpTools(servers);
+  const tools: ToolDefinition[] = [];
+  for (const entry of fetched) {
+    tools.push(...toMcpToolDefinitions(entry.server, entry.tools));
+  }
+  return tools;
 }

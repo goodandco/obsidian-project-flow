@@ -39,11 +39,12 @@ export async function createEntity(
     throw new Error(`Entity type not found: ${req.entityTypeId}`);
   }
 
-  validateRequiredFields(entityType, req.fields);
+  const normalizedFields = normalizeFieldAliases(req.fields);
+  validateRequiredFields(entityType, normalizedFields);
 
   const variables = {
     ...(resolved.record.variables as any),
-    ...(req.fields || {}),
+    ...(normalizedFields || {}),
   };
 
   const resolvedTemplate = await resolveTemplatePath(
@@ -119,6 +120,19 @@ function validateRequiredFields(entityType: EntityType, fields?: Record<string, 
   if (missing.length > 0) {
     throw new Error(`Missing required fields: ${missing.join(", ")}`);
   }
+}
+
+function normalizeFieldAliases(fields?: Record<string, any>): Record<string, any> | undefined {
+  if (!fields) return fields;
+  const out: Record<string, any> = { ...fields };
+  for (const [key, value] of Object.entries(fields)) {
+    if (value == null) continue;
+    const upper = key.toUpperCase();
+    const lower = key.toLowerCase();
+    if (!(upper in out)) out[upper] = value;
+    if (!(lower in out)) out[lower] = value;
+  }
+  return out;
 }
 
 async function resolveTemplatePath(

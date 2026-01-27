@@ -29,6 +29,8 @@ export function generateProjectVariables(info: ProjectInfoLite, now: Date = new 
     PARENT_TAG: info.parent ? info.tag : '', // Only set parent-related tag if parent exists
     YEAR: year,
     DATE: date,
+    year,
+    date,
     PROJECT_FULL_NAME: projectFullName,
     PROJECT_RELATIVE_PATH: projectRelativePath,
     PROJECT_PATH: projectPath,

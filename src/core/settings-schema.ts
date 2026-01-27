@@ -1,7 +1,7 @@
 import type { ProjectFlowSettings } from '../interfaces';
 import { DEFAULT_ENTITY_TYPES, DEFAULT_PROJECT_TYPES } from './registry-defaults';
 
-export const CURRENT_SETTINGS_SCHEMA_VERSION = 5;
+export const CURRENT_SETTINGS_SCHEMA_VERSION = 7;
 
 export interface VersionedSettings extends ProjectFlowSettings {
   schemaVersion?: number;
@@ -87,6 +87,12 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
         apiKey: "",
         model: "gpt-4o-mini",
         baseUrl: "https://api.openai.com",
+        strictExecution: false,
+        memoryLimit: 10,
+        mcpServers: [],
+        toolLog: [],
+        conversation: [],
+        pendingPlan: null,
       } as any;
     } else {
       s.ai = {
@@ -95,6 +101,12 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
         apiKey: (s.ai as any).apiKey ?? "",
         model: (s.ai as any).model ?? "gpt-4o-mini",
         baseUrl: (s.ai as any).baseUrl ?? "https://api.openai.com",
+        strictExecution: Boolean((s.ai as any).strictExecution),
+        memoryLimit: Number.isFinite((s.ai as any).memoryLimit) ? (s.ai as any).memoryLimit : 10,
+        mcpServers: Array.isArray((s.ai as any).mcpServers) ? (s.ai as any).mcpServers : [],
+        toolLog: Array.isArray((s.ai as any).toolLog) ? (s.ai as any).toolLog : [],
+        conversation: Array.isArray((s.ai as any).conversation) ? (s.ai as any).conversation : [],
+        pendingPlan: (s.ai as any).pendingPlan ?? null,
       } as any;
     }
     s.schemaVersion = CURRENT_SETTINGS_SCHEMA_VERSION;

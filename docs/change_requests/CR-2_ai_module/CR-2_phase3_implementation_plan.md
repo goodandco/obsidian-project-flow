@@ -27,6 +27,7 @@ Enable MCP tool integrations, harden workflows for daily use, and prepare collab
 ## Workflow Hardening
 - Retry strategies for tool and LLM errors.
 - Local conversation memory.
+- Persist multi-stage clarification context (pending plan state across user follow-ups).
 - Strict execution mode toggle.
 - Tool execution audit log.
 

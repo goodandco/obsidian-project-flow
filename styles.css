@@ -73,6 +73,12 @@
   justify-content: space-between;
 }
 
+.pf-ai-clear {
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.9em;
+}
+
 .pf-ai-messages {
   flex: 1;
   overflow-y: auto;
@@ -88,6 +94,7 @@
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
   white-space: pre-wrap;
+  user-select: text;
 }
 
 .pf-ai-message.user {
@@ -122,4 +129,25 @@
 
 .pf-ai-input button {
   min-width: 72px;
+}
+
+.pf-ai-confirmation {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.pf-ai-confirmation button {
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.pf-ai-confirm {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.pf-ai-reject {
+  background: transparent;
+  border: 1px solid var(--background-modifier-border);
 }

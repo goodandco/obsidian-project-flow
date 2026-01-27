@@ -45,6 +45,12 @@ export const DEFAULT_SETTINGS: ProjectFlowSettings = {
     apiKey: "",
     model: "gpt-4o-mini",
     baseUrl: "https://api.openai.com",
+    strictExecution: false,
+    memoryLimit: 10,
+    mcpServers: [],
+    toolLog: [],
+    conversation: [],
+    pendingPlan: null,
   },
   projectRecords: {},
   archivedRecords: {},
@@ -341,7 +347,11 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
               const delBtn = actions.createEl('button', { cls: ['gc-icon-button', 'clickable-icon'] });
               delBtn.setAttr('aria-label', `Delete ${pid}`);
               delBtn.setAttr('title', `Delete ${pid}`);
-              try { setIcon(delBtn, 'trash'); } catch { delBtn.setText('Del'); }
+              try {
+                setIcon(delBtn, 'trash');
+              } catch {
+                delBtn.setText('Del');
+              }
               delBtn.onclick = async (ev: MouseEvent) => {
                 ev.stopPropagation();
                 const [, msg] = await deleteProjectById(this.plugin, dimName, cat, pid);
@@ -352,7 +362,11 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
               const archBtn = actions.createEl('button', { cls: ['gc-icon-button', 'clickable-icon'] });
               archBtn.setAttr('aria-label', `Archive ${pid}`);
               archBtn.setAttr('title', `Archive ${pid}`);
-              try { setIcon(archBtn, 'archive'); } catch { archBtn.setText('Arc'); }
+              try {
+                setIcon(archBtn, 'archive');
+              } catch {
+                archBtn.setText('Arc');
+              }
               archBtn.onclick = async (ev: MouseEvent) => {
                 ev.stopPropagation();
                 const [, msg] = await archiveProjectByPromptInfo(this.plugin, dimName, cat, pid);
@@ -360,8 +374,12 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
                 this.display();
               };
 
-              wrap.onmouseenter = () => { actions.style.display = 'inline-flex'; };
-              wrap.onmouseleave = () => { actions.style.display = 'none'; };
+              wrap.onmouseenter = () => {
+                actions.style.display = 'inline-flex';
+              };
+              wrap.onmouseleave = () => {
+                actions.style.display = 'none';
+              };
 
               // add space between chips (space-separated)
               if (idx < ids.length - 1) idsWrap.createSpan({ text: " " });
@@ -603,6 +621,45 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
       await this.plugin.saveSettings();
     };
 
+    const aiStrict = aiSection.createDiv({ cls: "setting-item" });
+    aiStrict.createEl("label", { text: "Strict execution mode" });
+    const strictToggle = aiStrict.createEl("input", { type: "checkbox" });
+    strictToggle.checked = Boolean(this.plugin.settings.ai?.strictExecution);
+    strictToggle.onchange = async () => {
+      if (!this.plugin.settings.ai) return;
+      this.plugin.settings.ai.strictExecution = strictToggle.checked;
+      await this.plugin.saveSettings();
+    };
+
+    const aiMemory = aiSection.createDiv({ cls: "setting-item" });
+    aiMemory.createEl("label", { text: "Conversation memory (messages)" });
+    const memoryInput = aiMemory.createEl("input", { type: "number" });
+    memoryInput.min = "0";
+    memoryInput.max = "50";
+    memoryInput.value = String(this.plugin.settings.ai?.memoryLimit ?? 10);
+    memoryInput.onchange = async () => {
+      if (!this.plugin.settings.ai) return;
+      const next = Number(memoryInput.value);
+      this.plugin.settings.ai.memoryLimit = Number.isFinite(next) ? Math.max(0, Math.min(50, next)) : 10;
+      await this.plugin.saveSettings();
+    };
+
+    const aiMcp = aiSection.createDiv({ cls: "setting-item" });
+    aiMcp.createEl("label", { text: "MCP servers (JSON array)" });
+    const mcpInput = aiMcp.createEl("textarea");
+    mcpInput.placeholder = '[{"name":"calendar","url":"http://localhost:3000","apiKey":""}]';
+    mcpInput.value = JSON.stringify(this.plugin.settings.ai?.mcpServers || []);
+    mcpInput.onchange = async () => {
+      if (!this.plugin.settings.ai) return;
+      try {
+        const parsed = JSON.parse(mcpInput.value || "[]");
+        this.plugin.settings.ai.mcpServers = Array.isArray(parsed) ? parsed : [];
+        await this.plugin.saveSettings();
+      } catch {
+        new Notice("Invalid MCP servers JSON");
+      }
+    };
+
     // Archive section
     containerEl.createEl("h2", { text: "Archive" });
     const archivedRaw = (this.plugin.settings.archivedRecords || {}) as Record<string, Record<string, Record<string, any>>>;
@@ -656,7 +713,11 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
             const delBtn = actions.createEl('button', { cls: ['gc-icon-button', 'clickable-icon'] });
             delBtn.setAttr('aria-label', `Delete ${pid}`);
             delBtn.setAttr('title', `Delete ${pid}`);
-            try { setIcon(delBtn, 'trash'); } catch { delBtn.setText('Del'); }
+            try {
+              setIcon(delBtn, 'trash');
+            } catch {
+              delBtn.setText('Del');
+            }
             delBtn.onclick = async (ev: MouseEvent) => {
               ev.stopPropagation();
               const [, msg] = await (this.plugin as any).deleteArchivedProject(dimName, cat, pid);
@@ -664,8 +725,12 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
               this.display();
             };
 
-            wrap.onmouseenter = () => { actions.style.display = 'inline-flex'; };
-            wrap.onmouseleave = () => { actions.style.display = 'none'; };
+            wrap.onmouseenter = () => {
+              actions.style.display = 'inline-flex';
+            };
+            wrap.onmouseleave = () => {
+              actions.style.display = 'none';
+            };
 
             if (idx < ids.length - 1) idsWrap.createSpan({ text: ' ' });
           });

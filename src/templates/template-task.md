@@ -29,7 +29,10 @@ try {
 } catch (e) {
   console.warn('Could not list tasks folder, defaulting to 1', e);
 }
-const newName = `${projectId}-${next} ${tp.file.title}`;
+const baseTitle = tp.file.title.startsWith(projectId + "-")
+  ? tp.file.title.slice(projectId.length + 1).trim()
+  : tp.file.title;
+const newName = `${projectId}-${next} ${baseTitle}`;
 await tp.file.move(`${targetDir}/${newName}`);
 %>
 
@@ -67,4 +70,3 @@ dv.table(['File', 'Status'],  questions);
 ---
 
 ## Notes
-
