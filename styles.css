@@ -93,8 +93,12 @@
   border-radius: 10px;
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
-  white-space: pre-wrap;
+  white-space: normal;
   user-select: text;
+}
+
+.pf-ai-message pre {
+  white-space: pre;
 }
 
 .pf-ai-message.user {
@@ -118,6 +122,7 @@
   display: flex;
   gap: 8px;
   align-items: flex-end;
+  flex-wrap: wrap;
 }
 
 .pf-ai-input textarea {
@@ -131,6 +136,14 @@
   min-width: 72px;
 }
 
+.pf-ai-status {
+  width: 100%;
+  text-align: right;
+  font-size: 0.85em;
+  color: var(--text-muted);
+  padding-right: 4px;
+}
+
 .pf-ai-confirmation {
   display: flex;
   gap: 8px;
@@ -140,6 +153,15 @@
 .pf-ai-confirmation button {
   padding: 4px 10px;
   border-radius: 8px;
+}
+
+.pf-ai-confirmation button:disabled {
+  opacity: 0.8;
+  cursor: default;
+}
+
+.pf-ai-confirmation .pf-ai-selected {
+  font-weight: 600;
 }
 
 .pf-ai-confirm {

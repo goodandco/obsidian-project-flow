@@ -9,10 +9,23 @@ import { buildSystemPrompt, buildUserMessage } from "../domain/prompts";
 import { filterSafeTools, isAffirmative, isNegative } from "../domain/safety";
 import { findProjectMatches } from "../domain/context";
 import type { AiStateStore } from "../domain/conversation";
+import { classifyIntent } from "../domain/intent";
+import { streamProvider } from "../providers/provider";
+
+const CHAT_PROMPT = [
+  "You are a helpful Obsidian assistant.",
+  "Answer conversationally.",
+  "Do not propose plans unless explicitly asked.",
+  "Do not call tools.",
+  "If the user implies possible actions, suggest them softly.",
+].join("\n");
+
+const DEFAULT_MIXED_OFFER_TEXT = "I can also set this up for you. Shall I proceed?";
 
 export class AiChatController {
   private busy = false;
   private pendingPlan: PendingPlan | null = null;
+  private pendingMixedInput: string | null = null;
 
   constructor(
     private plugin: ProjectFlowPlugin,
@@ -210,6 +223,8 @@ export class AiChatController {
     try {
       if (this.pendingPlan) {
         await this.handleFollowup(input);
+      } else if (this.pendingMixedInput) {
+        await this.handleMixedFollowup(input);
       } else {
         await this.handleNewRequest(input);
       }
@@ -222,19 +237,61 @@ export class AiChatController {
   }
 
   private async handleNewRequest(input: string): Promise<void> {
+    const history = this.state.getConversationWindow().filter((m) => m.role !== "tool");
+    this.state.appendMessage({ role: "user", content: input });
+
+    const aiSettings = this.plugin.settings.ai!;
+    const intentResult = await classifyIntent(input, aiSettings);
+    if (intentResult.intent === "action") {
+      await this.handleActionRequest(input, history);
+      return;
+    }
+    if (intentResult.intent === "mixed") {
+      await this.handleMixedRequest(input, history);
+      return;
+    }
+    if (intentResult.intent === "unclear") {
+      const prompt = "Could you clarify what you'd like me to do?";
+      this.ui.appendMessage("assistant", prompt);
+      this.state.appendMessage({ role: "assistant", content: prompt });
+      return;
+    }
+    await this.handleChatRequest(input, history);
+  }
+
+  private async handleChatRequest(input: string, history: ChatMessage[]): Promise<string> {
+    const messages: ChatMessage[] = [
+      { role: "system", content: CHAT_PROMPT },
+      ...history,
+      { role: "user", content: input },
+    ];
+    const assistantEl = this.ui.appendMessage("assistant", "");
+    let content = "";
+    for await (const evt of streamProvider(this.plugin.settings.ai!, messages, [])) {
+      if (evt.type === "content" && evt.delta) {
+        content += evt.delta;
+        this.ui.updateMessage(assistantEl, content);
+      }
+    }
+    if (!assistantEl) {
+      this.ui.appendMessage("assistant", content);
+    }
+    this.state.appendMessage({ role: "assistant", content });
+    return content;
+  }
+
+  private async handleActionRequest(input: string, history: ChatMessage[]): Promise<void> {
     const tools = createToolRegistry(this.plugin);
     const mcpTools = await loadMcpToolRegistry(this.plugin);
     const allTools = [...tools, ...mcpTools];
     const safeTools = filterSafeTools(allTools);
     const systemMessage = await buildSystemPrompt(this.plugin);
     const userMessage = buildUserMessage(input);
-    const history = this.state.getConversationWindow().filter((m) => m.role !== "tool");
     const messages: ChatMessage[] = [
       { role: "system", content: systemMessage },
       ...history,
       { role: "user", content: userMessage },
     ];
-    this.state.appendMessage({ role: "user", content: input });
 
     const planResult = await runPlanningStage({
       plugin: this.plugin,
@@ -281,6 +338,44 @@ export class AiChatController {
     const confirmMsg = "Please confirm to proceed with these actions.";
     this.ui.appendMessage("assistant", confirmMsg);
     this.state.appendMessage({ role: "assistant", content: confirmMsg });
+  }
+
+  private async handleMixedRequest(input: string, history: ChatMessage[]): Promise<void> {
+    await this.handleChatRequest(input, history);
+    const offer = this.getMixedOfferText();
+    this.ui.appendMessage("assistant", offer);
+    this.state.appendMessage({ role: "assistant", content: offer });
+    this.pendingMixedInput = input;
+  }
+
+  private async handleMixedFollowup(input: string): Promise<void> {
+    const originalInput = this.pendingMixedInput;
+    if (!originalInput) return;
+    const trimmed = input.trim();
+    if (!trimmed) return;
+    this.state.appendMessage({ role: "user", content: trimmed });
+
+    if (isAffirmative(trimmed)) {
+      this.pendingMixedInput = null;
+      const history = this.state.getConversationWindow().filter((m) => m.role !== "tool");
+      await this.handleActionRequest(originalInput, history);
+      return;
+    }
+    if (isNegative(trimmed)) {
+      this.pendingMixedInput = null;
+      const msg = "Okay. Let me know if you'd like me to set it up.";
+      this.ui.appendMessage("assistant", msg);
+      this.state.appendMessage({ role: "assistant", content: msg });
+      return;
+    }
+    const prompt = "Please confirm if you'd like me to proceed.";
+    this.ui.appendMessage("assistant", prompt);
+    this.state.appendMessage({ role: "assistant", content: prompt });
+  }
+
+  private getMixedOfferText(): string {
+    const text = this.plugin.settings.ai?.mixedOfferText?.trim();
+    return text || DEFAULT_MIXED_OFFER_TEXT;
   }
 
   private setPendingPlan(pending: PendingPlan | null): void {

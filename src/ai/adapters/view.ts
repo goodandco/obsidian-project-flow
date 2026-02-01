@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf } from "obsidian";
+import { ItemView, WorkspaceLeaf, MarkdownRenderer } from "obsidian";
 import type { ProjectFlowPlugin } from "../../plugin";
 import type { ChatRole } from "../types/core";
 import type { ChatUi, MessageHandle } from "../types/ui";
@@ -12,6 +12,7 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
   private messageContainer: HTMLDivElement | null = null;
   private inputEl: HTMLTextAreaElement | null = null;
   private sendBtn: HTMLButtonElement | null = null;
+  private statusEl: HTMLDivElement | null = null;
   private controller: AiChatController | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: ProjectFlowPlugin) {
@@ -49,9 +50,13 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     const textarea = inputWrap.createEl("textarea");
     textarea.placeholder = "Ask ProjectFlow...";
     const sendBtn = inputWrap.createEl("button", { text: "Send" });
+    const statusEl = inputWrap.createDiv({ cls: "pf-ai-status" });
+    statusEl.setText("");
+    statusEl.hide();
 
     this.inputEl = textarea;
     this.sendBtn = sendBtn;
+    this.statusEl = statusEl;
 
     const state = new AiStateStore(this.plugin);
     this.controller = new AiChatController(this.plugin, this, state);
@@ -70,20 +75,21 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     this.messageContainer = null;
     this.inputEl = null;
     this.sendBtn = null;
+    this.statusEl = null;
     this.controller = null;
   }
 
   appendMessage(role: ChatRole, content: string): MessageHandle {
     if (!this.messageContainer) return null;
     const item = this.messageContainer.createDiv({ cls: `pf-ai-message ${role}` });
-    item.setText(content);
+    this.renderMessage(item, content);
     this.messageContainer.scrollTo({ top: this.messageContainer.scrollHeight, behavior: "smooth" });
     return item;
   }
 
   updateMessage(el: MessageHandle, content: string): void {
     if (!el) return;
-    el.setText(content);
+    this.renderMessage(el, content);
     this.messageContainer?.scrollTo({ top: this.messageContainer.scrollHeight, behavior: "smooth" });
   }
 
@@ -94,8 +100,25 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     proceed.addClass("pf-ai-confirm");
     const reject = wrap.createEl("button", { text: "Reject" });
     reject.addClass("pf-ai-reject");
-    proceed.onclick = () => this.controller?.handleFollowup("yes");
-    reject.onclick = () => this.controller?.handleFollowup("no");
+    const freeze = (chosen: "proceed" | "reject") => {
+      proceed.disabled = true;
+      reject.disabled = true;
+      if (chosen === "proceed") {
+        proceed.addClass("pf-ai-selected");
+        proceed.setText("Proceed ✓");
+      } else {
+        reject.addClass("pf-ai-selected");
+        reject.setText("Reject ✓");
+      }
+    };
+    proceed.onclick = () => {
+      freeze("proceed");
+      this.controller?.handleFollowup("yes");
+    };
+    reject.onclick = () => {
+      freeze("reject");
+      this.controller?.handleFollowup("no");
+    };
     this.messageContainer.scrollTo({ top: this.messageContainer.scrollHeight, behavior: "smooth" });
   }
 
@@ -105,6 +128,15 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
 
   setBusy(busy: boolean): void {
     if (this.sendBtn) this.sendBtn.disabled = busy;
+    if (this.statusEl) {
+      if (busy) {
+        this.statusEl.setText("Thinking...");
+        this.statusEl.show();
+      } else {
+        this.statusEl.setText("");
+        this.statusEl.hide();
+      }
+    }
   }
 
   private async handleSend(): Promise<void> {
@@ -112,5 +144,25 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     if (!input) return;
     if (this.inputEl) this.inputEl.value = "";
     await this.controller?.handleSend(input);
+  }
+
+  private renderMessage(el: HTMLDivElement, content: string): void {
+    const json = this.tryFormatJson(content);
+    const markdown = json ?? content;
+    el.empty();
+    void MarkdownRenderer.renderMarkdown(markdown, el, "", this);
+  }
+
+  private tryFormatJson(content: string): string | null {
+    const trimmed = content.trim();
+    if (!trimmed) return null;
+    if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) return null;
+    try {
+      const parsed = JSON.parse(trimmed);
+      const pretty = JSON.stringify(parsed, null, 2);
+      return `\`\`\`json\n${pretty}\n\`\`\``;
+    } catch {
+      return null;
+    }
   }
 }

@@ -34,6 +34,7 @@ export interface AISettings {
   baseUrl?: string;
   strictExecution?: boolean;
   memoryLimit?: number;
+  mixedOfferText?: string;
   mcpServers?: MCPServerConfig[];
   toolLog?: AIToolLogEntry[];
   conversation?: Array<Pick<ChatMessage, "role" | "content" | "name" | "toolCallId">>;

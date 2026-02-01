@@ -1,7 +1,9 @@
 import type { ProjectFlowSettings } from '../interfaces';
 import { DEFAULT_ENTITY_TYPES, DEFAULT_PROJECT_TYPES } from './registry-defaults';
 
-export const CURRENT_SETTINGS_SCHEMA_VERSION = 7;
+export const CURRENT_SETTINGS_SCHEMA_VERSION = 8;
+
+const DEFAULT_MIXED_OFFER_TEXT = "I can also set this up for you. Shall I proceed?";
 
 export interface VersionedSettings extends ProjectFlowSettings {
   schemaVersion?: number;
@@ -89,6 +91,7 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
         baseUrl: "https://api.openai.com",
         strictExecution: false,
         memoryLimit: 10,
+        mixedOfferText: DEFAULT_MIXED_OFFER_TEXT,
         mcpServers: [],
         toolLog: [],
         conversation: [],
@@ -103,6 +106,7 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
         baseUrl: (s.ai as any).baseUrl ?? "https://api.openai.com",
         strictExecution: Boolean((s.ai as any).strictExecution),
         memoryLimit: Number.isFinite((s.ai as any).memoryLimit) ? (s.ai as any).memoryLimit : 10,
+        mixedOfferText: (s.ai as any).mixedOfferText ?? DEFAULT_MIXED_OFFER_TEXT,
         mcpServers: Array.isArray((s.ai as any).mcpServers) ? (s.ai as any).mcpServers : [],
         toolLog: Array.isArray((s.ai as any).toolLog) ? (s.ai as any).toolLog : [],
         conversation: Array.isArray((s.ai as any).conversation) ? (s.ai as any).conversation : [],

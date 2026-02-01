@@ -543,6 +543,7 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
           apiKey: "",
           model: "gpt-4o-mini",
           baseUrl: "https://api.openai.com",
+          mixedOfferText: "I can also set this up for you. Shall I proceed?",
         };
       }
       this.plugin.settings.ai.enabled = aiEnabledToggle.checked;
@@ -641,6 +642,18 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
       if (!this.plugin.settings.ai) return;
       const next = Number(memoryInput.value);
       this.plugin.settings.ai.memoryLimit = Number.isFinite(next) ? Math.max(0, Math.min(50, next)) : 10;
+      await this.plugin.saveSettings();
+    };
+
+    const aiMixedOffer = aiSection.createDiv({ cls: "setting-item" });
+    aiMixedOffer.createEl("label", { text: "Mixed intent offer text" });
+    const mixedOfferInput = aiMixedOffer.createEl("textarea");
+    const defaultMixedOfferText = "I can also set this up for you. Shall I proceed?";
+    mixedOfferInput.placeholder = defaultMixedOfferText;
+    mixedOfferInput.value = this.plugin.settings.ai?.mixedOfferText || "";
+    mixedOfferInput.onchange = async () => {
+      if (!this.plugin.settings.ai) return;
+      this.plugin.settings.ai.mixedOfferText = mixedOfferInput.value.trim();
       await this.plugin.saveSettings();
     };
 

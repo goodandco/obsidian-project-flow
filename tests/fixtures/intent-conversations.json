@@ -1,0 +1,53 @@
+[
+  {
+    "name": "chat-only",
+    "steps": [
+      {
+        "user": "What is GTD?",
+        "intent": "chat",
+        "chatReply": "GTD is a productivity method.",
+        "expectAssistantContains": ["GTD is a productivity method."]
+      }
+    ]
+  },
+  {
+    "name": "action-only",
+    "steps": [
+      {
+        "user": "Create a project for the Q1 roadmap.",
+        "intent": "action",
+        "planResult": {
+          "needsFollowup": false,
+          "plan": "Create project and add notes.",
+          "context": "New project in Planning dimension.",
+          "fields": { "title": "Q1 Roadmap" }
+        },
+        "expectAssistantContains": [
+          "Planned steps: Create project and add notes.",
+          "Please confirm to proceed with these actions."
+        ]
+      }
+    ]
+  },
+  {
+    "name": "mixed-with-confirmation",
+    "steps": [
+      {
+        "user": "What is GTD and create a project for it.",
+        "intent": "mixed",
+        "chatReply": "GTD is a system for capturing and organizing tasks.",
+        "expectAssistantContains": [
+          "GTD is a system for capturing and organizing tasks.",
+          "I can also set this up for you. Shall I proceed?"
+        ]
+      },
+      {
+        "user": "yes",
+        "expectAssistantContains": [
+          "Planned steps:",
+          "Please confirm to proceed with these actions."
+        ]
+      }
+    ]
+  }
+]
