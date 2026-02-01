@@ -1,7 +1,7 @@
-import type { ProjectFlowPlugin } from "../plugin";
-import type { ToolDefinition } from "./types";
-import type { JSONSchema7 } from "./types-jsonschema";
-import { fetchMcpTools, toMcpToolDefinitions } from "./mcp-client";
+import type { ProjectFlowPlugin } from "../../plugin";
+import type { ToolDefinition } from "../types/tools";
+import type { JSONSchema7 } from "../schemas/jsonschema";
+import { fetchMcpTools, toMcpToolDefinitions } from "../mcp/client";
 
 const projectRefSchema: JSONSchema7 = {
   type: "object",

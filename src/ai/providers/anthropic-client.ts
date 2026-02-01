@@ -1,5 +1,5 @@
-import type { ChatMessage, ProviderStreamEvent, ToolCallDelta } from "./types";
-import type { ToolDefinition } from "./types";
+import type { ChatMessage, ProviderStreamEvent, ToolCallDelta } from "../types/core";
+import type { ToolDefinition } from "../types/tools";
 
 export interface AnthropicClientConfig {
   apiKey: string;

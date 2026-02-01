@@ -1,12 +1,8 @@
 import type { IProjectFlowPlugin, ProjectIndexEntry, ProjectRecord } from "../interfaces";
+import type { ProjectRef, ResolvedProject } from "../api/types";
 import { getProjectIndexCache, ensureProjectIndex } from "../core/project-index";
 
-export type ProjectRef = string | { fullName?: string; id?: string; tag?: string };
-
-export interface ResolvedProject {
-  entry: ProjectIndexEntry;
-  record: ProjectRecord;
-}
+export type { ProjectRef, ResolvedProject } from "../api/types";
 
 export function resolveProject(
   plugin: IProjectFlowPlugin,

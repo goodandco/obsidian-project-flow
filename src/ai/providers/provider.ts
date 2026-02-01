@@ -1,6 +1,6 @@
-import type { ChatMessage, ProviderStreamEvent } from "./types";
-import type { ToolDefinition } from "./types";
-import type { AISettings } from "../interfaces";
+import type { ChatMessage, ProviderStreamEvent } from "../types/core";
+import type { ToolDefinition } from "../types/tools";
+import type { AISettings } from "../../interfaces";
 import { streamChatCompletion } from "./openai-client";
 import { streamAnthropicMessages } from "./anthropic-client";
 

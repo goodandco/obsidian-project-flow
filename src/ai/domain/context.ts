@@ -1,5 +1,5 @@
-import type { ProjectFlowPlugin } from "../plugin";
-import type { ProjectIndexEntry } from "../interfaces";
+import type { ProjectFlowPlugin } from "../../plugin";
+import type { ProjectIndexEntry } from "../../interfaces";
 
 export function inferActiveProject(plugin: ProjectFlowPlugin): ProjectIndexEntry | null {
   const activeFile = plugin.app.workspace.getActiveFile();

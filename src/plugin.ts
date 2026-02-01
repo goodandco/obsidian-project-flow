@@ -4,7 +4,7 @@ import { DEFAULT_SETTINGS, ProjectFlowSettingTab } from "./settings-tab";
 import { showAddProjectPrompt } from "./commands/add-project";
 import { showRemoveProjectPrompt } from "./commands/remove-project";
 import { showArchiveProjectPrompt } from "./commands/archive-project";
-import { AI_VIEW_TYPE, ProjectFlowAIChatView } from "./ai/chat-view";
+import { AI_VIEW_TYPE, ProjectFlowAIChatView } from "./ai";
 
 export class ProjectFlowPlugin extends Plugin {
   settings: ProjectFlowSettings;
@@ -121,7 +121,7 @@ export class ProjectFlowPlugin extends Plugin {
   }
 
   private async exposeCoreApi() {
-    const { createCoreApi } = await import("./services/core-api");
+    const { createCoreApi } = await import("./api/core-api");
     this.coreApi = createCoreApi(this);
     const globalAny = window as any;
     globalAny.PluginApi = globalAny.PluginApi || {};

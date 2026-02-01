@@ -1,12 +1,6 @@
-import type { ToolDefinition, ToolCall } from "./types";
-import { validateSchema } from "./schema-validator";
-
-export interface ToolExecutionResult {
-  toolName: string;
-  ok: boolean;
-  result?: unknown;
-  error?: string;
-}
+import type { ToolCall } from "../types/core";
+import type { ToolDefinition, ToolExecutionResult } from "../types/tools";
+import { validateSchema } from "../schemas/validator";
 
 export async function executeToolCalls(
   toolCalls: ToolCall[],

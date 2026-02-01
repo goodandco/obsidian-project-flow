@@ -26,7 +26,7 @@ Deadline: ""
 
 ```dataviewjs
 
-const sections = dv.pages('#section and #$_PROJECT_TAG')  
+const sections = dv.pages('#type/section and #$_PROJECT_TAG')  
   .sort(p => p.Date, 'asc')
   .map((p) => ([ p.file.link ]));
 

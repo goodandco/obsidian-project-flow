@@ -1,5 +1,5 @@
-import { ApiError } from "./api-errors";
-import type { ProjectRef } from "../services/resolve-service";
+import { ApiError } from "./errors";
+import type { ProjectRef } from "./types";
 
 export function assertNonEmptyString(value: unknown, field: string): string {
   if (typeof value !== "string" || value.trim().length === 0) {

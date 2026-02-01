@@ -1,6 +1,6 @@
-import type { MCPServerConfig } from "../interfaces";
-import type { ToolDefinition } from "./types";
-import type { JSONSchema7 } from "./types-jsonschema";
+import type { MCPServerConfig } from "../../interfaces";
+import type { ToolDefinition } from "../types/tools";
+import type { JSONSchema7 } from "../schemas/jsonschema";
 
 interface MCPToolDescriptor {
   name: string;

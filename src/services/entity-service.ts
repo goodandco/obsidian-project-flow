@@ -2,22 +2,12 @@ import type {
   EntityType,
   IProjectFlowPlugin,
   ProjectFlowSettings,
-  ProjectIndexEntry,
   ProjectRecord,
   TemplateScope,
 } from "../interfaces";
+import type { CreateEntityRequest, CreateEntityResult } from "../api/types";
 import { sanitizeFileName, sanitizePath } from "../core/path-sanitizer";
 import { isPathWithinRoot, isSafeRelativePath } from "../core/path-constraints";
-
-export interface CreateEntityRequest {
-  projectRef: string | { fullName?: string; id?: string; tag?: string };
-  entityTypeId: string;
-  fields?: Record<string, string | number | boolean | null | undefined>;
-}
-
-export interface CreateEntityResult {
-  path: string;
-}
 
 export async function createEntity(
   plugin: IProjectFlowPlugin,
@@ -167,9 +157,4 @@ async function resolveTemplatePath(
     }
   }
   return null;
-}
-
-export interface ResolvedProject {
-  entry: ProjectIndexEntry;
-  record: ProjectRecord;
 }

@@ -1,4 +1,4 @@
-import type { JSONSchema7 } from "./types-jsonschema";
+import type { JSONSchema7 } from "./jsonschema";
 
 export interface SchemaValidationError {
   path: string;
