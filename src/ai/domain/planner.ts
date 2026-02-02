@@ -13,6 +13,7 @@ const PLANNER_PROMPT = [
   "If you need more info, set needsFollowup=true and ask a concise question.",
   "If you have enough info, set needsFollowup=false and provide a short plan, context summary, and fields.",
   "Do NOT call tools in this stage.",
+  "Format text in `question` and `plan` keys as markdown"
 ].join("\n");
 
 export async function runPlanningStage(options: {

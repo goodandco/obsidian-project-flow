@@ -52,7 +52,7 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     const sendBtn = inputWrap.createEl("button", { text: "Send" });
     const statusEl = inputWrap.createDiv({ cls: "pf-ai-status" });
     statusEl.setText("");
-    statusEl.hide();
+    statusEl.style.display = "none";
 
     this.inputEl = textarea;
     this.sendBtn = sendBtn;
@@ -81,20 +81,27 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
 
   appendMessage(role: ChatRole, content: string): MessageHandle {
     if (!this.messageContainer) return null;
+    const shouldScroll = this.shouldAutoScroll();
     const item = this.messageContainer.createDiv({ cls: `pf-ai-message ${role}` });
     this.renderMessage(item, content);
-    this.messageContainer.scrollTo({ top: this.messageContainer.scrollHeight, behavior: "smooth" });
+    if (shouldScroll) {
+      this.messageContainer.scrollTo({ top: this.messageContainer.scrollHeight, behavior: "smooth" });
+    }
     return item;
   }
 
   updateMessage(el: MessageHandle, content: string): void {
     if (!el) return;
+    const shouldScroll = this.shouldAutoScroll();
     this.renderMessage(el, content);
-    this.messageContainer?.scrollTo({ top: this.messageContainer.scrollHeight, behavior: "smooth" });
+    if (shouldScroll) {
+      this.messageContainer?.scrollTo({ top: this.messageContainer.scrollHeight, behavior: "smooth" });
+    }
   }
 
   appendConfirmationActions(): void {
     if (!this.messageContainer) return;
+    const shouldScroll = this.shouldAutoScroll();
     const wrap = this.messageContainer.createDiv({ cls: "pf-ai-confirmation" });
     const proceed = wrap.createEl("button", { text: "Proceed" });
     proceed.addClass("pf-ai-confirm");
@@ -119,7 +126,9 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
       freeze("reject");
       this.controller?.handleFollowup("no");
     };
-    this.messageContainer.scrollTo({ top: this.messageContainer.scrollHeight, behavior: "smooth" });
+    if (shouldScroll) {
+      this.messageContainer.scrollTo({ top: this.messageContainer.scrollHeight, behavior: "smooth" });
+    }
   }
 
   clearMessages(): void {
@@ -131,10 +140,10 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     if (this.statusEl) {
       if (busy) {
         this.statusEl.setText("Thinking...");
-        this.statusEl.show();
+        this.statusEl.style.display = "block";
       } else {
         this.statusEl.setText("");
-        this.statusEl.hide();
+        this.statusEl.style.display = "none";
       }
     }
   }
@@ -164,5 +173,13 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     } catch {
       return null;
     }
+  }
+
+  private shouldAutoScroll(): boolean {
+    const container = this.messageContainer;
+    if (!container) return false;
+    const threshold = 24;
+    const distanceFromBottom = container.scrollHeight - (container.scrollTop + container.clientHeight);
+    return distanceFromBottom <= threshold;
   }
 }

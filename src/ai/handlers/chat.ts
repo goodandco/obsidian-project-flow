@@ -15,6 +15,7 @@ import { streamProvider } from "../providers/provider";
 const CHAT_PROMPT = [
   "You are a helpful Obsidian assistant.",
   "Answer conversationally.",
+  "Be concise.",
   "Do not propose plans unless explicitly asked.",
   "Do not call tools.",
   "If the user implies possible actions, suggest them softly.",
@@ -170,7 +171,7 @@ export class AiChatController {
     const planContext = planResult.plan ? `Planned steps: ${planResult.plan}` : "";
     const plannerNote = planResult.context ? `Planner context: ${planResult.context}` : "";
     const fieldsNote = planResult.fields && Object.keys(planResult.fields).length > 0
-      ? `Fields: ${JSON.stringify(planResult.fields)}`
+      ? `Fields: \n \`\`\`json \n${JSON.stringify(planResult.fields)}\n \`\`\``
       : "";
     const planMessage = [planContext, plannerNote, fieldsNote].filter(Boolean).join("\n");
     if (planMessage) {

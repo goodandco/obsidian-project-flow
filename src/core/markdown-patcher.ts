@@ -24,17 +24,18 @@ export function patchTextByMarker(
   patchMode: PatchMode,
   fallbackHeading?: string,
 ): { updated: boolean; text: string } {
-  const markerToken = normalizeMarker(marker);
-  const markerIdx = text.indexOf(markerToken);
-  if (markerIdx >= 0) {
-    const lineEnd = text.indexOf("\n", markerIdx);
-    const insertStart = lineEnd >= 0 ? lineEnd + 1 : text.length;
-    const nextMarker = findNextMarker(text, insertStart);
-    const insertEnd = nextMarker >= 0 ? nextMarker : text.length;
+  const markerName = normalizeMarkerName(marker);
+  const startMarker = findMarkerToken(text, markerName, false);
+  if (startMarker) {
+    const insertStart = startMarker.end;
+    const endMarker = findMarkerToken(text, markerName, true, insertStart);
+    const insertEnd = endMarker ? endMarker.start : findNextMarker(text, insertStart);
+    const needsLeadingNewline = text[insertStart] !== "\n";
     const nextText = [
       text.slice(0, insertStart),
+      needsLeadingNewline ? "\n" : "",
       ensureTrailingNewline(content),
-      text.slice(insertEnd),
+      text.slice(insertEnd >= 0 ? insertEnd : text.length),
     ].join("");
     return { updated: true, text: nextText };
   }
@@ -118,20 +119,42 @@ export async function patchSectionInFile(
   return { ok: true };
 }
 
-function normalizeMarker(marker: string): string {
+// function normalizeMarker(marker: string): string {
+//   const trimmed = marker.trim();
+//   if (trimmed.startsWith("<!--") && trimmed.endsWith("-->")) {
+//     return trimmed;
+//   }
+//   return `<!-- ${trimmed} -->`;
+// }
+
+function normalizeMarkerName(marker: string): string {
   const trimmed = marker.trim();
-  if (trimmed.startsWith("<!--") && trimmed.endsWith("-->")) {
-    return trimmed;
-  }
-  return `<!-- ${trimmed} -->`;
+  const stripped = trimmed
+    .replace(/^<!--\s*/, "")
+    .replace(/\s*(?:-->|>)\s*$/, "");
+  return stripped.replace(/^\/\s*/, "").trim();
 }
 
 function normalizeHeadingText(heading: string): string {
   return heading.replace(/^#+\s*/, "").trim();
 }
 
+function findMarkerToken(
+  text: string,
+  name: string,
+  isEnd: boolean,
+  start = 0,
+): { start: number; end: number } | null {
+  const prefix = isEnd ? "\\/\\s*" : "";
+  const markerRegex = new RegExp(`<!--\\s*${prefix}${escapeRegExp(name)}\\s*(?:-->|>)`, "gi");
+  markerRegex.lastIndex = start;
+  const match = markerRegex.exec(text);
+  if (!match || match.index == null) return null;
+  return { start: match.index, end: match.index + match[0].length };
+}
+
 function findNextMarker(text: string, start: number): number {
-  const markerRegex = /<!--\s*AI:[A-Z_]+\s*-->/g;
+  const markerRegex = /<!--\s*\/?\s*[A-Za-z0-9:_-]+\s*(?:-->|>)/g;
   markerRegex.lastIndex = start;
   const match = markerRegex.exec(text);
   return match && match.index != null ? match.index : -1;

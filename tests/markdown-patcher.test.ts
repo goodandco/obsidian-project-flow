@@ -2,11 +2,19 @@ import { describe, it, expect } from "vitest";
 import { patchTextByMarker, patchTextByHeading } from "../src/core/markdown-patcher";
 
 describe("markdown-patcher", () => {
-  it("replaces content after marker", () => {
-    const input = "<!-- AI:CONTENT -->\nOld content\n<!-- AI:ACTIONS -->\n";
-    const res = patchTextByMarker(input, "AI:CONTENT", "New content", "lenient");
+  it("replaces content between matching start and end markers", () => {
+    const input = [
+      "### Summary",
+      "<!-- ai:summary> <!-- /ai:summary -->",
+      "",
+      "### Notes",
+      "<!-- ai:notes> <!-- /ai:notes -->",
+      "",
+    ].join("\n");
+    const res = patchTextByMarker(input, "ai:summary", "New content", "lenient");
     expect(res.updated).toBe(true);
-    expect(res.text).toContain("<!-- AI:CONTENT -->\nNew content\n<!-- AI:ACTIONS -->");
+    expect(res.text).toContain("<!-- ai:summary>\nNew content\n<!-- /ai:summary -->");
+    expect(res.text).toContain("### Notes\n<!-- ai:notes> <!-- /ai:notes -->");
   });
 
   it("falls back to heading in lenient mode", () => {
