@@ -16,12 +16,18 @@ Related task:
 
 # Proposal 
 ## What
+<!-- ai:what -->
+<!-- /ai:what -->
+
 
 what
 
 ---
 
 ## Why
+<!-- ai:why -->
+<!-- /ai:why -->
+
 
 
 reason
@@ -30,5 +36,8 @@ reason
 ---
 
 ## How
+<!-- ai:how -->
+<!-- /ai:how -->
+
 
 how to apply

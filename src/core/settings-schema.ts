@@ -94,8 +94,6 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
         mixedOfferText: DEFAULT_MIXED_OFFER_TEXT,
         mcpServers: [],
         toolLog: [],
-        conversation: [],
-        pendingPlan: null,
       } as any;
     } else {
       s.ai = {
@@ -109,8 +107,6 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
         mixedOfferText: (s.ai as any).mixedOfferText ?? DEFAULT_MIXED_OFFER_TEXT,
         mcpServers: Array.isArray((s.ai as any).mcpServers) ? (s.ai as any).mcpServers : [],
         toolLog: Array.isArray((s.ai as any).toolLog) ? (s.ai as any).toolLog : [],
-        conversation: Array.isArray((s.ai as any).conversation) ? (s.ai as any).conversation : [],
-        pendingPlan: (s.ai as any).pendingPlan ?? null,
       } as any;
     }
     s.schemaVersion = CURRENT_SETTINGS_SCHEMA_VERSION;

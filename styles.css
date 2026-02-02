@@ -63,14 +63,175 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  gap: 8px;
   padding: 8px;
+}
+
+.pf-ai-shell {
+  display: flex;
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+}
+
+.pf-ai-sidebar {
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 8px;
+  border-right: 1px solid var(--background-modifier-border);
+  min-height: 0;
+}
+
+.pf-ai-shell.pf-ai-narrow .pf-ai-sidebar {
+  width: 100%;
+  padding-right: 0;
+  border-right: none;
+}
+
+.pf-ai-conv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.pf-ai-new {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pf-ai-conv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+  width: 100%;
+}
+
+.pf-ai-conv-empty {
+  padding: 6px 8px;
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+.pf-ai-conv-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 120ms ease;
+  width: 100%;
+}
+
+.pf-ai-conv-item.is-active {
+  background: var(--background-secondary);
+}
+
+.pf-ai-conv-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.pf-ai-conv-title {
+  flex: 1;
+  padding: 4px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.pf-ai-conv-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.pf-ai-conv-actions button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75em;
+}
+
+.pf-ai-conv-item:hover .pf-ai-conv-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pf-ai-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
 }
 
 .pf-ai-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
+}
+
+.pf-ai-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pf-ai-header h3 {
+  margin: 0;
+  font-size: 1em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pf-ai-sidebar-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.pf-ai-shell.pf-ai-narrow .pf-ai-sidebar-toggle {
+  display: inline-flex;
+}
+
+.pf-ai-shell.pf-ai-sidebar-hidden .pf-ai-sidebar {
+  display: none;
+}
+
+.pf-ai-shell.pf-ai-sidebar-open .pf-ai-sidebar {
+  display: flex;
+}
+
+.pf-ai-shell.pf-ai-narrow.pf-ai-sidebar-open .pf-ai-main {
+  display: none;
+}
+
+.pf-ai-shell.pf-ai-narrow.pf-ai-sidebar-hidden .pf-ai-main {
+  display: flex;
 }
 
 .pf-ai-clear {
@@ -86,6 +247,7 @@
   flex-direction: column;
   gap: 8px;
   padding: 4px 2px;
+  min-height: 0;
 }
 
 .pf-ai-message {
@@ -172,4 +334,18 @@
 .pf-ai-reject {
   background: transparent;
   border: 1px solid var(--background-modifier-border);
+}
+
+@media (max-width: 700px) {
+  .pf-ai-shell {
+    flex-direction: column;
+  }
+
+  .pf-ai-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding-right: 0;
+    padding-bottom: 8px;
+  }
 }

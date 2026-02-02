@@ -37,6 +37,9 @@ await tp.file.move(`${targetDir}/${newName}`);
 %>
 
 ## Description
+<!-- ai:description -->
+<!-- /ai:description -->
+
 
 
 
@@ -70,3 +73,6 @@ dv.table(['File', 'Status'],  questions);
 ---
 
 ## Notes
+<!-- ai:notes -->
+<!-- /ai:notes -->
+

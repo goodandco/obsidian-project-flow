@@ -9,6 +9,9 @@ tags:
 ---
 
 ## Sprints
+<!-- ai:sprints -->
+<!-- /ai:sprints -->
+
 
 ```dataviewjs
 const getList = (pages, sort="desc") => pages  
@@ -65,6 +68,9 @@ dv.el("p", `Sprints: ${sprints.length}. Stories: ${allStories}. Story points: ${
 ---
 
 ## Proposals / Ideas
+<!-- ai:proposals-ideas -->
+<!-- /ai:proposals-ideas -->
+
 
 ```dataview
 
@@ -74,3 +80,6 @@ TABLE Status, Date FROM #ideas AND #$_PROJECT_TAG WHERE !contains(file.name, "Te
 
 
 ## Journal
+<!-- ai:journal -->
+<!-- /ai:journal -->
+

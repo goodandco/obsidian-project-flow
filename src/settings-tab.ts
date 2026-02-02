@@ -49,8 +49,6 @@ export const DEFAULT_SETTINGS: ProjectFlowSettings = {
     memoryLimit: 10,
     mcpServers: [],
     toolLog: [],
-    conversation: [],
-    pendingPlan: null,
   },
   projectRecords: {},
   archivedRecords: {},

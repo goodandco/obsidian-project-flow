@@ -13,14 +13,23 @@ tags:
 <% await tp.file.move("$_PROJECT_PATH/Meetings/Discussion/" + tp.date.now("YYYY.MM.DD") + " Discussion Session") %>
 
 ## 🗓️ Agenda  
+<!-- ai:agenda -->
+<!-- /ai:agenda -->
+
 
 Why is this meeting being held? Create a task over here   
   
 ## 📝 Discussion Notes  
+<!-- ai:discussion-notes -->
+<!-- /ai:discussion-notes -->
+
 
 Notes from the discussion  
   
 ## ✔️ Action Items  
+<!-- ai:action-items -->
+<!-- /ai:action-items -->
+
 
 - Tasks that needs to be completed.
 

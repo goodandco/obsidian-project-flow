@@ -19,6 +19,9 @@ Deadline: ""
 ---
 
 ## Main info
+<!-- ai:main-info -->
+<!-- /ai:main-info -->
+
 
 >[!Links]+
 > - some link
@@ -38,6 +41,9 @@ dv.table(['File'],  sections);
 ---
 
 ## Journal
+<!-- ai:journal -->
+<!-- /ai:journal -->
+
 
 
 ---
