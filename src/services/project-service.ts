@@ -7,6 +7,7 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
     const { projectTypeId, projectType } = resolveProjectType(plugin.settings, projectInfo);
     projectInfo.projectTypeId = projectTypeId;
 
+    normalizeProjectYearAndName(projectInfo);
     const variables = generateProjectVariables(projectInfo, plugin.settings);
     const projectsDir = plugin.settings.projectsRoot || "1. Projects";
 
@@ -98,6 +99,32 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
   } catch (error) {
     return [false, `Error creating project: ${error}`];
   }
+}
+
+function normalizeProjectYearAndName(projectInfo: ProjectInfo): void {
+  const inferred = inferYearFromName(projectInfo.name);
+  if (inferred.year && !projectInfo.year) {
+    projectInfo.year = inferred.year;
+  }
+  if (inferred.name !== projectInfo.name) {
+    projectInfo.name = inferred.name;
+  }
+  if (projectInfo.year) {
+    const cleaned = stripLeadingYear(projectInfo.name, projectInfo.year);
+    projectInfo.name = cleaned;
+  }
+}
+
+function inferYearFromName(name: string): { year: string | null; name: string } {
+  const trimmed = name.trim();
+  const match = trimmed.match(/^(\d{4})[.\-\s]+(.+)$/);
+  if (!match) return { year: null, name: trimmed };
+  return { year: match[1], name: match[2].trim() };
+}
+
+function stripLeadingYear(name: string, year: string): string {
+  const pattern = new RegExp(`^${year}[.\\-\\s]+`, "i");
+  return name.trim().replace(pattern, "").trim();
 }
 
 async function recordProjectCreation(
@@ -221,17 +248,6 @@ async function createProjectTemplates(
     { source: "template-task.md", target: `${projectName}_Task_Template.md` },
     { source: "template-idea.md", target: `${projectName}_Idea_Template.md` },
     { source: "template-knowledge-base-item.md", target: `${projectName}_Knowledge_Item_Template.md` },
-    { source: "template-meeting-daily.md", target: "template-meeting-daily.md" },
-    { source: "template-meeting-discussion.md", target: "template-meeting-discussion.md" },
-    { source: "template-meeting-knowledge.md", target: "template-meeting-knowledge.md" },
-    { source: "template-meeting-planning.md", target: "template-meeting-planning.md" },
-    { source: "template-meeting-refinement.md", target: "template-meeting-refinement.md" },
-    { source: "template-meeting-retro.md", target: "template-meeting-retro.md" },
-    { source: "template-meeting-demo.md", target: "template-meeting-demo.md" },
-    { source: "template-sprint.md", target: "template-sprint.md" },
-    { source: "template-task.md", target: "template-task.md" },
-    { source: "template-idea.md", target: "template-idea.md" },
-    { source: "template-knowledge-base-item.md", target: "template-knowledge-base-item.md" },
   ];
 
   for (const mapping of templateMappings) {

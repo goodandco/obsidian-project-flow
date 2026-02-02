@@ -57,6 +57,7 @@ export function createToolRegistry(plugin: ProjectFlowPlugin): ToolDefinition[] 
           name: { type: "string" },
           tag: { type: "string" },
           id: { type: "string" },
+          year: { type: "string" },
           dimension: { type: "string" },
           category: { type: "string" },
           parent: { type: "string" },

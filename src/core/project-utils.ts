@@ -2,7 +2,7 @@ import { ProjectInfo, ProjectVariables, ProjectFlowSettings } from "../interface
 
 export function generateProjectVariables(projectInfo: ProjectInfo, settings: ProjectFlowSettings): ProjectVariables {
   const now = new Date();
-  const year = now.getFullYear().toString();
+  const year = normalizeYear(projectInfo.year) || now.getFullYear().toString();
   const date = now.toISOString().split("T")[0]; // YYYY-MM-DD
   const projectsDir = settings.projectsRoot || "1. Projects";
   const parentSegment =
@@ -34,6 +34,12 @@ export function generateProjectVariables(projectInfo: ProjectInfo, settings: Pro
     PROJECT_ID: projectInfo.id,
     PROJECT_DIMENSION: dimMeta ? dimMeta.name : projectInfo.dimension,
   };
+}
+
+function normalizeYear(value?: string): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  return /^\d{4}$/.test(trimmed) ? trimmed : null;
 }
 
 export async function processTemplate(

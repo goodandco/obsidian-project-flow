@@ -5,7 +5,7 @@ import type { ChatUi } from "../types/ui";
 import { createToolRegistry, loadMcpToolRegistry } from "../adapters/registry";
 import { runAgentLoop } from "./agent";
 import { runPlanningStage } from "../domain/planner";
-import { buildSystemPrompt, buildUserMessage } from "../domain/prompts";
+import { buildSystemPrompt } from "../domain/prompts";
 import { filterSafeTools, isAffirmative, isNegative } from "../domain/safety";
 import { findProjectMatches } from "../domain/context";
 import type { AiStateStore } from "../domain/conversation";
@@ -82,7 +82,7 @@ export class AiChatController {
 
     if (pending.status === "awaiting_confirmation") {
       if (isAffirmative(input)) {
-        const systemMessage = await buildSystemPrompt(this.plugin);
+        const systemMessage = await buildSystemPrompt(this.plugin, this.getChatProjectContext());
         const history = this.state.getConversationWindow().filter((m) => m.role !== "tool");
         const followupMessage = [
           `Original request: ${pending.originalInput}`,
@@ -128,7 +128,7 @@ export class AiChatController {
     }
 
     const safeTools = filterSafeTools(allTools);
-    const systemMessage = await buildSystemPrompt(this.plugin);
+    const systemMessage = await buildSystemPrompt(this.plugin, this.getChatProjectContext());
     const history = this.state.getConversationWindow().filter((m) => m.role !== "tool");
     const clarificationContext = pending.clarifications || [];
     clarificationContext.push(input);
@@ -150,6 +150,7 @@ export class AiChatController {
       messages,
       tools: safeTools,
       allowToolCalls: false,
+      chatProjectContext: this.getChatProjectContext(),
     });
     if (planResult.needsFollowup && planResult.question) {
       pending.plan = planResult.plan;
@@ -201,6 +202,11 @@ export class AiChatController {
             "assistant",
             `Resolved project: ${matches[0].fullName} (${matches[0].projectTag})`,
           );
+          this.state.setProjectContext({
+            projectId: matches[0].projectId,
+            projectTag: matches[0].projectTag,
+            fullName: matches[0].fullName,
+          });
         } else {
           const list = matches.map((m) => `- ${m.projectTag} (${m.fullName})`).join("\n");
           this.ui.appendMessage("assistant", `Multiple matches found:\n${list}`);
@@ -211,6 +217,11 @@ export class AiChatController {
         "assistant",
         `Resolved project: ${result.entry.fullName} (${result.entry.projectTag})`,
       );
+      this.state.setProjectContext({
+        projectId: result.entry.projectId,
+        projectTag: result.entry.projectTag,
+        fullName: result.entry.fullName,
+      });
     } catch (err: any) {
       this.ui.appendMessage("assistant", err?.message || "Failed to resolve project.");
     }
@@ -286,11 +297,19 @@ export class AiChatController {
     const mcpTools = await loadMcpToolRegistry(this.plugin);
     const allTools = [...tools, ...mcpTools];
     const safeTools = filterSafeTools(allTools);
-    const systemMessage = await buildSystemPrompt(this.plugin);
-    const userMessage = buildUserMessage(input);
+    const systemMessage = await buildSystemPrompt(this.plugin, this.getChatProjectContext());
+    const userMessage = input;
+    const trimmedInput = input.trim();
+    let actionHistory = history;
+    if (actionHistory.length > 0) {
+      const last = actionHistory[actionHistory.length - 1];
+      if (last.role === "user" && last.content.trim() === trimmedInput) {
+        actionHistory = actionHistory.slice(0, -1);
+      }
+    }
     const messages: ChatMessage[] = [
       { role: "system", content: systemMessage },
-      ...history,
+      ...actionHistory,
       { role: "user", content: userMessage },
     ];
 
@@ -299,6 +318,7 @@ export class AiChatController {
       messages,
       tools: safeTools,
       allowToolCalls: false,
+      chatProjectContext: this.getChatProjectContext(),
     });
     if (planResult.needsFollowup && planResult.question) {
       this.setPendingPlan({
@@ -377,6 +397,14 @@ export class AiChatController {
   private getMixedOfferText(): string {
     const text = this.plugin.settings.ai?.mixedOfferText?.trim();
     return text || DEFAULT_MIXED_OFFER_TEXT;
+  }
+
+  private getChatProjectContext(): { projectId: string; projectTag: string; fullName: string } | null {
+    const stateAny = this.state as any;
+    if (stateAny && typeof stateAny.getProjectContext === "function") {
+      return stateAny.getProjectContext();
+    }
+    return null;
   }
 
   private setPendingPlan(pending: PendingPlan | null): void {

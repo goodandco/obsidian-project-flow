@@ -12,7 +12,7 @@ import type { PatchMarkerRequest, PatchSectionRequest } from "../core/markdown-p
 
 export type ProjectRef = string | { fullName?: string; id?: string; tag?: string };
 
-export type CreateProjectRequest = ProjectInfo;
+export type CreateProjectRequest = ProjectInfo & { year?: string };
 export type CreateProjectResult = [boolean, string];
 
 export type EntityFieldValue = string | number | boolean | null | undefined;

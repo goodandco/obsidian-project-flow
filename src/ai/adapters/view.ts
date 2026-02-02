@@ -15,6 +15,7 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
   private statusEl: HTMLDivElement | null = null;
   private conversationListEl: HTMLDivElement | null = null;
   private headerTitleEl: HTMLHeadingElement | null = null;
+  private headerProjectEl: HTMLSpanElement | null = null;
   private controller: AiChatController | null = null;
   private state: AiStateStore | null = null;
   private shellEl: HTMLDivElement | null = null;
@@ -74,6 +75,8 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     toggleBtn.onclick = () => this.toggleSidebarVisibility();
     this.sidebarToggleBtn = toggleBtn;
     this.headerTitleEl = headerLeft.createEl("h3");
+    this.headerProjectEl = headerLeft.createEl("span");
+    this.headerProjectEl.addClass("pf-ai-project-id");
     const clearBtn = header.createEl("button", { text: "Clear" });
     clearBtn.addClass("pf-ai-clear");
     clearBtn.onclick = () => {
@@ -123,6 +126,7 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     this.statusEl = null;
     this.conversationListEl = null;
     this.headerTitleEl = null;
+    this.headerProjectEl = null;
     this.controller = null;
     this.state = null;
     this.shellEl = null;
@@ -294,6 +298,14 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
       if (conversation.id === activeId) row.addClass("is-active");
       const title = row.createDiv({ text: conversation.title });
       title.addClass("pf-ai-conv-title");
+      const projectId = this.state.getConversationProjectId(conversation.id);
+      if (projectId) {
+        const badge = row.createDiv({ text: projectId });
+        badge.addClass("pf-ai-conv-project");
+        const color = this.colorForProject(projectId);
+        badge.style.borderColor = color;
+        badge.style.color = color;
+      }
       row.onclick = () => this.selectConversation(conversation.id);
       const actions = row.createDiv({ cls: "pf-ai-conv-actions" });
       const renameBtn = actions.createEl("button");
@@ -337,6 +349,16 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     if (!this.headerTitleEl || !this.state) return;
     const title = this.state.getActiveConversationTitle();
     this.headerTitleEl.setText(title ? `ProjectFlow AI — ${title}` : "ProjectFlow AI");
+    if (this.headerProjectEl) {
+      const projectId = this.state.getProjectContext()?.projectId;
+      if (projectId) {
+        this.headerProjectEl.setText(projectId);
+        this.headerProjectEl.style.display = "inline-flex";
+      } else {
+        this.headerProjectEl.setText("");
+        this.headerProjectEl.style.display = "none";
+      }
+    }
   }
 
   private renderMessage(el: HTMLDivElement, content: string): void {
@@ -420,5 +442,14 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     if (summary.messageCount === 0 && summary.title === this.emptyConversationTitle) {
       this.state.clearActiveConversation();
     }
+  }
+
+  private colorForProject(id: string): string {
+    let hash = 0;
+    for (let i = 0; i < id.length; i += 1) {
+      hash = (hash * 31 + id.charCodeAt(i)) | 0;
+    }
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue} 55% 45%)`;
   }
 }

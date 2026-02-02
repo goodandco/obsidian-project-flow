@@ -73,6 +73,7 @@ export interface ProjectInfo {
   dimension: string;
   category: string;
   projectTypeId?: string;
+  year?: string; // optional year override for full name/path
 }
 
 export interface ProjectInfoFromPrompt {

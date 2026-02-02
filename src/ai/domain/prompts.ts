@@ -1,7 +1,11 @@
 import type { ProjectFlowPlugin } from "../../plugin";
+import type { ChatProjectContext } from "./conversation";
 import { inferActiveProject } from "./context";
 
-export async function buildSystemPrompt(plugin: ProjectFlowPlugin): Promise<string> {
+export async function buildSystemPrompt(
+  plugin: ProjectFlowPlugin,
+  chatProject?: ChatProjectContext | null,
+): Promise<string> {
   const selection = getSelection(plugin);
   const activeFile = plugin.app.workspace.getActiveFile();
   let activeFileContent = "";
@@ -16,12 +20,17 @@ export async function buildSystemPrompt(plugin: ProjectFlowPlugin): Promise<stri
   const projectIndex = plugin.settings.projectIndex;
   const activeProject = inferActiveProject(plugin);
   const entityRequirements = getEntityRequirementsSummary(plugin);
+  const chatProjectNote = chatProject
+    ? `${chatProject.projectId} (${chatProject.projectTag})`
+    : "(none)";
 
   return [
     "You are ProjectFlow AI. You must use tools to perform any actions.",
     "Never edit markdown directly; use tools only.",
     "Respond with tool calls when an action is required.",
     "If required fields are missing, ask the user for them instead of calling tools.",
+    "If a chat project context is available, use it as the default projectRef and do not ask for project selection unless the user wants to change it.",
+    "When creating projects, use a separate year field if needed; do not include the year inside the name.",
     "Use camelCase fields in createEntity (e.g., fields.title, fields.description).",
     "Example tool call: createEntity { projectRef:{tag:\"my-tag\"}, entityTypeId:\"task\", fields:{ title:\"...\", description:\"...\" } }",
     "Context:",
@@ -29,14 +38,12 @@ export async function buildSystemPrompt(plugin: ProjectFlowPlugin): Promise<stri
     `Active file: ${activeFile?.path || "(none)"}`,
     `Active file content (truncated): ${activeFileContent || "(none)"}`,
     `Active project: ${activeProject ? `${activeProject.projectTag} (${activeProject.fullName})` : "(none)"}`,
+    `Chat project context: ${chatProjectNote}`,
     `Entity required fields: ${entityRequirements}`,
     `Project index snapshot: ${projectIndex ? JSON.stringify(projectIndex) : "(none)"}`,
   ].join("\n");
 }
 
-export function buildUserMessage(input: string): string {
-  return `I'm going to create a project with tag ${input}\n${input}`;
-}
 
 function getSelection(plugin: ProjectFlowPlugin): string {
   const editor = (plugin.app.workspace as any).activeEditor?.editor;

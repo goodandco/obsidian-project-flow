@@ -158,6 +158,14 @@
   transition: opacity 120ms ease;
 }
 
+.pf-ai-conv-project {
+  font-size: 0.7em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
 .pf-ai-conv-actions button {
   width: 22px;
   height: 22px;
@@ -194,6 +202,18 @@
   gap: 8px;
   flex: 1;
   min-width: 0;
+}
+
+.pf-ai-project-id {
+  display: none;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75em;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .pf-ai-header h3 {

@@ -1,6 +1,6 @@
 import type { ProjectFlowPlugin } from "../../plugin";
 import type { ChatMessage, ToolCall } from "../types/core";
-import type { ToolDefinition } from "../types/tools";
+import type { ToolDefinition, ToolExecutionResult } from "../types/tools";
 import type { ChatUi, MessageHandle } from "../types/ui";
 import type { AiStateStore } from "../domain/conversation";
 import { streamProvider } from "../providers/provider";
@@ -9,6 +9,66 @@ import { extractMissingFields } from "../domain/safety";
 import { executeToolCalls } from "./tool-executor";
 import { formatResult } from "../utils/format";
 import { delay } from "../utils/time";
+
+const PROJECT_REF_TOOLS = new Set([
+  "resolveProject",
+  "createEntity",
+  "getChildren",
+  "getParents",
+]);
+
+function applyProjectContextToToolCalls(
+  toolCalls: ToolCall[],
+  context: { projectId: string } | null,
+): void {
+  if (!context || !context.projectId) return;
+  for (const call of toolCalls) {
+    if (!PROJECT_REF_TOOLS.has(call.name)) continue;
+    const args = call.arguments as Record<string, any>;
+    if (args.projectRef) continue;
+    args.projectRef = { id: context.projectId };
+  }
+}
+
+function updateProjectContextFromResults(
+  state: AiStateStore,
+  toolCalls: ToolCall[],
+  results: ToolExecutionResult[],
+): void {
+  for (let i = 0; i < results.length; i += 1) {
+    const res = results[i];
+    if (!res.ok) continue;
+    const call = toolCalls[i];
+    if (!call) continue;
+    if (call.name === "resolveProject") {
+      const result = res.result as any;
+      if (result?.entry) {
+        const entry = result.entry;
+        state.setProjectContext({
+          projectId: entry.projectId,
+          projectTag: entry.projectTag,
+          fullName: entry.fullName,
+        });
+      }
+      continue;
+    }
+    if (PROJECT_REF_TOOLS.has(call.name)) {
+      const args = call.arguments as Record<string, any>;
+      state.setProjectContextFromRef(args.projectRef);
+      continue;
+    }
+    if (call.name === "createProject") {
+      const args = call.arguments as Record<string, any>;
+      if (args?.id && args?.tag && args?.name) {
+        state.setProjectContext({
+          projectId: String(args.id),
+          projectTag: String(args.tag),
+          fullName: String(args.name),
+        });
+      }
+    }
+  }
+}
 
 export async function runAgentLoop(options: {
   plugin: ProjectFlowPlugin;
@@ -66,10 +126,12 @@ export async function runAgentLoop(options: {
       return;
     }
 
+    applyProjectContextToToolCalls(toolCalls, options.state.getProjectContext());
     for (const call of toolCalls) {
       options.ui.appendMessage("tool", `Tool call: ${call.name} ${formatResult(call.arguments)}`);
     }
     const results = await executeToolCalls(toolCalls, options.tools);
+    updateProjectContextFromResults(options.state, toolCalls, results);
     const missingFields = extractMissingFields(results);
     for (let i = 0; i < results.length; i += 1) {
       const res = results[i];

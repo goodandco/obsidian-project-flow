@@ -1,5 +1,6 @@
 import type { ProjectFlowPlugin } from "../../plugin";
-import type { PendingPlan } from "../../interfaces";
+import type { PendingPlan, ProjectIndexEntry } from "../../interfaces";
+import type { ProjectRef } from "../../api/types";
 import type { ChatMessage, ChatRole } from "../types/core";
 
 const DATA_FILE_NAME = "ai-conversations.json";
@@ -14,6 +15,7 @@ interface AiConversationEntry {
   updatedAt: string;
   messages: ChatMessage[];
   pendingPlan?: PendingPlan | null;
+  projectContext?: ChatProjectContext | null;
 }
 
 interface AiConversationData {
@@ -28,6 +30,12 @@ export interface AiConversationSummary {
   createdAt: string;
   updatedAt: string;
   messageCount: number;
+}
+
+export interface ChatProjectContext {
+  projectId: string;
+  projectTag: string;
+  fullName: string;
 }
 
 function createConversationId(): string {
@@ -47,6 +55,20 @@ function deriveTitleFromMessage(message: string): string {
 
 function isValidRole(role: any): role is ChatRole {
   return role === "system" || role === "user" || role === "assistant" || role === "tool";
+}
+
+function normalizeProjectRef(ref: ProjectRef): { fullName?: string; id?: string; tag?: string } {
+  if (typeof ref === "string") {
+    const trimmed = ref.trim();
+    if (trimmed.startsWith("project/")) return { tag: trimmed };
+    if (trimmed.includes(".")) return { fullName: trimmed };
+    return { id: trimmed };
+  }
+  return {
+    fullName: ref.fullName?.trim(),
+    id: ref.id?.trim(),
+    tag: ref.tag?.trim(),
+  };
 }
 
 export class AiStateStore {
@@ -97,6 +119,39 @@ export class AiStateStore {
       }));
   }
 
+  getConversationProjectId(id: string): string | null {
+    const conversation = this.getActiveConversationById(id);
+    return conversation?.projectContext?.projectId || null;
+  }
+
+  getProjectContext(): ChatProjectContext | null {
+    const conversation = this.getActiveConversation();
+    return conversation?.projectContext || null;
+  }
+
+  setProjectContext(context: ChatProjectContext | null): void {
+    const conversation = this.getActiveConversation();
+    if (!conversation) return;
+    conversation.projectContext = context;
+    conversation.updatedAt = new Date().toISOString();
+    this.persistConversation();
+  }
+
+  setProjectContextFromRef(ref: ProjectRef | null | undefined): void {
+    if (!ref) return;
+    const entry = this.resolveProjectRef(ref);
+    if (!entry) return;
+    this.setProjectContext({
+      projectId: entry.projectId,
+      projectTag: entry.projectTag,
+      fullName: entry.fullName,
+    });
+  }
+
+  clearProjectContext(): void {
+    this.setProjectContext(null);
+  }
+
   createConversation(title?: string): string {
     const now = new Date().toISOString();
     const conversation: AiConversationEntry = {
@@ -106,6 +161,7 @@ export class AiStateStore {
       updatedAt: now,
       messages: [],
       pendingPlan: null,
+      projectContext: null,
     };
     this.data.conversations.push(conversation);
     this.data.activeConversationId = conversation.id;
@@ -201,6 +257,17 @@ export class AiStateStore {
     this.persistConversation();
   }
 
+  private resolveProjectRef(ref: ProjectRef): ProjectIndexEntry | null {
+    const index = this.plugin.settings.projectIndex;
+    if (!index) return null;
+    const lookup = normalizeProjectRef(ref);
+    const entry =
+      (lookup.fullName && index.byFullName[lookup.fullName]) ||
+      (lookup.id && index.byId[lookup.id]) ||
+      (lookup.tag && index.byTag[lookup.tag]);
+    return entry || null;
+  }
+
   private getActiveConversation(): AiConversationEntry | null {
     const activeId = this.data.activeConversationId;
     if (!activeId) return null;
@@ -293,6 +360,13 @@ export class AiStateStore {
           }))
         : [];
       const pendingPlan = item.pendingPlan ?? null;
+      const projectContext = item.projectContext && typeof item.projectContext === "object"
+        ? {
+          projectId: String(item.projectContext.projectId || ""),
+          projectTag: String(item.projectContext.projectTag || ""),
+          fullName: String(item.projectContext.fullName || ""),
+        }
+        : null;
       data.conversations.push({
         id,
         title,
@@ -300,6 +374,7 @@ export class AiStateStore {
         updatedAt,
         messages,
         pendingPlan,
+        projectContext,
       });
     }
     return data;

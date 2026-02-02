@@ -32,6 +32,12 @@ export function validateCreateProjectRequest(req: any): void {
   assertNonEmptyString(req?.id, "id");
   assertNonEmptyString(req?.dimension, "dimension");
   assertNonEmptyString(req?.category, "category");
+  if (req?.year != null) {
+    const year = String(req.year).trim();
+    if (!/^\d{4}$/.test(year)) {
+      throw new ApiError("invalid_request", "year must be a 4-digit string", { field: "year" });
+    }
+  }
 }
 
 export function validateCreateEntityRequest(req: any): void {

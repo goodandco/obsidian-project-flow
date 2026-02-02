@@ -8,6 +8,7 @@ import type {
 import type { CreateEntityRequest, CreateEntityResult } from "../api/types";
 import { sanitizeFileName, sanitizePath } from "../core/path-sanitizer";
 import { isPathWithinRoot, isSafeRelativePath } from "../core/path-constraints";
+import { patchMarkerInFile } from "../core/markdown-patcher";
 
 export async function createEntity(
   plugin: IProjectFlowPlugin,
@@ -89,6 +90,7 @@ export async function createEntity(
     throw new Error(`File already exists: ${filePath}`);
   }
   await fm.createIfAbsent(filePath, processed);
+  await patchFieldsIntoMarkers(plugin, filePath, normalizedFields);
 
   return { path: filePath };
 }
@@ -123,6 +125,32 @@ function normalizeFieldAliases(fields?: Record<string, any>): Record<string, any
     if (!(lower in out)) out[lower] = value;
   }
   return out;
+}
+
+async function patchFieldsIntoMarkers(
+  plugin: IProjectFlowPlugin,
+  filePath: string,
+  fields?: Record<string, any>,
+): Promise<void> {
+  if (!fields) return;
+  const entries = Object.entries(fields)
+    .filter(([key, value]) => key.toLowerCase() === key)
+    .filter(([key, value]) => key !== "title" && value != null && String(value).trim().length > 0);
+
+  for (const [key, value] of entries) {
+    const marker = `ai:${key}`;
+    const content = String(value);
+    const res = await patchMarkerInFile(plugin.app, {
+      path: filePath,
+      marker,
+      content,
+      patchMode: "strict",
+    });
+    if (!res.ok) {
+      // Ignore missing markers for fields not supported by the template
+      continue;
+    }
+  }
 }
 
 async function resolveTemplatePath(

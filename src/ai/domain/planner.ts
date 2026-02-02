@@ -12,6 +12,8 @@ const PLANNER_PROMPT = [
   "fields must include required values for createEntity/createProject when applicable (e.g., TITLE, DESCRIPTION).",
   "If you need more info, set needsFollowup=true and ask a concise question.",
   "If you have enough info, set needsFollowup=false and provide a short plan, context summary, and fields.",
+  "If a chat project context is provided, assume that project and do NOT ask the user to choose a project.",
+  "When planning createProject, do not include the year in the name; use a separate year field if needed.",
   "Do NOT call tools in this stage.",
   "Format text in `question` and `plan` keys as markdown"
 ].join("\n");
@@ -21,9 +23,13 @@ export async function runPlanningStage(options: {
   messages: ChatMessage[];
   tools: ToolDefinition[];
   allowToolCalls?: boolean;
+  chatProjectContext?: { projectId: string; projectTag: string; fullName: string } | null;
 }): Promise<PlanningResult> {
+  const chatProjectNote = options.chatProjectContext
+    ? `${options.chatProjectContext.projectId} (${options.chatProjectContext.projectTag})`
+    : "(none)";
   const planningMessages: ChatMessage[] = [
-    { role: "system", content: PLANNER_PROMPT },
+    { role: "system", content: `${PLANNER_PROMPT}\nChat project context: ${chatProjectNote}` },
     ...options.messages.filter((m) => m.role !== "tool"),
   ];
 
