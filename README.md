@@ -1,159 +1,397 @@
-# ProjectFlow (Obsidian Plugin)
+# ProjectFlow
 
-ProjectFlow helps you quickly create a well-structured project workspace inside your Obsidian vault. It asks for a few details (project name, tag, optional parent, dimension, and category), then generates a folder tree, main project notes, and a set of reusable templates. You can fully customize dimensions, their order, and categories in the plugin settings.
+ProjectFlow is a local-first project management and automation plugin for Obsidian.
 
+It helps you create structured project workspaces, manage tasks and meetings via templates, and (optionally) use AI to automate common workflows — all while keeping your vault as the single source of truth.
+
+ProjectFlow is designed as a deterministic domain engine on top of Markdown:
+projects, entities, templates, and relationships are managed through explicit APIs and contracts, not free-form AI edits.
+
+---
+
+## Key Ideas
+
+- **Local-first**: Your vault is always the system of record.
+- **Deterministic Core**: Projects and entities are created through explicit APIs and templates.
+- **Tool-only AI**: The AI agent never edits files directly. All changes go through ProjectFlow Core.
+- **User-customizable templates**: You fully control layouts and structures.
+- **Extensible**: Designed to support external tools (via MCP) and multiple LLM providers.
+
+---
 
 ## Features
-- Create a complete project structure in seconds
-- Guided prompts for project name, tag, optional parent, dimension, and category
-- Configurable Dimensions and Categories in Settings
-  - Add, rename, delete, and reorder dimensions (arrow buttons)
-  - Add, rename, and delete categories per dimension
-  - Reset to defaults with a confirmation dialog
-- Automatic variable substitution in generated notes and templates (supports `${VAR}` and legacy `$_VAR`)
-- Project-specific template folder with common meeting/sprint/task templates
-- Desktop-only (per Obsidian manifest); minimum Obsidian version 0.12.0
 
+### Core Project Management
 
-## Installation
-This plugin runs inside your Obsidian vault at:
+- Guided project creation (name, tag, ID, parent, dimension, category)
+- Configurable dimensions and categories
+- Automatic folder structure and note generation
+- Project registry with:
+  - projectIndex
+  - projectGraph (parent/child relationships)
+  - projectTypes
+  - entityTypes
+- Deterministic entity creation (tasks, meetings, sprints, ideas, etc.)
+- Project-specific template folders
+- Safe markdown patching with markers / headings / append fallback
+- Archiving with subtree support
 
-- <vault>/.obsidian/plugins/project-flow
+### Template System
 
-Manual installation:
-1. Copy or clone this repository into the folder above (folder name must be `project-flow`).
-2. Build the plugin (see Development) so `main.js`, `manifest.json`, and `styles.css` are present in the plugin folder.
-3. In Obsidian, go to Settings → Community plugins → turn on “Community plugins” (safe mode off), then enable “ProjectFlow”.
+Templates are resolved in three layers (highest priority first):
 
-Using BRAT (optional):
-- If this repository is public, you can install via the “Obsidian BRAT” plugin → Add beta plugin → paste this repo’s URL. BRAT will place it under `.obsidian/plugins/project-flow`. Then enable “ProjectFlow”.
+1. Per-project templates  
+   `Templates/<PROJECT_NAME>_Templates/`
 
+2. Vault-level templates (configurable root, default: `Templates/ProjectFlow/`)
 
-## Quick start (Usage)
-Run the command from the Command Palette:
-- “Add Project Info”
+3. Built-in plugin templates (fallback)
 
-You’ll be asked for:
-1. Project name → stored as $_PROJECT_NAME
-2. Project tag → stored as $_PROJECT_TAG
-3. Project ID (used as task prefix) → stored as $_PROJECT_ID
-4. Parent name (optional) → stored as $_PROJECT_PARENT
-5. Dimension → select from your configured list
-6. Category → select from the chosen dimension
+`entityTypes` define:
+- which template to use
+- target folder
+- filename rules
 
-After collecting inputs, ProjectFlow creates the project structure and files, filling template variables accordingly.
+Built-in templates act as reference implementations.  
+Vault and project templates may freely override or replace them.
 
+---
 
-## What gets created
-By default, projects are created under:
-- `1. Projects/<order>. <Dimension>/<Category>/<$_PROJECT_FULL_NAME>`
+## Configuration (Required)
 
-Notes:
-- `<order>. <Dimension>` reflects the custom order you set for each dimension (e.g., `1. Business`).
-- You can change the root via the `projectsRoot` setting (default: `"1. Projects"`). Currently this is not exposed in the UI; it’s stored in the plugin’s data JSON.
+Before creating projects, you must configure ProjectFlow.
 
-Within the project folder, ProjectFlow creates:
-- Knowledge Base/
-- Meetings/
-- Work/
-  - Tasks/
-- People/
-- <$_PROJECT_FULL_NAME>.md (Project)
-- <$_PROJECT_NAME> Meetings.md
-- <$_PROJECT_NAME> People.md
-- <$_PROJECT_NAME> Work.md
+Open:
 
-Template sources are expected INSIDE YOUR VAULT under `.obsidian/plugins/project-flow/src/templates/` and include base files like `project.md`, `meetings.md`, `people.md`, `work.md`. Ensure those files exist in your vault copy of the plugin during development/testing.
+Settings → Community Plugins → ProjectFlow
 
+ProjectFlow uses **Dimensions** and **Categories** to organize projects.  
+These define your folder structure and must be set up first.
 
-## Variables available in templates
-Collected from user:
-- $_PROJECT_NAME
-- $_PROJECT_TAG
-- $_PROJECT_PARENT
-- $_PARENT_TAG (only set when a parent is provided; otherwise empty)
+### Dimensions
 
-Generated automatically:
-- $_YEAR (current year)
-- $_DATE (YYYY-MM-DD)
-- $_PROJECT_FULL_NAME = `<$_YEAR><optional .$_PROJECT_PARENT>.<$_PROJECT_NAME>`
-- $_PROJECT_RELATIVE_PATH = `1. Projects/<$_DIMENSION>/<$_CATEGORY>/<$_PROJECT_FULL_NAME>`
-- $_PROJECT_PATH = same as relative path inside your vault
-- $_DIMENSION (dimension display name)
-- $_CATEGORY
-- $_PROJECT_ID (provided during setup; used to prefix task names as <ID>-N)
-- $_PROJECT_DIMENSION (alias of $_DIMENSION for legacy templates)
+Dimensions represent high-level areas of your life or work, for example:
 
-Token syntaxes supported in templates:
-- Legacy: `$_VARIABLE`
-- Modern: `${VARIABLE}`
+- Business
+- Personal
+- Family
+- Health
 
+Each dimension has:
 
-## Project-specific Templates folder
-ProjectFlow also creates a project-specific template folder:
-- `Templates/<$_PROJECT_NAME>_Templates`
-
-It populates it with files such as:
-- <$_PROJECT_NAME>_Meeting_Daily_Template.md → from template-meeting-daily.md
-- <$_PROJECT_NAME>_Meeting_Discussion_Template.md → from template-meeting-discussion.md
-- <$_PROJECT_NAME>_Meeting_Knowledge_Template.md → from template-meeting-knowledge.md
-- <$_PROJECT_NAME>_Meeting_Planning_Template.md → from template-meeting-planning.md
-- <$_PROJECT_NAME>_Meeting_Refinement_Template.md → from template-meeting-refinement.md
-- <$_PROJECT_NAME>_Meeting_Retro_Template.md → from template-meeting-retro.md
-- <$_PROJECT_NAME>_Meeting_Demo_Template.md → from template-meeting-demo.md
-- <$_PROJECT_NAME>_Sprint_Template.md → from template-sprint.md
-- <$_PROJECT_NAME>_Task_Template.md → from template-task.md
-- <$_PROJECT_NAME>_Idea_Template.md → from template-idea.md
-
-Each of those uses the same variable substitution described above.
-
-
-## Settings
-Open: Settings → Community plugins → ProjectFlow
+- a name
+- an order (used to prefix folders, e.g. `1. Business`)
+- a list of categories
 
 You can:
-- Manage Dimensions and Categories (add, rename, delete)
-- Reorder dimensions with arrow buttons (affects folder names like `1. Business`)
-- Reset to defaults using the rotate-arrow icon with confirmation
-- Configure the projects root folder via the hidden setting `projectsRoot` (default: "1. Projects")
 
-Styling comes from styles.css in the plugin root; Obsidian auto-loads it.
+- add, rename, and delete dimensions
+- reorder dimensions (affects folder names)
+- reset to defaults
 
+---
 
-## Development
-Prerequisites: Node.js 16+ and npm.
+### Categories
 
-Scripts:
-- npm run dev → watch-mode build with esbuild (inline sourcemaps)
-- npm run build → type-check (tsc, no emit) + production bundle with esbuild
-- npm run deploy → prompts for your vault path, builds, and copies main.js, manifest.json, styles.css (and src/templates if present) into <vault>/.obsidian/plugins/project-flow
-- npm run test → run unit tests for pure helpers (vitest)
-- npm run test:build → run a simple build verification script
+Each dimension contains one or more categories, for example:
 
-Tooling:
-- Entry: main.ts; output bundle: main.js (CJS, ES2018)
-- Externals: obsidian, electron, CodeMirror, Node builtins
-- Banner injected into main.js: "THIS IS A GENERATED/BUNDLED FILE BY ESBUILD"
+Business:
+- R&D
+- Jobs
+- OpenSource
 
-To try in Obsidian:
-1. npm run build
-2. Ensure `main.js`, `manifest.json`, and `styles.css` are under `<vault>/.obsidian/plugins/project-flow/`
-3. Toggle the plugin off/on or use View → Force reload
+Personal:
+- Writing
+- Reading
+- Sports
 
-Testing (optional):
-- Build verification: `npm run test:build` (checks banner and main.js size)
-- Unit tests for pure modules (no Obsidian imports): `npm run test`
+Categories define the second level of the project path.
 
-Compatibility:
-- isDesktopOnly: true; minAppVersion: 0.12.0 (see manifest.json)
+---
 
+### Projects Root
 
-## Troubleshooting
-- “Template file not found”: The plugin reads from `.obsidian/plugins/project-flow/src/templates/` inside your vault. Make sure the templates folder and files exist there.
-- “Selected dimension has no categories”: Add categories in Settings for that dimension before running the command.
-- Styles not applied: Verify `styles.css` exists in the plugin root.
-- Command not found: Ensure the plugin is enabled and you’re on Desktop (this plugin is desktop-only).
+All projects are created under the configured root folder
+(default: `1. Projects`).
 
+This can be changed in settings.
+
+---
+
+### Templates Root
+
+Vault-level templates are resolved from the configured templates root
+(default: `Templates/ProjectFlow/`).
+
+Project-specific templates are always created under:
+
+`Templates/<PROJECT_NAME>_Templates/`
+
+These override vault and built-in templates.
+
+---
+
+### AI Settings (Optional)
+
+If you enable the AI module, additional settings appear:
+
+- Enable AI (on/off)
+- Provider (OpenAI / Anthropic / compatible local endpoint)
+- API key
+- Model
+- Base URL (for OpenAI-compatible providers such as Ollama)
+
+When AI is disabled:
+
+- the chat panel is hidden
+- no LLM clients are initialized
+- ProjectFlow behaves as a pure project management plugin
+
+---
+
+### Important
+
+Dimensions and categories must be configured before creating projects.
+
+They determine:
+
+- folder structure
+- project paths
+- how entities are organized
+
+ProjectFlow does not assume defaults beyond the initial setup.
+
+---
+
+## AI Module (Optional)
+
+ProjectFlow includes an optional AI module with a chat-first interface.
+
+When enabled, a right-panel chat allows you to use natural language to:
+
+- resolve projects
+- create entities (tasks, meetings, notes, etc.)
+- patch notes
+- run simple workflows
+
+### Supported Providers
+
+- OpenAI (initial)
+- Anthropic (planned)
+- OpenAI-compatible local endpoints (e.g. Ollama)
+
+Provider, model, API key, and base URL are configurable in settings.
+
+---
+
+## AI & Automation Model
+
+ProjectFlow uses a **tool-only agent architecture**.
+
+The AI agent:
+
+- cannot access the filesystem directly
+- cannot write markdown files
+- cannot modify templates
+- does not know vault paths
+
+Instead, the agent may only call registered tools such as:
+
+- resolveProject
+- createProject
+- createEntity
+- patchMarker / patchSection
+- relationship helpers
+
+All filesystem operations are performed exclusively by ProjectFlow Core.
+
+In other words:
+
+```
+LLM → Tool Calls → ProjectFlow Core → Vault
+```
+
+This ensures:
+
+- deterministic behavior
+- vault safety
+- clear audit boundaries
+- future enterprise compatibility
+
+---
+
+## AI Markers (Template Automation Contract)
+
+Built-in templates define automation-safe zones using HTML comments such as:
+
+```md
+<!-- AI:CONTENT -->
+<!-- AI:NOTES -->
+<!-- AI:ACTIONS -->
+<!-- AI:AGENDA -->
+<!-- AI:SUMMARY -->
+```
+
+These markers indicate where automation is allowed to write.
+
+User and project templates:
+
+- are NOT required to include markers
+- may rename or remove them freely
+
+Core patching behavior:
+
+1. Prefer AI markers if present
+2. Fall back to heading-based patching
+3. Fall back to appending content (lenient mode)
+4. Fail explicitly in strict mode
+
+Markers are part of the core automation contract, but never mandatory for customization.
+
+---
+
+## Getting Started
+
+### Installation
+
+(Currently via development build / manual install.)
+
+1. Clone or download the repository.
+2. Place it into your vault:
+
+```
+.obsidian/plugins/projectflow/
+```
+
+3. Enable ProjectFlow in Obsidian Community Plugins.
+4. Open ProjectFlow settings to configure:
+   - Dimensions & categories
+   - Templates root
+   - (Optional) AI provider settings
+
+---
+
+### Creating a Project
+
+Run from the Command Palette:
+
+- **ProjectFlow: Add Project Info**
+
+You’ll be prompted for:
+
+1. Project name
+2. Project tag
+3. Project ID
+4. Optional parent
+5. Dimension
+6. Category
+
+ProjectFlow will:
+
+- create the folder structure
+- generate initial notes
+- copy project templates
+- register the project in its internal index
+
+---
+
+### Using AI (if enabled)
+
+Enable AI in ProjectFlow settings.
+
+Open the ProjectFlow AI panel and type, for example:
+
+- add this to problog
+- create a task from this note
+- summarize this meeting and add action items
+
+The agent will translate your request into structured tool calls executed by ProjectFlow Core.
+
+---
+
+## Roadmap (High Level)
+
+Phase 1:
+- Chat UI
+- OpenAI integration
+- Core tools
+- Basic AgentPlan execution
+- Simple flows
+
+Phase 2:
+- Anthropic / Ollama support
+- Improved context handling
+- Multi-step agent loops
+
+Phase 3:
+- MCP integrations
+- Advanced workflows
+- Collaboration-oriented features
+
+---
 
 ## License
-ISC
+
+ProjectFlow is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+
+This means:
+
+- You are free to use, modify, and self-host ProjectFlow.
+- If you deploy ProjectFlow (or a modified version) as a network service,
+  you must make the source code of your modifications available.
+
+Commercial licenses will be available for organizations that require
+non-AGPL usage (e.g. closed-source deployments, enterprise support).
+
+See LICENSE for details.
+
+---
+
+## Contributing
+
+Contributions are welcome.
+
+By submitting a pull request or other contribution, you agree that your
+contributions will be licensed under AGPL-3.0.
+
+Please keep changes focused and document new features.
+
+See CONTRIBUTING.md for details.
+
+---
+
+## Security
+
+If you discover a security issue, please report it privately.
+
+Do not open public issues for vulnerabilities.
+
+(Contact information will be provided.)
+
+---
+
+## Trademark
+
+“ProjectFlow” is a trademark of Oleksandr Hudenko.
+
+You may use the name to refer to the open-source project,
+but not to market derived products or services without permission.
+
+---
+
+## Philosophy
+
+ProjectFlow treats Markdown as a real project system, not just notes.
+
+AI is a helper — not an editor of record.
+
+The goal is to combine:
+
+- human control
+- deterministic structure
+- automation
+- extensibility
+
+without giving up ownership of your data.
+
+---
