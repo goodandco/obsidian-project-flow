@@ -11,8 +11,8 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
     const variables = generateProjectVariables(projectInfo, plugin.settings);
     const projectsDir = plugin.settings.projectsRoot || "1. Projects";
 
-    const {sanitizePath, sanitizeFileName} = await import("../core/path-sanitizer");
-    const {SafeFileManager} = await import("./file-manager");
+    const { sanitizePath, sanitizeFileName } = await import("../core/path-sanitizer");
+    const { SafeFileManager } = await import("./file-manager");
     const fm = new SafeFileManager(plugin.app);
 
     // Build sanitized paths
@@ -37,7 +37,7 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
       "People",
     ];
     const folderOps = [
-      {type: "folder" as const, path: safeProjectDir},
+      { type: "folder" as const, path: safeProjectDir },
       ...subdirs.map((s) => ({
         type: "folder" as const,
         path: sanitizePath(`${safeProjectDir}/${s}`),
@@ -56,9 +56,9 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
         fileName: `${projectInfo.name} Meetings.md`,
         template: "meetings.md",
       },
-      {fileName: `${projectInfo.name} People.md`, template: "people.md"},
-      {fileName: `${projectInfo.name} Work.md`, template: "work.md"},
-      {fileName: `${projectInfo.name} Knowledge Base.md`, template: "knowledge-base.md"},
+      { fileName: `${projectInfo.name} People.md`, template: "people.md" },
+      { fileName: `${projectInfo.name} Work.md`, template: "work.md" },
+      { fileName: `${projectInfo.name} Knowledge Base.md`, template: "knowledge-base.md" },
     ];
 
     const fileOps = [] as Array<{ type: "file"; path: string; data: string }>;
@@ -75,10 +75,17 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
         templateContent,
         variables,
       );
+      // Support nested paths like "Overview/Goals.md" by only sanitizing the
+      // filename segment; the directory segment must already exist (via folderStructure).
+      const lastSlash = resolvedFileName.lastIndexOf('/');
+      const dirSegment = lastSlash >= 0 ? resolvedFileName.substring(0, lastSlash) : '';
+      const fileSegment = lastSlash >= 0 ? resolvedFileName.substring(lastSlash + 1) : resolvedFileName;
       const safeFilePath = sanitizePath(
-        `${safeProjectDir}/${sanitizeFileName(resolvedFileName)}`,
+        dirSegment
+          ? `${safeProjectDir}/${dirSegment}/${sanitizeFileName(fileSegment)}`
+          : `${safeProjectDir}/${sanitizeFileName(fileSegment)}`,
       );
-      fileOps.push({type: "file", path: safeFilePath, data: processed});
+      fileOps.push({ type: "file", path: safeFilePath, data: processed });
     }
 
     // Batch create folders and files with rollback on file errors
@@ -90,7 +97,7 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
     }
 
     // Create template folder and its files using helper (non-critical)
-    await createProjectTemplates(plugin, projectInfo.name, variables);
+    await createProjectTemplates(plugin, projectInfo.name, variables, projectType);
 
     // Record project creation in plugin data
     await recordProjectCreation(plugin, projectInfo, variables);
@@ -215,7 +222,7 @@ async function createProjectFile(
     );
 
     const filePath = `${projectDir}/${fileName}`;
-    const {SafeFileManager} = await import("./file-manager");
+    const { SafeFileManager } = await import("./file-manager");
     const fm = new SafeFileManager(plugin.app);
     await fm.createIfAbsent(filePath, processedContent);
   } catch (error) {
@@ -228,15 +235,16 @@ async function createProjectTemplates(
   plugin: IProjectFlowPlugin,
   projectName: string,
   variables: ProjectVariables,
+  projectType?: any, // Use any to avoid circular deps or define interface here
 ) {
-  const {sanitizePath, sanitizeFileName} = await import("../core/path-sanitizer");
-  const {SafeFileManager} = await import("./file-manager");
+  const { sanitizePath, sanitizeFileName } = await import("../core/path-sanitizer");
+  const { SafeFileManager } = await import("./file-manager");
   const fm = new SafeFileManager(plugin.app);
-  
+
   const templateDir = sanitizePath(`Templates/${projectName}_Templates`);
   await fm.ensureFolder(templateDir);
 
-  const templateMappings = [
+  const templateMappings = projectType?.projectTemplates ?? [
     { source: "template-meeting-daily.md", target: `${projectName}_Meeting_Daily_Template.md` },
     { source: "template-meeting-discussion.md", target: `${projectName}_Meeting_Discussion_Template.md` },
     { source: "template-meeting-knowledge.md", target: `${projectName}_Meeting_Knowledge_Template.md` },
@@ -252,7 +260,8 @@ async function createProjectTemplates(
 
   for (const mapping of templateMappings) {
     try {
-      const safeTarget = sanitizeFileName(mapping.target);
+      const resolvedTarget = await processTemplate(mapping.target, variables);
+      const safeTarget = sanitizeFileName(resolvedTarget);
       await createProjectFile(
         plugin,
         templateDir,

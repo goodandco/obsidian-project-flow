@@ -7,9 +7,11 @@ import { validateCreateEntityRequest } from "../validators";
 export function createEntityHandlers(plugin: IProjectFlowPlugin) {
   return {
     listEntityTypes: (): EntityTypesRegistry => {
+      // Returns flat list of all available entity types across all project types
       return mergeEntityTypes(plugin.settings.entityTypes);
     },
     describeEntityType: (id: string): EntityType | null => {
+      // Checks across all project types
       const types = mergeEntityTypes(plugin.settings.entityTypes);
       return types[id] || null;
     },

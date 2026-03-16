@@ -1,5 +1,5 @@
 import type { ProjectFlowPlugin } from "../../plugin";
-import type { PendingPlan } from "../../interfaces";
+import type { AISettings, PendingPlan } from "../../interfaces";
 import type { ChatMessage } from "../types/core";
 import type { ChatUi } from "../types/ui";
 import { createToolRegistry, loadMcpToolRegistry } from "../adapters/registry";
@@ -11,6 +11,23 @@ import { findProjectMatches } from "../domain/context";
 import type { AiStateStore } from "../domain/conversation";
 import { classifyIntent } from "../domain/intent";
 import { streamProvider } from "../providers/provider";
+
+function buildPlanDisplayMessage(
+  plan: string | undefined,
+  _context: string | undefined,
+  fields: Record<string, unknown> | undefined,
+): string {
+  const parts: string[] = [];
+  if (plan) parts.push(plan);
+  const filledFields = fields
+    ? Object.entries(fields).filter(([, v]) => v != null && v !== "" && typeof v !== "object")
+    : [];
+  if (filledFields.length > 0) {
+    const rows = filledFields.map(([k, v]) => `- **${k}:** ${String(v)}`).join("\n");
+    parts.push(rows);
+  }
+  return parts.length > 0 ? parts.join("\n\n") : "Ready to proceed.";
+}
 
 const CHAT_PROMPT = [
   "You are a helpful Obsidian assistant.",
@@ -43,13 +60,13 @@ export class AiChatController {
 
     this.ui.appendMessage("user", input);
 
-    const aiSettings = this.plugin.settings.ai;
+    const aiSettings = await this.resolveAiSettings();
     if (!aiSettings?.enabled) {
       this.ui.appendMessage("assistant", "AI module is disabled in settings.");
       return;
     }
 
-    if (!aiSettings.apiKey && aiSettings.provider !== "ollama") {
+    if (aiSettings.provider !== "ollama" && !aiSettings.apiKey) {
       await this.handleTagLookup(input);
       return;
     }
@@ -76,7 +93,7 @@ export class AiChatController {
     if (!input) return;
     this.state.appendMessage({ role: "user", content: input });
 
-    const tools = createToolRegistry(this.plugin);
+    const tools = createToolRegistry(this.plugin, this.ui, this.state);
     const mcpTools = await loadMcpToolRegistry(this.plugin);
     const allTools = [...tools, ...mcpTools];
 
@@ -149,7 +166,7 @@ export class AiChatController {
       plugin: this.plugin,
       messages,
       tools: safeTools,
-      allowToolCalls: false,
+      allowToolCalls: true,
       chatProjectContext: this.getChatProjectContext(),
     });
     if (planResult.needsFollowup && planResult.question) {
@@ -169,16 +186,9 @@ export class AiChatController {
     pending.fields = planResult.fields;
     pending.status = "awaiting_confirmation";
     this.setPendingPlan(pending);
-    const planContext = planResult.plan ? `Planned steps: ${planResult.plan}` : "";
-    const plannerNote = planResult.context ? `Planner context: ${planResult.context}` : "";
-    const fieldsNote = planResult.fields && Object.keys(planResult.fields).length > 0
-      ? `Fields: \n \`\`\`json \n${JSON.stringify(planResult.fields)}\n \`\`\``
-      : "";
-    const planMessage = [planContext, plannerNote, fieldsNote].filter(Boolean).join("\n");
-    if (planMessage) {
-      this.ui.appendMessage("assistant", planMessage);
-      this.state.appendMessage({ role: "assistant", content: planMessage });
-    }
+    const planMessage = buildPlanDisplayMessage(planResult.plan, planResult.context, planResult.fields);
+    this.ui.appendMessage("assistant", planMessage);
+    this.state.appendMessage({ role: "assistant", content: planMessage });
     this.ui.appendConfirmationActions();
     const confirmMsg = "Please confirm to proceed with these actions.";
     this.ui.appendMessage("assistant", confirmMsg);
@@ -252,7 +262,11 @@ export class AiChatController {
     const history = this.state.getConversationWindow().filter((m) => m.role !== "tool");
     this.state.appendMessage({ role: "user", content: input });
 
-    const aiSettings = this.plugin.settings.ai!;
+    const aiSettings = await this.resolveAiSettings();
+    if (!aiSettings) {
+      this.ui.appendMessage("assistant", "AI settings are missing.");
+      return;
+    }
     const intentResult = await classifyIntent(input, aiSettings);
     if (intentResult.intent === "action") {
       await this.handleActionRequest(input, history);
@@ -277,9 +291,11 @@ export class AiChatController {
       ...history,
       { role: "user", content: input },
     ];
+    const aiSettings = await this.resolveAiSettings();
+    if (!aiSettings) throw new Error("AI settings are missing.");
     const assistantEl = this.ui.appendMessage("assistant", "");
     let content = "";
-    for await (const evt of streamProvider(this.plugin.settings.ai!, messages, [])) {
+    for await (const evt of streamProvider(aiSettings, messages, [])) {
       if (evt.type === "content" && evt.delta) {
         content += evt.delta;
         this.ui.updateMessage(assistantEl, content);
@@ -293,7 +309,7 @@ export class AiChatController {
   }
 
   private async handleActionRequest(input: string, history: ChatMessage[]): Promise<void> {
-    const tools = createToolRegistry(this.plugin);
+    const tools = createToolRegistry(this.plugin, this.ui, this.state);
     const mcpTools = await loadMcpToolRegistry(this.plugin);
     const allTools = [...tools, ...mcpTools];
     const safeTools = filterSafeTools(allTools);
@@ -317,7 +333,7 @@ export class AiChatController {
       plugin: this.plugin,
       messages,
       tools: safeTools,
-      allowToolCalls: false,
+      allowToolCalls: true,
       chatProjectContext: this.getChatProjectContext(),
     });
     if (planResult.needsFollowup && planResult.question) {
@@ -336,16 +352,9 @@ export class AiChatController {
       return;
     }
 
-    const planContext = planResult.plan ? `Planned steps: ${planResult.plan}` : "";
-    const plannerNote = planResult.context ? `Planner context: ${planResult.context}` : "";
-    const fieldsNote = planResult.fields && Object.keys(planResult.fields).length > 0
-      ? `Fields: ${JSON.stringify(planResult.fields)}`
-      : "";
-    const planMessage = [planContext, plannerNote, fieldsNote].filter(Boolean).join("\n");
-    if (planMessage) {
-      this.ui.appendMessage("assistant", planMessage);
-      this.state.appendMessage({ role: "assistant", content: planMessage });
-    }
+    const planMessage = buildPlanDisplayMessage(planResult.plan, planResult.context, planResult.fields);
+    this.ui.appendMessage("assistant", planMessage);
+    this.state.appendMessage({ role: "assistant", content: planMessage });
     this.setPendingPlan({
       originalInput: input,
       plan: planResult.plan,
@@ -405,6 +414,14 @@ export class AiChatController {
       return stateAny.getProjectContext();
     }
     return null;
+  }
+
+  private async resolveAiSettings(): Promise<AISettings | null> {
+    const pluginAny = this.plugin as any;
+    if (typeof pluginAny.getResolvedAiSettings === "function") {
+      return (await pluginAny.getResolvedAiSettings()) as AISettings | null;
+    }
+    return (pluginAny.settings?.ai ?? null) as AISettings | null;
   }
 
   private setPendingPlan(pending: PendingPlan | null): void {

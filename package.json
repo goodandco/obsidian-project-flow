@@ -9,6 +9,9 @@
     "deploy:to": "node scripts/deploy.mjs",
     "test:build": "node scripts/build.test.mjs",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
     "lint": "eslint . --ext .ts,.tsx,.js",
     "lint:fix": "eslint . --ext .ts,.tsx,.js --fix"
   },
@@ -17,15 +20,18 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
+    "@playwright/test": "^1.58.2",
     "@types/node": "^16.11.6",
     "@typescript-eslint/eslint-plugin": "5.29.0",
     "@typescript-eslint/parser": "5.29.0",
+    "axe-core": "^4.11.1",
     "builtin-modules": "3.3.0",
-    "esbuild": "0.17.3",
+    "esbuild": "^0.27.3",
     "eslint": "^8.57.1",
     "obsidian": "latest",
     "tslib": "2.4.0",
     "typescript": "4.7.4",
-    "vitest": "^0.34.6"
+    "vitest": "^4.0.18"
   }
 }

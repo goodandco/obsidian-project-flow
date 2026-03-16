@@ -16,7 +16,7 @@ export interface ProjectFlowSettings {
   schemaVersion?: number; // lightweight settings schema version
   projectIndex?: ProjectIndex;
   projectGraph?: ProjectGraph;
-  entityTypes?: EntityTypesRegistry;
+  entityTypes?: Record<string, EntityTypesRegistry>;
   projectTypes?: ProjectTypesRegistry;
   ai?: AISettings;
   // Nested map: dimension -> category -> projectId -> ProjectRecord
@@ -29,7 +29,8 @@ export type AIProvider = "openai" | "anthropic" | "ollama";
 export interface AISettings {
   enabled: boolean;
   provider: AIProvider;
-  apiKey?: string;
+  apiKeySecretName?: string;
+  apiKey?: string; // resolved at runtime from SecretStorage/env; never persisted
   model?: string;
   baseUrl?: string;
   strictExecution?: boolean;
@@ -44,7 +45,8 @@ export interface AISettings {
 export interface MCPServerConfig {
   name: string;
   url: string;
-  apiKey?: string;
+  apiKeySecretName?: string;
+  apiKey?: string; // resolved at runtime from SecretStorage; never persisted
 }
 
 export interface AIToolLogEntry {
@@ -114,8 +116,17 @@ export interface EntityType {
   targetFolder: string;
   filenameRule: string;
   requiredFields?: string[];
+  /**
+   * Default values for fields not supplied by the user.
+   * Supports computed expressions:
+   *   "today"     → current date as dd/mm/yyyy
+   *   "today+Nd"  → current date + N days as dd/mm/yyyy  (e.g. "today+14d")
+   * All other strings are used verbatim.
+   */
+  fieldDefaults?: Record<string, string>;
   defaultTags?: string[];
   patchMarkers?: string[];
+  childFolders?: string[];
 }
 
 export type EntityTypesRegistry = Record<string, EntityType>;
@@ -126,6 +137,7 @@ export interface ProjectType {
   description?: string;
   folderStructure?: string[];
   initialNotes?: Array<{ fileName: string; template: string }>;
+  projectTemplates?: Array<{ source: string; target: string }>;
   allowedEntityTypes?: string[];
 }
 

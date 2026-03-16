@@ -8,4 +8,6 @@ export interface ChatUi {
   appendConfirmationActions(): void;
   clearMessages(): void;
   setBusy(busy: boolean): void;
+  openToolGroup(): void;
+  closeToolGroup(label: string): void;
 }

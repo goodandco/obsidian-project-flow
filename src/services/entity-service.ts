@@ -24,7 +24,7 @@ export async function createEntity(
     throw new Error("Project not found for reference.");
   }
 
-  const entityTypes = mergeEntityTypes(plugin.settings.entityTypes);
+  const entityTypes = mergeEntityTypes(plugin.settings.entityTypes, resolved.record.info.projectTypeId);
   const entityType = entityTypes[req.entityTypeId];
   if (!entityType) {
     throw new Error(`Entity type not found: ${req.entityTypeId}`);
@@ -35,6 +35,7 @@ export async function createEntity(
 
   const variables = {
     ...(resolved.record.variables as any),
+    ...resolveFieldDefaults(entityType),
     ...(normalizedFields || {}),
   };
 
@@ -52,7 +53,9 @@ export async function createEntity(
   const templateContent = await adapter.read(resolvedTemplate.path);
   const processed = processTemplate(templateContent, variables);
 
-  const relativeTarget = processTemplate(entityType.targetFolder, variables);
+  let relativeTarget = processTemplate(entityType.targetFolder, variables);
+  // Normalize: strip leading slashes (from empty ${parentFolder}) and collapse double slashes
+  relativeTarget = relativeTarget.replace(/^\/+/, '').replace(/\/\/+/g, '/');
   if (!isSafeRelativePath(relativeTarget)) {
     throw new Error("Unsafe targetFolder path.");
   }
@@ -90,6 +93,18 @@ export async function createEntity(
     throw new Error(`File already exists: ${filePath}`);
   }
   await fm.createIfAbsent(filePath, processed);
+
+  // Create child folders if defined on entity type (e.g., module creates Lessons/, Notes/, etc.)
+  if (entityType.childFolders?.length) {
+    for (const child of entityType.childFolders) {
+      if (!isSafeRelativePath(child)) continue;
+      const childPath = sanitizePath(`${folderPath}/${child}`);
+      if (isPathWithinRoot(childPath, projectPath)) {
+        await fm.ensureFolder(childPath);
+      }
+    }
+  }
+
   await patchFieldsIntoMarkers(plugin, filePath, normalizedFields);
 
   return { path: filePath };
@@ -175,8 +190,8 @@ async function resolveTemplatePath(
 
   const preferredScopes: TemplateScope[] = entityType.templateScope
     ? ([entityType.templateScope, "builtin"] as TemplateScope[]).filter(
-        (v, i, arr) => arr.indexOf(v) === i,
-      )
+      (v, i, arr) => arr.indexOf(v) === i,
+    )
     : (["project", "vault", "builtin"] as TemplateScope[]);
 
   for (const candidate of tryScopes(preferredScopes)) {
@@ -185,4 +200,37 @@ async function resolveTemplatePath(
     }
   }
   return null;
+}
+
+/**
+ * Resolve fieldDefaults for an entity type into concrete values.
+ * Computed expressions:
+ *   "today"     → dd/mm/yyyy of the current date
+ *   "today+Nd"  → dd/mm/yyyy of today + N days
+ */
+function resolveFieldDefaults(entityType: EntityType): Record<string, string> {
+  if (!entityType.fieldDefaults) return {};
+  const now = new Date();
+  const fmt = (d: Date) => {
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  };
+  const result: Record<string, string> = {};
+  for (const [field, expr] of Object.entries(entityType.fieldDefaults)) {
+    if (expr === "today") {
+      result[field] = fmt(now);
+    } else {
+      const plusDays = expr.match(/^today\+(\d+)d$/);
+      if (plusDays) {
+        const d = new Date(now);
+        d.setDate(d.getDate() + parseInt(plusDays[1], 10));
+        result[field] = fmt(d);
+      } else {
+        result[field] = expr;
+      }
+    }
+  }
+  return result;
 }

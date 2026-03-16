@@ -5,6 +5,7 @@ import type { PlanningResult } from "../types/planning";
 import { streamProvider } from "../providers/provider";
 import { buildToolCallsFromDeltas, finalizeToolCalls } from "./tool-calls";
 import { executeToolCalls } from "../handlers/tool-executor";
+import { getEntityRequirementsSummary } from "./prompts";
 
 const PLANNER_PROMPT = [
   "You are a planner for ProjectFlow AI.",
@@ -14,7 +15,12 @@ const PLANNER_PROMPT = [
   "If you have enough info, set needsFollowup=false and provide a short plan, context summary, and fields.",
   "If a chat project context is provided, assume that project and do NOT ask the user to choose a project.",
   "When planning createProject, do not include the year in the name; use a separate year field if needed.",
-  "Do NOT call tools in this stage.",
+  "MANDATORY RULE — createProject: dimension and category MUST be explicitly chosen by the user.",
+  "  Step 1: Call the listDimensions tool to retrieve all available dimensions and their categories.",
+  "  Step 2: Set needsFollowup=true. In the question, list the available dimensions/categories and ask the user to choose.",
+  "  Step 3: NEVER put dimension or category in the fields object during planning — leave them out entirely.",
+  "  Step 4: Only set needsFollowup=false after the user has explicitly stated their dimension and category choice.",
+  "  This rule applies even if you think you can infer the values from context. Always ask.",
   "Format text in `question` and `plan` keys as markdown"
 ].join("\n");
 
@@ -28,9 +34,22 @@ export async function runPlanningStage(options: {
   const chatProjectNote = options.chatProjectContext
     ? `${options.chatProjectContext.projectId} (${options.chatProjectContext.projectTag})`
     : "(none)";
+  const entityRequirements = getEntityRequirementsSummary(options.plugin);
   const planningMessages: ChatMessage[] = [
-    { role: "system", content: `${PLANNER_PROMPT}\nChat project context: ${chatProjectNote}` },
-    ...options.messages.filter((m) => m.role !== "tool"),
+    {
+      role: "system",
+      content: [
+        PLANNER_PROMPT,
+        `Chat project context: ${chatProjectNote}`,
+        `Entity required fields (by project type → entity type): ${entityRequirements}`,
+        "When the user's request involves creating an entity, check the required fields above.",
+        "If any required field is missing from what the user provided, set needsFollowup=true and ask for it.",
+        "EXCEPTION — never ask the user for these fields; they are resolved automatically by the agent using tools: parentFolder.",
+      ].join("\n"),
+    },
+    // Strip the main system prompt — the planner only needs the conversation turns,
+    // not the full project index (which would let it infer dimension/category silently).
+    ...options.messages.filter((m) => m.role !== "tool" && m.role !== "system"),
   ];
 
   const content = await runPlannerLoop({
@@ -57,13 +76,17 @@ async function runPlannerLoop(options: {
   tools: ToolDefinition[];
   allowToolCalls: boolean;
 }): Promise<string> {
+  const aiSettings = await options.plugin.getResolvedAiSettings();
+  if (!aiSettings) {
+    throw new Error("AI settings are missing");
+  }
   let content = "";
   const maxSteps = 6;
   const toolDefs = options.allowToolCalls ? options.tools : [];
   for (let step = 0; step < maxSteps; step += 1) {
     const toolCallsAccumulator = new Map<number, ToolCall>();
     content = "";
-    for await (const evt of streamProvider(options.plugin.settings.ai!, options.messages, toolDefs)) {
+    for await (const evt of streamProvider(aiSettings, options.messages, toolDefs)) {
       if (evt.type === "content" && evt.delta) {
         content += evt.delta;
       }

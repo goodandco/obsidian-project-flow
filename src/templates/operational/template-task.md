@@ -13,28 +13,6 @@ Sprint:
 TaskType: 
 StoryPoints: 
 ---
-<%*
-const projectId = "$_PROJECT_ID".split('/').join('-');
-const targetDir = "$_PROJECT_PATH/Work/Tasks";
-let next = 1;
-try {
-  const listing = await app.vault.adapter.list(targetDir);
-  const files = (listing && listing.files) ? listing.files : [];
-  const nums = files
-    .map(f => f.split('/').pop())
-    .filter(name => name && name.startsWith(projectId + '-'))
-    .map(name => parseInt(name.substring(projectId.length + 1)))
-    .filter(n => !isNaN(n));
-  next = nums.length ? Math.max(...nums) + 1 : 1;
-} catch (e) {
-  console.warn('Could not list tasks folder, defaulting to 1', e);
-}
-const baseTitle = tp.file.title.startsWith(projectId + "-")
-  ? tp.file.title.slice(projectId.length + 1).trim()
-  : tp.file.title;
-const newName = `${projectId}-${next} ${baseTitle}`;
-await tp.file.move(`${targetDir}/${newName}`);
-%>
 
 ## Description
 <!-- ai:description -->

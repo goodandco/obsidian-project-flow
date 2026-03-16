@@ -8,6 +8,7 @@ export function filterSafeTools(tools: ToolDefinition[]): ToolDefinition[] {
     "describeEntityType",
     "listProjectTypes",
     "describeProjectType",
+    "listDimensions",
     "getChildren",
     "getParents",
   ]);

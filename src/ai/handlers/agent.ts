@@ -77,29 +77,47 @@ export async function runAgentLoop(options: {
   messages: ChatMessage[];
   tools: ToolDefinition[];
   maxSteps?: number;
+  showAssistant?: boolean;
 }): Promise<void> {
+  const aiSettings = await options.plugin.getResolvedAiSettings();
+  if (!aiSettings) {
+    throw new Error("AI settings are missing");
+  }
+  const showAssistant = options.showAssistant !== false;
   const maxSteps = options.maxSteps ?? 6;
   for (let step = 0; step < maxSteps; step += 1) {
-    const assistantEl = options.ui.appendMessage("assistant", "");
+    let assistantEl: MessageHandle = null;
     const toolUsageEls = new Map<string, MessageHandle>();
     const toolCallsAccumulator = new Map<number, ToolCall>();
     const strict = Boolean(options.plugin.settings.ai?.strictExecution);
     const maxRetries = 2;
     let attempt = 0;
+    let toolGroupOpened = false;
+    let assistantContent = "";
 
     /* eslint-disable no-constant-condition */
     while (true) {
       try {
-        for await (const evt of streamProvider(options.plugin.settings.ai!, options.messages, options.tools)) {
+        for await (const evt of streamProvider(aiSettings, options.messages, options.tools)) {
           if (evt.type === "content" && evt.delta) {
-            const current = assistantEl?.textContent || "";
-            options.ui.updateMessage(assistantEl, current + evt.delta);
+            assistantContent += evt.delta;
+            if (showAssistant) {
+              if (!assistantEl) {
+                assistantEl = options.ui.appendMessage("assistant", assistantContent);
+              } else {
+                options.ui.updateMessage(assistantEl, assistantContent);
+              }
+            }
           }
           if (evt.type === "tool_call_delta" && evt.toolCalls) {
             buildToolCallsFromDeltas(evt.toolCalls, toolCallsAccumulator);
             for (const delta of evt.toolCalls) {
               if (!delta.name) continue;
               if (!toolUsageEls.has(delta.name)) {
+                if (!toolGroupOpened) {
+                  options.ui.openToolGroup();
+                  toolGroupOpened = true;
+                }
                 const el = options.ui.appendMessage("tool", `Using tool: ${delta.name}`);
                 if (el) toolUsageEls.set(delta.name, el);
               }
@@ -118,9 +136,10 @@ export async function runAgentLoop(options: {
     }
 
     const toolCalls = finalizeToolCalls(toolCallsAccumulator);
-    const assistantContent = assistantEl?.textContent || "";
     options.messages.push({ role: "assistant", content: assistantContent, toolCalls });
-    options.state.appendMessage({ role: "assistant", content: assistantContent });
+    if (showAssistant && assistantContent) {
+      options.state.appendMessage({ role: "assistant", content: assistantContent });
+    }
 
     if (toolCalls.length === 0) {
       return;
@@ -142,12 +161,14 @@ export async function runAgentLoop(options: {
         ? `Tool result (${res.toolName}): ${formatResult(res.result)}`
         : `Tool error (${res.toolName}): ${res.error}`;
       options.ui.appendMessage("tool", msg);
-      options.state.appendMessage({
-        role: "tool",
-        name: res.toolName,
-        toolCallId: toolCalls[i]?.id,
-        content: JSON.stringify(payload),
-      });
+      if (showAssistant) {
+        options.state.appendMessage({
+          role: "tool",
+          name: res.toolName,
+          toolCallId: toolCalls[i]?.id,
+          content: JSON.stringify(payload),
+        });
+      }
       options.state.recordToolLog(res.toolName, res.ok, res.error);
       options.messages.push({
         role: "tool",
@@ -156,8 +177,20 @@ export async function runAgentLoop(options: {
         content: JSON.stringify(payload),
       });
     }
+    if (toolGroupOpened) {
+      options.ui.closeToolGroup("Tool calls...");
+      toolGroupOpened = false;
+      if (showAssistant) {
+        options.state.appendMessage({
+          role: "assistant",
+          content: `[tool_calls:${toolCalls.map((c) => c.name).join(",")}]`,
+        });
+      }
+    }
     if (strict && results.some((r) => !r.ok)) {
-      options.ui.appendMessage("assistant", "Strict mode: tool execution failed. Please adjust input and try again.");
+      const failed = results.filter((r) => !r.ok);
+      const details = failed.map((r) => `**${r.toolName}**: ${r.error ?? "unknown error"}`).join("\n");
+      options.ui.appendMessage("assistant", `Strict mode: one or more tools failed. Previous successful actions may already be applied.\n\n${details}`);
       return;
     }
     if (missingFields.length > 0) {

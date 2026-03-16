@@ -1,17 +1,16 @@
 ---
 Type: "Sprint"
+Title: "${title}"
 Parent: "[[$_PROJECT_NAME Work]]"
 Status: Plan
 Project: "[[$_PROJECT_FULL_NAME]]"
-StartedAt: ""
-FinishedAt: ""
+StartedAt: "${startedAt}"
+FinishedAt: "${finishedAt}"
 tags:
   - type/sprint
   - sprint
   - $_PROJECT_TAG
 ---
-<% await tp.file.move("$_PROJECT_PATH/Work/Sprints/" + "$_PROJECT_NAME Sprint N") %>
-
 
 ```dataview
 

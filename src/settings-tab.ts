@@ -1,6 +1,7 @@
-import { Notice, PluginSettingTab, setIcon } from "obsidian";
+import { Notice, PluginSettingTab, Setting, setIcon } from "obsidian";
+import * as Obsidian from "obsidian";
 import { ProjectFlowPlugin } from "./plugin";
-import { ProjectFlowSettings } from "./interfaces";
+import { ProjectFlowSettings, type AIProvider } from "./interfaces";
 import { DEFAULT_ENTITY_TYPES, DEFAULT_PROJECT_TYPES } from "./core/registry-defaults";
 import { ConfirmResetModal } from "./confirm-reset-modal";
 import { deleteProjectById, archiveProjectByPromptInfo } from "./services/project-management-service";
@@ -42,7 +43,7 @@ export const DEFAULT_SETTINGS: ProjectFlowSettings = {
   ai: {
     enabled: false,
     provider: "openai",
-    apiKey: "",
+    apiKeySecretName: "",
     model: "gpt-4o-mini",
     baseUrl: "https://api.openai.com",
     strictExecution: false,
@@ -68,6 +69,14 @@ function hashString(str: string): number {
     h |= 0;
   }
   return h;
+}
+
+function idHueClass(id: string): string {
+  return `gc-id-hue-${Math.abs(hashString(id)) % 12}`;
+}
+
+function normalizeSecretName(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
 }
 
 export class ProjectFlowSettingTab extends PluginSettingTab {
@@ -108,42 +117,42 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
       modal.open();
     };
 
-    // Roots section
-    containerEl.createEl("h2", { text: "Folders" });
+    // General settings should be first and not use a heading.
+    new Setting(containerEl)
+      .setName("Projects root")
+      .addText((text) => {
+        text.setPlaceholder("e.g. 1. Projects");
+        text.setValue(this.plugin.settings.projectsRoot || "1. Projects");
+        text.onChange(async (value) => {
+          this.plugin.settings.projectsRoot = value.trim() || "1. Projects";
+          await this.plugin.saveSettings();
+        });
+      });
 
-    const rootsRow = containerEl.createDiv({ cls: "gc-column" });
-    const projectsRootDiv = rootsRow.createDiv({ cls: "setting-item" });
-    projectsRootDiv.createEl("label", { text: "Projects root" });
-    const projectsInput = projectsRootDiv.createEl("input", { type: "text" });
-    projectsInput.value = this.plugin.settings.projectsRoot || "1. Projects";
-    projectsInput.placeholder = "e.g. 1. Projects";
-    projectsInput.onchange = async () => {
-      this.plugin.settings.projectsRoot = projectsInput.value.trim() || "1. Projects";
-      await this.plugin.saveSettings();
-    };
+    new Setting(containerEl)
+      .setName("Archive root")
+      .addText((text) => {
+        text.setPlaceholder("e.g. 4. Archive");
+        text.setValue(this.plugin.settings.archiveRoot || "4. Archive");
+        text.onChange(async (value) => {
+          this.plugin.settings.archiveRoot = value.trim() || "4. Archive";
+          await this.plugin.saveSettings();
+        });
+      });
 
-    const archiveRootDiv = rootsRow.createDiv({ cls: "setting-item" });
-    archiveRootDiv.createEl("label", { text: "Archive root" });
-    const archiveInput = archiveRootDiv.createEl("input", { type: "text" });
-    archiveInput.value = this.plugin.settings.archiveRoot || "4. Archive";
-    archiveInput.placeholder = "e.g. 4. Archive";
-    archiveInput.onchange = async () => {
-      this.plugin.settings.archiveRoot = archiveInput.value.trim() || "4. Archive";
-      await this.plugin.saveSettings();
-    };
-
-    const templatesRootDiv = rootsRow.createDiv({ cls: "setting-item" });
-    templatesRootDiv.createEl("label", { text: "Templates root" });
-    const templatesInput = templatesRootDiv.createEl("input", { type: "text" });
-    templatesInput.value = this.plugin.settings.templatesRoot || "Templates/ProjectFlow";
-    templatesInput.placeholder = "e.g. Templates/ProjectFlow";
-    templatesInput.onchange = async () => {
-      this.plugin.settings.templatesRoot = templatesInput.value.trim() || "Templates/ProjectFlow";
-      await this.plugin.saveSettings();
-    };
+    new Setting(containerEl)
+      .setName("Templates root")
+      .addText((text) => {
+        text.setPlaceholder("e.g. Templates/ProjectFlow");
+        text.setValue(this.plugin.settings.templatesRoot || "Templates/ProjectFlow");
+        text.onChange(async (value) => {
+          this.plugin.settings.templatesRoot = value.trim() || "Templates/ProjectFlow";
+          await this.plugin.saveSettings();
+        });
+      });
 
     // Dimensions section
-    containerEl.createEl("h2", { text: "Dimensions" });
+    new Setting(containerEl).setName("Dimensions").setHeading();
 
     // Sort dimensions by order ascending for display
     const dims = [...this.plugin.settings.dimensions].sort(
@@ -242,8 +251,8 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
         const row = nameEl.parentElement!;
         nameEl.detach?.();
         // hide edit/delete while editing
-        editBtn.style.display = "none";
-        removeBtn.style.display = "none";
+        editBtn.addClass("gc-hidden");
+        removeBtn.addClass("gc-hidden");
         // create input
         const input = row.createEl("input", { type: "text" });
         input.value = current;
@@ -318,38 +327,42 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
             Record<string, Record<string, any>>
           >;
           const dimName = dim.name;
-          const ids = Object.keys(recs?.[dimName]?.[cat] || {});
           // Render category name first (bold), then space-separated IDs with random colors
           const catLabel = item.createEl("b", { text: cat });
           // container for IDs
           const idsWrap = item.createDiv({ cls: "gc-id-wrap" });
-          if (ids.length > 0) {
-            // prepend a space between category and ids list for readability
-            idsWrap.createSpan({ text: " " });
-            ids.forEach((pid, idx) => {
+          const projectsInCategory = recs?.[dimName]?.[cat] || {};
+
+          // Group projects by projectTypeId
+          const groupedByTypeId: Record<string, string[]> = {};
+          Object.entries(projectsInCategory).forEach(([pid, record]: [string, any]) => {
+            const typeId = record.info?.projectTypeId || "operational";
+            if (!groupedByTypeId[typeId]) groupedByTypeId[typeId] = [];
+            groupedByTypeId[typeId].push(pid);
+          });
+
+          const typeIds = Object.keys(groupedByTypeId).sort();
+          typeIds.forEach((typeId, typeIdx) => {
+            const pids = groupedByTypeId[typeId].sort();
+
+            // Render type label if there are multiple types or if it's not the default
+            if (typeIds.length > 1 || typeId !== "operational") {
+              const typeName = this.plugin.settings.projectTypes?.[typeId]?.name || typeId;
+              idsWrap.createSpan({ cls: "gc-type-label", text: `${typeName}: ` });
+            }
+
+            pids.forEach((pid, idx) => {
               // Wrap each tag with actions that appear on hover
               const wrap = idsWrap.createSpan({ cls: "gc-id-chip" });
-              wrap.style.display = 'inline-flex';
-              wrap.style.alignItems = 'center';
-              wrap.style.gap = '4px';
-
-              const tag = wrap.createSpan({ cls: "gc-id-tag", text: pid });
-              const hue = Math.abs(hashString(pid)) % 360;
-              tag.style.backgroundColor = `hsl(${hue}, 70%, 90%)`;
-              tag.style.color = `hsl(${hue}, 70%, 25%)`;
+              wrap.createSpan({ cls: ["gc-id-tag", idHueClass(pid)], text: pid });
 
               // Actions (hidden until hover)
               const actions = wrap.createSpan({ cls: 'gc-id-actions' });
-              actions.style.display = 'none';
 
               const delBtn = actions.createEl('button', { cls: ['gc-icon-button', 'clickable-icon'] });
               delBtn.setAttr('aria-label', `Delete ${pid}`);
               delBtn.setAttr('title', `Delete ${pid}`);
-              try {
-                setIcon(delBtn, 'trash');
-              } catch {
-                delBtn.setText('Del');
-              }
+              try { setIcon(delBtn, 'trash'); } catch { delBtn.setText('Del'); }
               delBtn.onclick = async (ev: MouseEvent) => {
                 ev.stopPropagation();
                 const [, msg] = await deleteProjectById(this.plugin, dimName, cat, pid);
@@ -360,11 +373,7 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
               const archBtn = actions.createEl('button', { cls: ['gc-icon-button', 'clickable-icon'] });
               archBtn.setAttr('aria-label', `Archive ${pid}`);
               archBtn.setAttr('title', `Archive ${pid}`);
-              try {
-                setIcon(archBtn, 'archive');
-              } catch {
-                archBtn.setText('Arc');
-              }
+              try { setIcon(archBtn, 'archive'); } catch { archBtn.setText('Arc'); }
               archBtn.onclick = async (ev: MouseEvent) => {
                 ev.stopPropagation();
                 const [, msg] = await archiveProjectByPromptInfo(this.plugin, dimName, cat, pid);
@@ -372,17 +381,15 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
                 this.display();
               };
 
-              wrap.onmouseenter = () => {
-                actions.style.display = 'inline-flex';
-              };
-              wrap.onmouseleave = () => {
-                actions.style.display = 'none';
-              };
-
-              // add space between chips (space-separated)
-              if (idx < ids.length - 1) idsWrap.createSpan({ text: " " });
+              // add space between chips
+              if (idx < pids.length - 1) idsWrap.createSpan({ text: " " });
             });
-          }
+
+            // add space/separator between type groups
+            if (typeIdx < typeIds.length - 1) {
+              idsWrap.createSpan({ cls: "gc-type-separator", text: " | " });
+            }
+          });
           item.createDiv({ cls: "gc-spacer" });
           // Prepare remove before edit to toggle visibility during edit
           const removeCatBtn = item.createEl("button", {
@@ -416,8 +423,8 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
             const row = catLabel.parentElement!;
             catLabel.detach?.();
             // hide normal actions while editing
-            editCatBtn.style.display = "none";
-            removeCatBtn.style.display = "none";
+            editCatBtn.addClass("gc-hidden");
+            removeCatBtn.addClass("gc-hidden");
             const input = row.createEl("input", { type: "text" });
             input.value = current;
             input.addClass("gc-rename");
@@ -497,8 +504,9 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
     });
 
     // Add new dimension UI
+
     const addDiv = containerEl.createDiv({ cls: "add-dimension" });
-    addDiv.createEl("h3", { text: "Add new dimension" });
+    addDiv.createDiv({ cls: "gc-subheading", text: "Add new dimension" });
     const row = addDiv.createDiv({ cls: "gc-row" });
     const newDimInput = row.createEl("input", {
       type: "text",
@@ -525,154 +533,8 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
       }
     };
 
-    // AI section
-    containerEl.createEl("h2", { text: "AI Module" });
-
-    const aiSection = containerEl.createDiv({ cls: "gc-column" });
-    const aiEnabled = aiSection.createDiv({ cls: "setting-item" });
-    aiEnabled.createEl("label", { text: "Enable AI module" });
-    const aiEnabledToggle = aiEnabled.createEl("input", { type: "checkbox" });
-    aiEnabledToggle.checked = Boolean(this.plugin.settings.ai?.enabled);
-    aiEnabledToggle.onchange = async () => {
-      if (!this.plugin.settings.ai) {
-        this.plugin.settings.ai = {
-          enabled: false,
-          provider: "openai",
-          apiKey: "",
-          model: "gpt-4o-mini",
-          baseUrl: "https://api.openai.com",
-          mixedOfferText: "I can also set this up for you. Shall I proceed?",
-        };
-      }
-      this.plugin.settings.ai.enabled = aiEnabledToggle.checked;
-      await this.plugin.saveSettings();
-      await (this.plugin as any).toggleAiView?.(aiEnabledToggle.checked);
-    };
-
-    const aiProvider = aiSection.createDiv({ cls: "setting-item" });
-    aiProvider.createEl("label", { text: "Provider" });
-    const providerSelect = aiProvider.createEl("select");
-    ["openai", "anthropic", "ollama"].forEach((provider) => {
-      const opt = providerSelect.createEl("option", { text: provider });
-      opt.value = provider;
-    });
-    providerSelect.value = this.plugin.settings.ai?.provider || "openai";
-    providerSelect.onchange = async () => {
-      if (!this.plugin.settings.ai) return;
-      const defaults = {
-        openai: { baseUrl: "https://api.openai.com", model: "gpt-4o-mini" },
-        anthropic: { baseUrl: "https://api.anthropic.com", model: "claude-3-5-sonnet-latest" },
-        ollama: { baseUrl: "http://localhost:11434", model: "llama3.1" },
-      };
-      this.plugin.settings.ai.provider = providerSelect.value as any;
-      const currentBaseUrl = this.plugin.settings.ai.baseUrl || "";
-      const currentModel = this.plugin.settings.ai.model || "";
-      const knownBaseUrls = Object.values(defaults).map((d) => d.baseUrl);
-      const knownModels = Object.values(defaults).map((d) => d.model);
-      if (!currentBaseUrl || knownBaseUrls.includes(currentBaseUrl)) {
-        this.plugin.settings.ai.baseUrl = defaults[providerSelect.value as "openai" | "anthropic" | "ollama"].baseUrl;
-      }
-      if (!currentModel || knownModels.includes(currentModel)) {
-        this.plugin.settings.ai.model = defaults[providerSelect.value as "openai" | "anthropic" | "ollama"].model;
-      }
-      await this.plugin.saveSettings();
-      this.display();
-    };
-
-    const aiKey = aiSection.createDiv({ cls: "setting-item" });
-    aiKey.createEl("label", { text: "API key (not required for local providers)" });
-    const apiKeyInput = aiKey.createEl("input", { type: "password" });
-    apiKeyInput.placeholder = "sk-...";
-    apiKeyInput.value = this.plugin.settings.ai?.apiKey || "";
-    apiKeyInput.onchange = async () => {
-      if (!this.plugin.settings.ai) return;
-      this.plugin.settings.ai.apiKey = apiKeyInput.value.trim();
-      await this.plugin.saveSettings();
-    };
-
-    const aiModel = aiSection.createDiv({ cls: "setting-item" });
-    aiModel.createEl("label", { text: "Model" });
-    const modelInput = aiModel.createEl("input", { type: "text" });
-    modelInput.placeholder = this.plugin.settings.ai?.provider === "anthropic"
-      ? "claude-3-5-sonnet-latest"
-      : this.plugin.settings.ai?.provider === "ollama"
-        ? "llama3.1"
-        : "gpt-4o-mini";
-    modelInput.value = this.plugin.settings.ai?.model || modelInput.placeholder;
-    modelInput.onchange = async () => {
-      if (!this.plugin.settings.ai) return;
-      this.plugin.settings.ai.model = modelInput.value.trim() || "gpt-4o-mini";
-      await this.plugin.saveSettings();
-    };
-
-    const aiBaseUrl = aiSection.createDiv({ cls: "setting-item" });
-    aiBaseUrl.createEl("label", { text: "Base URL" });
-    const baseUrlInput = aiBaseUrl.createEl("input", { type: "text" });
-    baseUrlInput.placeholder = this.plugin.settings.ai?.provider === "anthropic"
-      ? "https://api.anthropic.com"
-      : this.plugin.settings.ai?.provider === "ollama"
-        ? "http://localhost:11434"
-        : "https://api.openai.com";
-    baseUrlInput.value = this.plugin.settings.ai?.baseUrl || baseUrlInput.placeholder;
-    baseUrlInput.onchange = async () => {
-      if (!this.plugin.settings.ai) return;
-      this.plugin.settings.ai.baseUrl = baseUrlInput.value.trim() || "https://api.openai.com";
-      await this.plugin.saveSettings();
-    };
-
-    const aiStrict = aiSection.createDiv({ cls: "setting-item" });
-    aiStrict.createEl("label", { text: "Strict execution mode" });
-    const strictToggle = aiStrict.createEl("input", { type: "checkbox" });
-    strictToggle.checked = Boolean(this.plugin.settings.ai?.strictExecution);
-    strictToggle.onchange = async () => {
-      if (!this.plugin.settings.ai) return;
-      this.plugin.settings.ai.strictExecution = strictToggle.checked;
-      await this.plugin.saveSettings();
-    };
-
-    const aiMemory = aiSection.createDiv({ cls: "setting-item" });
-    aiMemory.createEl("label", { text: "Conversation memory (messages)" });
-    const memoryInput = aiMemory.createEl("input", { type: "number" });
-    memoryInput.min = "0";
-    memoryInput.max = "50";
-    memoryInput.value = String(this.plugin.settings.ai?.memoryLimit ?? 10);
-    memoryInput.onchange = async () => {
-      if (!this.plugin.settings.ai) return;
-      const next = Number(memoryInput.value);
-      this.plugin.settings.ai.memoryLimit = Number.isFinite(next) ? Math.max(0, Math.min(50, next)) : 10;
-      await this.plugin.saveSettings();
-    };
-
-    const aiMixedOffer = aiSection.createDiv({ cls: "setting-item" });
-    aiMixedOffer.createEl("label", { text: "Mixed intent offer text" });
-    const mixedOfferInput = aiMixedOffer.createEl("textarea");
-    const defaultMixedOfferText = "I can also set this up for you. Shall I proceed?";
-    mixedOfferInput.placeholder = defaultMixedOfferText;
-    mixedOfferInput.value = this.plugin.settings.ai?.mixedOfferText || "";
-    mixedOfferInput.onchange = async () => {
-      if (!this.plugin.settings.ai) return;
-      this.plugin.settings.ai.mixedOfferText = mixedOfferInput.value.trim();
-      await this.plugin.saveSettings();
-    };
-
-    const aiMcp = aiSection.createDiv({ cls: "setting-item" });
-    aiMcp.createEl("label", { text: "MCP servers (JSON array)" });
-    const mcpInput = aiMcp.createEl("textarea");
-    mcpInput.placeholder = '[{"name":"calendar","url":"http://localhost:3000","apiKey":""}]';
-    mcpInput.value = JSON.stringify(this.plugin.settings.ai?.mcpServers || []);
-    mcpInput.onchange = async () => {
-      if (!this.plugin.settings.ai) return;
-      try {
-        const parsed = JSON.parse(mcpInput.value || "[]");
-        this.plugin.settings.ai.mcpServers = Array.isArray(parsed) ? parsed : [];
-        await this.plugin.saveSettings();
-      } catch {
-        new Notice("Invalid MCP servers JSON");
-      }
-    };
-
     // Archive section
-    containerEl.createEl("h2", { text: "Archive" });
+    new Setting(containerEl).setName("Archive").setHeading();
     const archivedRaw = (this.plugin.settings.archivedRecords || {}) as Record<string, Record<string, Record<string, any>>>;
     const archived = archivedRaw && !Array.isArray(archivedRaw) ? archivedRaw : {};
 
@@ -710,17 +572,9 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
           idsWrap.createSpan({ text: " " });
           ids.forEach((pid, idx) => {
             const wrap = idsWrap.createSpan({ cls: 'gc-id-chip' });
-            wrap.style.display = 'inline-flex';
-            wrap.style.alignItems = 'center';
-            wrap.style.gap = '4px';
-
-            const tag = wrap.createSpan({ cls: 'gc-id-tag', text: pid });
-            const hue = Math.abs(hashString(pid)) % 360;
-            tag.style.backgroundColor = `hsl(${hue}, 70%, 90%)`;
-            tag.style.color = `hsl(${hue}, 70%, 25%)`;
+            wrap.createSpan({ cls: ["gc-id-tag", idHueClass(pid)], text: pid });
 
             const actions = wrap.createSpan({ cls: 'gc-id-actions' });
-            actions.style.display = 'none';
             const delBtn = actions.createEl('button', { cls: ['gc-icon-button', 'clickable-icon'] });
             delBtn.setAttr('aria-label', `Delete ${pid}`);
             delBtn.setAttr('title', `Delete ${pid}`);
@@ -736,13 +590,6 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
               this.display();
             };
 
-            wrap.onmouseenter = () => {
-              actions.style.display = 'inline-flex';
-            };
-            wrap.onmouseleave = () => {
-              actions.style.display = 'none';
-            };
-
             if (idx < ids.length - 1) idsWrap.createSpan({ text: ' ' });
           });
         }
@@ -754,5 +601,200 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
       const hint = containerEl.createDiv({ cls: "setting-item" });
       hint.createSpan({ text: "No archived projects yet." });
     }
+
+
+    // AI section
+    new Setting(containerEl).setName("AI Module").setHeading();
+
+    const defaultMixedOfferText = "I can also set this up for you. Shall I proceed?";
+    const aiDefaults: Record<AIProvider, { baseUrl: string; model: string }> = {
+      openai: { baseUrl: "https://api.openai.com", model: "gpt-4o-mini" },
+      anthropic: { baseUrl: "https://api.anthropic.com", model: "claude-3-5-sonnet-latest" },
+      ollama: { baseUrl: "http://localhost:11434", model: "llama3.1" },
+    };
+
+    const ensureAiSettings = () => {
+      if (!this.plugin.settings.ai) {
+        this.plugin.settings.ai = {
+          enabled: false,
+          provider: "openai",
+          apiKeySecretName: "",
+          model: aiDefaults.openai.model,
+          baseUrl: aiDefaults.openai.baseUrl,
+          strictExecution: false,
+          memoryLimit: 10,
+          mixedOfferText: defaultMixedOfferText,
+          mcpServers: [],
+          toolLog: [],
+        };
+      }
+      if (this.plugin.settings.ai.apiKeySecretName == null) this.plugin.settings.ai.apiKeySecretName = "";
+      if (this.plugin.settings.ai.model == null) {
+        this.plugin.settings.ai.model = aiDefaults[this.plugin.settings.ai.provider].model;
+      }
+      if (this.plugin.settings.ai.baseUrl == null) {
+        this.plugin.settings.ai.baseUrl = aiDefaults[this.plugin.settings.ai.provider].baseUrl;
+      }
+      if (this.plugin.settings.ai.strictExecution == null) this.plugin.settings.ai.strictExecution = false;
+      if (this.plugin.settings.ai.memoryLimit == null) this.plugin.settings.ai.memoryLimit = 10;
+      if (this.plugin.settings.ai.mixedOfferText == null) this.plugin.settings.ai.mixedOfferText = defaultMixedOfferText;
+      if (!Array.isArray(this.plugin.settings.ai.mcpServers)) this.plugin.settings.ai.mcpServers = [];
+      if (!Array.isArray(this.plugin.settings.ai.toolLog)) this.plugin.settings.ai.toolLog = [];
+      return this.plugin.settings.ai;
+    };
+
+    const ai = ensureAiSettings();
+
+    new Setting(containerEl)
+      .setName("Enable AI module")
+      .addToggle((toggle) => {
+        toggle.setValue(Boolean(ai.enabled));
+        toggle.onChange(async (value) => {
+          const next = ensureAiSettings();
+          next.enabled = value;
+          await this.plugin.saveSettings();
+          await (this.plugin as any).toggleAiView?.(value);
+        });
+      });
+
+    new Setting(containerEl)
+      .setName("Provider")
+      .addDropdown((dropdown) => {
+        dropdown.addOption("openai", "openai");
+        dropdown.addOption("anthropic", "anthropic");
+        dropdown.addOption("ollama", "ollama");
+        dropdown.setValue(ai.provider || "openai");
+        dropdown.onChange(async (value) => {
+          const next = ensureAiSettings();
+          const provider = value as AIProvider;
+          next.provider = provider;
+          const currentBaseUrl = next.baseUrl || "";
+          const currentModel = next.model || "";
+          const knownBaseUrls = Object.values(aiDefaults).map((d) => d.baseUrl);
+          const knownModels = Object.values(aiDefaults).map((d) => d.model);
+          if (!currentBaseUrl || knownBaseUrls.includes(currentBaseUrl)) {
+            next.baseUrl = aiDefaults[provider].baseUrl;
+          }
+          if (!currentModel || knownModels.includes(currentModel)) {
+            next.model = aiDefaults[provider].model;
+          }
+          await this.plugin.saveSettings();
+          this.display();
+        });
+      });
+
+    const apiKeySetting = new Setting(containerEl)
+      .setName("API key")
+      .setDesc("Select a secret from SecretStorage.");
+    const SecretComponent = (Obsidian as any).SecretComponent;
+    const addComponent = (apiKeySetting as any).addComponent?.bind(apiKeySetting);
+    if (SecretComponent && addComponent) {
+      addComponent((el: HTMLElement) =>
+        new SecretComponent(this.app, el)
+          .setValue(ai.apiKeySecretName || "")
+          .onChange(async (value: string | null) => {
+            const next = ensureAiSettings();
+            next.apiKeySecretName = normalizeSecretName(value);
+            await this.plugin.saveSettings();
+          }),
+      );
+    } else {
+      apiKeySetting.addText((text) => {
+        text.setPlaceholder("Secret name");
+        text.setValue(ai.apiKeySecretName || "");
+        text.onChange(async (value) => {
+          const next = ensureAiSettings();
+          next.apiKeySecretName = normalizeSecretName(value);
+          await this.plugin.saveSettings();
+        });
+      });
+    }
+
+    new Setting(containerEl)
+      .setName("Model")
+      .addText((text) => {
+        const provider = ai.provider || "openai";
+        text.setPlaceholder(aiDefaults[provider].model);
+        text.setValue(ai.model || aiDefaults[provider].model);
+        text.onChange(async (value) => {
+          const next = ensureAiSettings();
+          const fallback = aiDefaults[next.provider || "openai"].model;
+          next.model = value.trim() || fallback;
+          await this.plugin.saveSettings();
+        });
+      });
+
+    new Setting(containerEl)
+      .setName("Base URL")
+      .addText((text) => {
+        const provider = ai.provider || "openai";
+        text.setPlaceholder(aiDefaults[provider].baseUrl);
+        text.setValue(ai.baseUrl || aiDefaults[provider].baseUrl);
+        text.onChange(async (value) => {
+          const next = ensureAiSettings();
+          const fallback = aiDefaults[next.provider || "openai"].baseUrl;
+          next.baseUrl = value.trim() || fallback;
+          await this.plugin.saveSettings();
+        });
+      });
+
+    new Setting(containerEl)
+      .setName("Strict execution mode")
+      .addToggle((toggle) => {
+        toggle.setValue(Boolean(ai.strictExecution));
+        toggle.onChange(async (value) => {
+          const next = ensureAiSettings();
+          next.strictExecution = value;
+          await this.plugin.saveSettings();
+        });
+      });
+
+    new Setting(containerEl)
+      .setName("Conversation memory (messages)")
+      .addText((text) => {
+        text.inputEl.type = "number";
+        text.inputEl.min = "0";
+        text.inputEl.max = "50";
+        text.setValue(String(ai.memoryLimit ?? 10));
+        text.onChange(async (value) => {
+          const next = ensureAiSettings();
+          const memory = Number(value);
+          next.memoryLimit = Number.isFinite(memory) ? Math.max(0, Math.min(50, memory)) : 10;
+          await this.plugin.saveSettings();
+          text.setValue(String(next.memoryLimit));
+        });
+      });
+
+    new Setting(containerEl)
+      .setName("Mixed intent offer text")
+      .addTextArea((text) => {
+        text.setPlaceholder(defaultMixedOfferText);
+        text.setValue(ai.mixedOfferText || "");
+        text.onChange(async (value) => {
+          const next = ensureAiSettings();
+          next.mixedOfferText = value.trim();
+          await this.plugin.saveSettings();
+        });
+      });
+
+    new Setting(containerEl)
+      .setName("MCP servers (JSON array)")
+      .setDesc("Use apiKeySecretName per server. Legacy apiKey values are migrated to SecretStorage.")
+      .addTextArea((text) => {
+        text.setPlaceholder('[{"name":"calendar","url":"http://localhost:3000","apiKeySecretName":"projectflow-mcp-calendar"}]');
+        text.setValue(JSON.stringify(ai.mcpServers || []));
+        text.onChange(async (value) => {
+          const next = ensureAiSettings();
+          try {
+            const parsed = JSON.parse(value || "[]");
+            const servers = Array.isArray(parsed) ? parsed : [];
+            next.mcpServers = await this.plugin.normalizeMcpServersWithSecrets(servers);
+            await this.plugin.saveSettings();
+          } catch {
+            new Notice("Invalid MCP servers JSON");
+          }
+        });
+      });
+
   }
 }

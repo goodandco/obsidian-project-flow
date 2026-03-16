@@ -1,7 +1,7 @@
 import type { ProjectFlowSettings } from '../interfaces';
 import { DEFAULT_ENTITY_TYPES, DEFAULT_PROJECT_TYPES } from './registry-defaults';
 
-export const CURRENT_SETTINGS_SCHEMA_VERSION = 8;
+export const CURRENT_SETTINGS_SCHEMA_VERSION = 10;
 
 const DEFAULT_MIXED_OFFER_TEXT = "I can also set this up for you. Shall I proceed?";
 
@@ -82,11 +82,20 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
     if (!s.projectTypes || Object.keys(s.projectTypes as any).length === 0) {
       s.projectTypes = DEFAULT_PROJECT_TYPES as any;
     }
+    // v10: Reset learning entity/project types to pick up new defaults
+    if (!s.schemaVersion || s.schemaVersion < 10) {
+      if (s.entityTypes && (s.entityTypes as any).learning) {
+        delete (s.entityTypes as any).learning;
+      }
+      if (s.projectTypes && (s.projectTypes as any).learning) {
+        delete (s.projectTypes as any).learning;
+      }
+    }
     if (!s.ai) {
       s.ai = {
         enabled: false,
         provider: "openai",
-        apiKey: "",
+        apiKeySecretName: "",
         model: "gpt-4o-mini",
         baseUrl: "https://api.openai.com",
         strictExecution: false,
@@ -99,7 +108,7 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
       s.ai = {
         enabled: Boolean((s.ai as any).enabled),
         provider: ((s.ai as any).provider || "openai") as any,
-        apiKey: (s.ai as any).apiKey ?? "",
+        apiKeySecretName: (s.ai as any).apiKeySecretName ?? "",
         model: (s.ai as any).model ?? "gpt-4o-mini",
         baseUrl: (s.ai as any).baseUrl ?? "https://api.openai.com",
         strictExecution: Boolean((s.ai as any).strictExecution),
