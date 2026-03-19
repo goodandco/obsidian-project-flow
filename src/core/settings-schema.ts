@@ -1,7 +1,7 @@
 import type { ProjectFlowSettings } from '../interfaces';
 import { DEFAULT_ENTITY_TYPES, DEFAULT_PROJECT_TYPES } from './registry-defaults';
 
-export const CURRENT_SETTINGS_SCHEMA_VERSION = 10;
+export const CURRENT_SETTINGS_SCHEMA_VERSION = 11;
 
 const DEFAULT_MIXED_OFFER_TEXT = "I can also set this up for you. Shall I proceed?";
 
@@ -89,6 +89,15 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
       }
       if (s.projectTypes && (s.projectTypes as any).learning) {
         delete (s.projectTypes as any).learning;
+      }
+    }
+    // v11: Reset operational entity/project types — templatePaths moved into operational/ subdirectory
+    if (!s.schemaVersion || s.schemaVersion < 11) {
+      if (s.entityTypes && (s.entityTypes as any).operational) {
+        delete (s.entityTypes as any).operational;
+      }
+      if (s.projectTypes && (s.projectTypes as any).operational) {
+        delete (s.projectTypes as any).operational;
       }
     }
     if (!s.ai) {

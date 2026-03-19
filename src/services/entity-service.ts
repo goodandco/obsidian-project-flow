@@ -33,10 +33,15 @@ export async function createEntity(
   const normalizedFields = normalizeFieldAliases(req.fields);
   validateRequiredFields(entityType, normalizedFields);
 
+  const nextIndex = entityType.indexField
+    ? await computeNextIndex(plugin, entityType, resolved.record.variables.PROJECT_PATH)
+    : null;
+
   const variables = {
     ...(resolved.record.variables as any),
-    ...resolveFieldDefaults(entityType),
+    ...resolveFieldDefaults(entityType, normalizedFields),
     ...(normalizedFields || {}),
+    ...(nextIndex !== null && entityType.indexField ? { [entityType.indexField]: String(nextIndex) } : {}),
   };
 
   const resolvedTemplate = await resolveTemplatePath(
@@ -51,7 +56,8 @@ export async function createEntity(
 
   const adapter: any = (plugin.app.vault as any).adapter;
   const templateContent = await adapter.read(resolvedTemplate.path);
-  const processed = processTemplate(templateContent, variables);
+  // Strip any unresolved ${tokens} so optional frontmatter fields render as empty
+  const processed = processTemplate(templateContent, variables).replace(/\$\{[^}]+\}/g, "");
 
   let relativeTarget = processTemplate(entityType.targetFolder, variables);
   // Normalize: strip leading slashes (from empty ${parentFolder}) and collapse double slashes
@@ -202,35 +208,90 @@ async function resolveTemplatePath(
   return null;
 }
 
+async function computeNextIndex(
+  plugin: IProjectFlowPlugin,
+  entityType: EntityType,
+  projectPath: string,
+): Promise<number> {
+  const { processTemplate } = await import("../core/template-processor");
+  const adapter: any = (plugin.app.vault as any).adapter;
+  // Resolve the target folder without index variable (it won't appear in folder path normally)
+  const relativeTarget = processTemplate(entityType.targetFolder, {});
+  const folderPath = sanitizePath(relativeTarget ? `${projectPath}/${relativeTarget}` : projectPath);
+  try {
+    const listing = await adapter.list(folderPath);
+    const files: string[] = listing?.files ?? [];
+    return files.length + 1;
+  } catch {
+    return 1;
+  }
+}
+
 /**
  * Resolve fieldDefaults for an entity type into concrete values.
  * Computed expressions:
- *   "today"     → dd/mm/yyyy of the current date
- *   "today+Nd"  → dd/mm/yyyy of today + N days
+ *   "today"     → yyyy-mm-dd of the current date
+ *   "today+Nd"  → yyyy-mm-dd of today + N days
  */
-function resolveFieldDefaults(entityType: EntityType): Record<string, string> {
+function resolveFieldDefaults(entityType: EntityType, providedFields?: Record<string, any> | undefined): Record<string, string> {
   if (!entityType.fieldDefaults) return {};
   const now = new Date();
   const fmt = (d: Date) => {
     const dd = String(d.getDate()).padStart(2, "0");
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const yyyy = d.getFullYear();
-    return `${dd}/${mm}/${yyyy}`;
+    return `${yyyy}-${mm}-${dd}`;
   };
+  const parseDate = (s: string): Date | null => {
+    // Accepts yyyy-mm-dd
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+  };
+  const addDays = (base: Date, n: number): Date => {
+    const d = new Date(base);
+    d.setDate(d.getDate() + n);
+    return d;
+  };
+
+  // First pass: resolve all "today"-based defaults, skipping user-provided fields.
   const result: Record<string, string> = {};
   for (const [field, expr] of Object.entries(entityType.fieldDefaults)) {
+    const userVal = providedFields?.[field] ?? providedFields?.[field.toLowerCase()] ?? providedFields?.[field.toUpperCase()];
+    if (userVal != null) continue; // user provided — skip default
     if (expr === "today") {
       result[field] = fmt(now);
     } else {
-      const plusDays = expr.match(/^today\+(\d+)d$/);
-      if (plusDays) {
-        const d = new Date(now);
-        d.setDate(d.getDate() + parseInt(plusDays[1], 10));
-        result[field] = fmt(d);
+      const todayPlus = expr.match(/^today\+(\d+)d$/);
+      if (todayPlus) {
+        result[field] = fmt(addDays(now, parseInt(todayPlus[1], 10)));
       } else {
         result[field] = expr;
       }
     }
   }
+
+  // Second pass: for any "today+Nd" default that was computed, rebase it onto a
+  // sibling field if that sibling was explicitly provided by the user.
+  // e.g. finishedAt = "today+14d" → rebase onto user-provided startedAt if available.
+  for (const [field, expr] of Object.entries(entityType.fieldDefaults)) {
+    const todayPlus = expr.match(/^today\+(\d+)d$/);
+    if (!todayPlus) continue;
+    if (result[field] == null) continue; // field was user-provided, nothing to rebase
+
+    // Find if there is another date-defaulted field whose user-supplied value
+    // can serve as the base. Look for sibling fields whose default is "today".
+    for (const [sibling, siblingExpr] of Object.entries(entityType.fieldDefaults)) {
+      if (sibling === field) continue;
+      if (siblingExpr !== "today") continue;
+      const siblingUserVal = providedFields?.[sibling] ?? providedFields?.[sibling.toLowerCase()] ?? providedFields?.[sibling.toUpperCase()];
+      if (siblingUserVal == null) continue;
+      const base = parseDate(String(siblingUserVal));
+      if (!base) continue;
+      result[field] = fmt(addDays(base, parseInt(todayPlus[1], 10)));
+      break;
+    }
+  }
+
   return result;
 }

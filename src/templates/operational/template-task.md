@@ -1,17 +1,18 @@
 ---
-ID: "$_PROJECT_ID-N"
+ID: "${PROJECT_ID}-${taskIndex}"
+Index: ${taskIndex}
 Type: "Task"
 Status: "New"
-Project: "[[$_PROJECT_FULL_NAME]]"
-StartedAt: ""
-FinishedAt: ""
+Project: "[[${PROJECT_FULL_NAME}]]"
+StartedAt: ${startedAt}
+FinishedAt: ${finishedAt}
 tags:
   - type/task
-  - $_PROJECT_TAG
-Parent: "[[$_PROJECT_NAME Work]]"
-Sprint: 
-TaskType: 
-StoryPoints: 
+  - ${PROJECT_TAG}
+Parent: "[[${PROJECT_NAME} Work]]"
+Sprint: ${sprint}
+TaskType: ${taskType}
+StoryPoints:
 ---
 
 ## Description
@@ -25,20 +26,20 @@ StoryPoints:
 
 ```dataviewjs
 
-const tasks = dv.pages('#type/task')  
+const tasks = dv.pages('#type/task')
   .where(b => dv.func.contains(b.Parent, dv.current().file.link))
-  .sort(p => [p.StartedAt, p.file.name], 'asc')   
-  .map(p => ([  
+  .sort(p => [p.StartedAt, p.file.name], 'asc')
+  .map(p => ([
     p.file.link, p.Status, p.StoryPoints, p.StartedAt, p.FinishedAt
   ]));
 
 dv.header(2, 'Subtasks');
-   
+
 dv.table(['File', 'Status', 'Start', 'End', 'SP' ],  tasks);
 
 dv.el('p', '---');
 
-const questions = dv.pages('#faq')  
+const questions = dv.pages('#faq')
   .where(b => dv.func.contains(b.Parent, dv.current().file.link))
   .sort(k => k.file.name, 'asc')
   .map(p => ([ p.file.link, p.Status ]));

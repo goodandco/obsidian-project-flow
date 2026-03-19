@@ -116,6 +116,8 @@ export interface EntityType {
   targetFolder: string;
   filenameRule: string;
   requiredFields?: string[];
+  /** Per-field AI descriptions, keyed by field name. Overrides generic FIELD_DESCRIPTIONS in the tool schema. */
+  fieldDescriptions?: Record<string, string>;
   /**
    * Default values for fields not supplied by the user.
    * Supports computed expressions:
@@ -127,6 +129,11 @@ export interface EntityType {
   defaultTags?: string[];
   patchMarkers?: string[];
   childFolders?: string[];
+  /**
+   * When set, the service counts existing files in the resolved targetFolder and
+   * injects the next sequential number as this variable name (e.g. "taskIndex" → ${taskIndex} = 1, 2, 3…).
+   */
+  indexField?: string;
 }
 
 export type EntityTypesRegistry = Record<string, EntityType>;

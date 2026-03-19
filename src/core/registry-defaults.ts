@@ -7,8 +7,12 @@ export const DEFAULT_ENTITY_TYPES: Record<string, EntityTypesRegistry> = {
       name: "Task",
       templatePath: "operational/template-task.md",
       targetFolder: "Work/Tasks",
-      filenameRule: "${PROJECT_ID}-${title}",
-      requiredFields: ["title", "description"],
+      filenameRule: "${PROJECT_ID}-${taskIndex}-${title}",
+      requiredFields: ["title", "description", "sprint"],
+      indexField: "taskIndex",
+      fieldDescriptions: {
+        sprint: "Title of the sprint this task belongs to. Call listProjectFiles with subfolder='Work/Sprints' to discover available sprints, then use the sprint filename (without .md) as the value.",
+      },
       patchMarkers: ["AI:CONTENT", "AI:ACTIONS"],
     },
     "meeting.planning": {
@@ -69,9 +73,12 @@ export const DEFAULT_ENTITY_TYPES: Record<string, EntityTypesRegistry> = {
       id: "sprint",
       name: "Sprint",
       templatePath: "operational/template-sprint.md",
-      targetFolder: "Work",
-      filenameRule: "${title}",
+      targetFolder: "Work/Sprints",
+      filenameRule: "Sprint ${title}",
       requiredFields: ["title"],
+      fieldDescriptions: {
+        title: "Short sprint identifier only — e.g. '1', '2', 'Q1 2024', 'March Week 1'. Do NOT include the project name or the word 'Sprint'.",
+      },
       fieldDefaults: {
         startedAt: "today",
         finishedAt: "today+14d",
@@ -149,6 +156,7 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
       "Meetings",
       "Work",
       "Work/Tasks",
+      "Work/Sprints",
       "People",
     ],
     initialNotes: [

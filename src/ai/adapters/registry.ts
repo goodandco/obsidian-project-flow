@@ -255,9 +255,10 @@ export function createSpecializedToolRegistry(
     // Map entityType requirements to the tool schema with descriptions
     if (entityType.requiredFields) {
       for (const field of entityType.requiredFields) {
+        const description = entityType.fieldDescriptions?.[field] ?? FIELD_DESCRIPTIONS[field];
         propFields[field] = {
           type: "string",
-          ...(FIELD_DESCRIPTIONS[field] ? { description: FIELD_DESCRIPTIONS[field] } : {}),
+          ...(description ? { description } : {}),
         };
         required.push(field);
       }
