@@ -49,6 +49,12 @@ export function createToolRegistry(plugin: ProjectFlowPlugin, ui: ChatUi, state:
       handler: async (args) => api.resolveProject(args.projectRef),
     },
     {
+      name: "listProjects",
+      description: "List all projects in the vault. Returns an array of entries with fullName, projectId, projectTag, dimension, category, projectName, and parent. Use this to find a project when you only know its name or need to browse available projects.",
+      schema: { type: "object", properties: {}, additionalProperties: false },
+      handler: async () => api.listProjects(),
+    },
+    {
       name: "listEntityTypes",
       description: "List available entity types.",
       schema: { type: "object", properties: {}, additionalProperties: false },

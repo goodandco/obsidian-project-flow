@@ -47,7 +47,6 @@ export async function delegateToProjectAssistant(
             state,
             messages,
             tools: specializedTools,
-            maxSteps: 5,
             showAssistant: false,
         });
 

@@ -21,6 +21,16 @@ const PLANNER_PROMPT = [
   "  Step 3: NEVER put dimension or category in the fields object during planning — leave them out entirely.",
   "  Step 4: Only set needsFollowup=false after the user has explicitly stated their dimension and category choice.",
   "  This rule applies even if you think you can infer the values from context. Always ask.",
+  "MANDATORY RULE — createProject: id and tag MUST be explicitly provided by the user.",
+  "  id: a unique project identifier used in vault folder paths (e.g. 'my-project-2024'). Lowercase, hyphens allowed.",
+  "  tag: a short label used to reference the project in notes (e.g. '#myproj').",
+  "  Step 1: Check whether the user has already stated an id and a tag in this conversation.",
+  "  Step 2: If EITHER is missing AND the user has NOT explicitly asked you to generate/auto-generate/make up/choose them, set needsFollowup=true.",
+  "  Step 3: In the follow-up question, ask for id and tag together. If dimension/category are also unknown, ask for all four in a single question — do NOT send separate follow-ups.",
+  "  Step 4: NEVER put id or tag in the fields object during planning until the user has explicitly stated them.",
+  "  Step 5: Only set needsFollowup=false (and populate fields) after the user has explicitly provided both id and tag.",
+  "  EXCEPTION: If the user has explicitly used phrases such as 'generate', 'auto-generate', 'make up', 'choose for me', 'pick for me', or equivalent for id and/or tag, you MAY generate those values and proceed without asking.",
+  "  This rule applies even if you think you can infer the values from context. Always ask unless the exception applies.",
   "Format text in `question` and `plan` keys as markdown"
 ].join("\n");
 
@@ -81,9 +91,8 @@ async function runPlannerLoop(options: {
     throw new Error("AI settings are missing");
   }
   let content = "";
-  const maxSteps = 6;
   const toolDefs = options.allowToolCalls ? options.tools : [];
-  for (let step = 0; step < maxSteps; step += 1) {
+  while (true) {
     const toolCallsAccumulator = new Map<number, ToolCall>();
     content = "";
     for await (const evt of streamProvider(aiSettings, options.messages, toolDefs)) {
@@ -113,7 +122,6 @@ async function runPlannerLoop(options: {
       });
     }
   }
-  return content.trim();
 }
 
 export function parsePlannerJson(raw: string): PlanningResult | null {

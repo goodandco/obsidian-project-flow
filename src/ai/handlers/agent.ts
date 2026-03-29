@@ -76,7 +76,6 @@ export async function runAgentLoop(options: {
   state: AiStateStore;
   messages: ChatMessage[];
   tools: ToolDefinition[];
-  maxSteps?: number;
   showAssistant?: boolean;
 }): Promise<void> {
   const aiSettings = await options.plugin.getResolvedAiSettings();
@@ -84,8 +83,9 @@ export async function runAgentLoop(options: {
     throw new Error("AI settings are missing");
   }
   const showAssistant = options.showAssistant !== false;
-  const maxSteps = options.maxSteps ?? 6;
-  for (let step = 0; step < maxSteps; step += 1) {
+  const totalUsage = { inputTokens: 0, outputTokens: 0 };
+  let lastAssistantEl: MessageHandle = null;
+  while (true) {
     let assistantEl: MessageHandle = null;
     const toolUsageEls = new Map<string, MessageHandle>();
     const toolCallsAccumulator = new Map<number, ToolCall>();
@@ -108,6 +108,10 @@ export async function runAgentLoop(options: {
                 options.ui.updateMessage(assistantEl, assistantContent);
               }
             }
+          }
+          if (evt.type === "usage" && evt.usage) {
+            totalUsage.inputTokens += evt.usage.inputTokens;
+            totalUsage.outputTokens += evt.usage.outputTokens;
           }
           if (evt.type === "tool_call_delta" && evt.toolCalls) {
             buildToolCallsFromDeltas(evt.toolCalls, toolCallsAccumulator);
@@ -135,6 +139,8 @@ export async function runAgentLoop(options: {
       }
     }
 
+    if (assistantEl) lastAssistantEl = assistantEl;
+
     const toolCalls = finalizeToolCalls(toolCallsAccumulator);
     options.messages.push({ role: "assistant", content: assistantContent, toolCalls });
     if (showAssistant && assistantContent) {
@@ -142,6 +148,7 @@ export async function runAgentLoop(options: {
     }
 
     if (toolCalls.length === 0) {
+      options.ui.showUsage(lastAssistantEl, totalUsage);
       return;
     }
 
@@ -191,6 +198,7 @@ export async function runAgentLoop(options: {
       const failed = results.filter((r) => !r.ok);
       const details = failed.map((r) => `**${r.toolName}**: ${r.error ?? "unknown error"}`).join("\n");
       options.ui.appendMessage("assistant", `Strict mode: one or more tools failed. Previous successful actions may already be applied.\n\n${details}`);
+      options.ui.showUsage(lastAssistantEl, totalUsage);
       return;
     }
     if (missingFields.length > 0) {
@@ -199,8 +207,8 @@ export async function runAgentLoop(options: {
         "assistant",
         `Missing required fields: ${unique.join(", ")}. Please provide them and try again.`,
       );
+      options.ui.showUsage(lastAssistantEl, totalUsage);
       return;
     }
   }
-  options.ui.appendMessage("assistant", "Stopped after reaching max tool steps.");
 }

@@ -74,8 +74,8 @@ export class AiChatController {
     await this.handleLLM(input);
   }
 
-  onClose(): void {
-    this.state.flushConversation();
+  async onClose(): Promise<void> {
+    await this.state.flushConversation();
   }
 
   clearConversation(): void {
@@ -295,15 +295,21 @@ export class AiChatController {
     if (!aiSettings) throw new Error("AI settings are missing.");
     const assistantEl = this.ui.appendMessage("assistant", "");
     let content = "";
+    let totalUsage = { inputTokens: 0, outputTokens: 0 };
     for await (const evt of streamProvider(aiSettings, messages, [])) {
       if (evt.type === "content" && evt.delta) {
         content += evt.delta;
         this.ui.updateMessage(assistantEl, content);
       }
+      if (evt.type === "usage" && evt.usage) {
+        totalUsage.inputTokens += evt.usage.inputTokens;
+        totalUsage.outputTokens += evt.usage.outputTokens;
+      }
     }
     if (!assistantEl) {
       this.ui.appendMessage("assistant", content);
     }
+    this.ui.showUsage(assistantEl, totalUsage);
     this.state.appendMessage({ role: "assistant", content });
     return content;
   }

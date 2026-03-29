@@ -227,12 +227,12 @@ export class AiStateStore {
     this.persistConversation();
   }
 
-  flushConversation(): void {
+  async flushConversation(): Promise<void> {
     if (this.persistTimer) {
       window.clearTimeout(this.persistTimer);
       this.persistTimer = null;
     }
-    void this.writeNow();
+    await this.writeNow();
   }
 
   recordToolLog(toolName: string, ok: boolean, error?: string): void {

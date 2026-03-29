@@ -17,7 +17,7 @@ export async function* streamAnthropicMessages(
 
   const payload: any = {
     model: config.model,
-    max_tokens: 1024,
+    max_tokens: 4096,
     system,
     messages: anthropicMessages,
     tools: tools.map((t) => ({
@@ -47,6 +47,8 @@ export async function* streamAnthropicMessages(
   const decoder = new TextDecoder();
   let buffer = "";
   const suppressInputDelta = new Set<number>();
+  let inputTokens = 0;
+  let outputTokens = 0;
 
   while (true) {
     const { value, done } = await reader.read();
@@ -59,6 +61,7 @@ export async function* streamAnthropicMessages(
       if (!trimmed.startsWith("data:")) continue;
       const data = trimmed.replace(/^data:\s*/, "");
       if (!data || data === "[DONE]") {
+        yield { type: "usage", usage: { inputTokens, outputTokens } };
         yield { type: "done" };
         return;
       }
@@ -69,6 +72,12 @@ export async function* streamAnthropicMessages(
         continue;
       }
       const type = json?.type;
+      if (type === "message_start") {
+        inputTokens = json.message?.usage?.input_tokens ?? 0;
+      }
+      if (type === "message_delta") {
+        outputTokens = json.usage?.output_tokens ?? 0;
+      }
       if (type === "content_block_delta") {
         const delta = json.delta;
         if (delta?.type === "text_delta") {
@@ -100,11 +109,13 @@ export async function* streamAnthropicMessages(
         }
       }
       if (type === "message_stop") {
+        yield { type: "usage", usage: { inputTokens, outputTokens } };
         yield { type: "done" };
         return;
       }
     }
   }
+  yield { type: "usage", usage: { inputTokens, outputTokens } };
   yield { type: "done" };
 }
 

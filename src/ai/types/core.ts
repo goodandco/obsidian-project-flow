@@ -21,8 +21,14 @@ export interface ToolCallDelta {
   arguments?: string;
 }
 
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export interface ProviderStreamEvent {
-  type: "content" | "tool_call_delta" | "done";
+  type: "content" | "tool_call_delta" | "usage" | "done";
   delta?: string;
   toolCalls?: ToolCallDelta[];
+  usage?: TokenUsage;
 }

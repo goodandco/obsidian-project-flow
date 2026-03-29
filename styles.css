@@ -286,14 +286,44 @@
   font-size: 0.9em;
 }
 
-.pf-ai-messages {
+.pf-ai-messages-wrap {
   flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.pf-ai-messages {
+  height: 100%;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 4px 2px;
-  min-height: 0;
+}
+
+.pf-ai-new-messages {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 4px;
+  padding: 5px 14px;
+  border-radius: 14px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: 0.8em;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  z-index: 10;
+  transition: opacity 0.15s ease;
+  border: none;
+}
+
+.pf-ai-new-messages:hover {
+  opacity: 0.85;
 }
 
 .pf-ai-message {
@@ -470,6 +500,14 @@
     padding-bottom: 8px;
   }
 }
+.pf-ai-token-usage {
+  margin-top: 6px;
+  font-size: 0.78em;
+  color: var(--text-faint);
+  text-align: right;
+  user-select: none;
+}
+
 .project-flow-settings .gc-type-label {
   font-size: 0.75em;
   text-transform: uppercase;

@@ -19,7 +19,6 @@ export async function buildSystemPrompt(
       activeFileContent = "";
     }
   }
-  const projectIndex = plugin.settings.projectIndex;
   const activeProject = inferActiveProject(plugin);
   const entityRequirements = getEntityRequirementsSummary(plugin);
   const projectTypeSummary = getProjectTypeSummary(plugin);
@@ -35,6 +34,7 @@ export async function buildSystemPrompt(
     "If a chat project context is available, use it as the default projectRef and do not ask for project selection unless the user wants to change it.",
     "When creating projects, use a separate year field if needed; do not include the year inside the name.",
     "CRITICAL — Creating a project: You MUST call listDimensions BEFORE createProject. Use ONLY the dimension names and category values returned by listDimensions. If the required dimension does not exist, call createDimension first. If the required category does not exist inside the chosen dimension, call createCategory first. Never guess, invent, or hard-code dimension or category values.",
+    "CRITICAL — Creating a project: The user MUST explicitly provide the project id (unique vault folder identifier, e.g. 'my-project-2024') and tag (short reference label, e.g. '#myproj'). NEVER invent or auto-generate these values unless the user has explicitly asked you to do so (e.g. 'generate the id for me'). If either is missing, ask the user before calling createProject.",
     "To interact with or create entities inside a project, you MUST use the `delegateToProjectAssistant` tool. Do NOT try to create entities directly.",
     "Pass clear instructions to the delegated assistant with the exact details of what needs to be created or done.",
     "Example tool call: delegateToProjectAssistant { projectRef:{tag:\"my-tag\"}, instructions:\"Create a new task titled 'Fix bug' with description 'Fix the login bug'\" }",
@@ -46,7 +46,6 @@ export async function buildSystemPrompt(
     `Chat project context: ${chatProjectNote}`,
     `Available Project Types: ${projectTypeSummary}`,
     `Entity required fields: ${entityRequirements}`,
-    `Project index snapshot: ${projectIndex ? JSON.stringify(projectIndex) : "(none)"}`,
   ].join("\n");
 }
 
