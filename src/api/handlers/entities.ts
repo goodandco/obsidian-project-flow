@@ -1,18 +1,16 @@
 import type { IProjectFlowPlugin, EntityType, EntityTypesRegistry } from "../../interfaces";
 import type { CreateEntityRequest, CreateEntityResult } from "../types";
-import { mergeEntityTypes } from "../../core/registry-merge";
+import { mergeEntityTypes, mergeProjectTypes } from "../../core/registry-merge";
 import { createEntity } from "../../services/entity-service";
 import { validateCreateEntityRequest } from "../validators";
 
 export function createEntityHandlers(plugin: IProjectFlowPlugin) {
   return {
     listEntityTypes: (): EntityTypesRegistry => {
-      // Returns flat list of all available entity types across all project types
-      return mergeEntityTypes(plugin.settings.entityTypes);
+      return mergeEntityTypes(mergeProjectTypes(plugin.settings.projectTypes));
     },
     describeEntityType: (id: string): EntityType | null => {
-      // Checks across all project types
-      const types = mergeEntityTypes(plugin.settings.entityTypes);
+      const types = mergeEntityTypes(mergeProjectTypes(plugin.settings.projectTypes));
       return types[id] || null;
     },
     createEntity: async (req: CreateEntityRequest): Promise<CreateEntityResult> => {

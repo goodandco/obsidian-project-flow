@@ -1,7 +1,7 @@
 import type { ProjectFlowSettings } from '../interfaces';
-import { DEFAULT_ENTITY_TYPES, DEFAULT_PROJECT_TYPES } from './registry-defaults';
+import { DEFAULT_PROJECT_TYPES } from './registry-defaults';
 
-export const CURRENT_SETTINGS_SCHEMA_VERSION = 12;
+export const CURRENT_SETTINGS_SCHEMA_VERSION = 13;
 
 const DEFAULT_MIXED_OFFER_TEXT = "I can also set this up for you. Shall I proceed?";
 
@@ -19,7 +19,6 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
     schemaVersion: input?.schemaVersion ?? 0,
     projectRecords: {} as any,
     archivedRecords: (input as any)?.archivedRecords ?? ({} as any),
-    entityTypes: (input as any)?.entityTypes ?? ({} as any),
     projectTypes: (input as any)?.projectTypes ?? ({} as any),
     projectIndex: (input as any)?.projectIndex,
     projectGraph: (input as any)?.projectGraph,
@@ -74,43 +73,48 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
   sorted.forEach((d, i) => { d.order = i + 1; });
   s.dimensions = sorted as any;
 
-  // future migrations can transform s based on schemaVersion
   if (!s.schemaVersion || s.schemaVersion < CURRENT_SETTINGS_SCHEMA_VERSION) {
-    if (!s.entityTypes || Object.keys(s.entityTypes as any).length === 0) {
-      s.entityTypes = DEFAULT_ENTITY_TYPES as any;
-    }
     if (!s.projectTypes || Object.keys(s.projectTypes as any).length === 0) {
       s.projectTypes = DEFAULT_PROJECT_TYPES as any;
     }
-    // v10: Reset learning entity/project types to pick up new defaults
-    if (!s.schemaVersion || s.schemaVersion < 10) {
-      if (s.entityTypes && (s.entityTypes as any).learning) {
-        delete (s.entityTypes as any).learning;
-      }
-      if (s.projectTypes && (s.projectTypes as any).learning) {
-        delete (s.projectTypes as any).learning;
-      }
-    }
-    // v11: Reset operational entity/project types — templatePaths moved into operational/ subdirectory
+
+    // v10–v11: reset stale learning/operational project types
     if (!s.schemaVersion || s.schemaVersion < 11) {
-      if (s.entityTypes && (s.entityTypes as any).operational) {
-        delete (s.entityTypes as any).operational;
-      }
-      if (s.projectTypes && (s.projectTypes as any).operational) {
+      if (s.projectTypes) {
+        delete (s.projectTypes as any).learning;
         delete (s.projectTypes as any).operational;
       }
     }
-    // v12: Strip projectTemplates from all persisted project types — they are now always derived
-    // from registry defaults and must not be overridden by stale data.json values.
+
+    // v12: strip stale projectTemplates
     if (!s.schemaVersion || s.schemaVersion < 12) {
       if (s.projectTypes && typeof s.projectTypes === 'object') {
         for (const pt of Object.values(s.projectTypes as any)) {
-          if (pt && typeof pt === 'object') {
-            delete (pt as any).projectTemplates;
-          }
+          if (pt && typeof pt === 'object') delete (pt as any).projectTemplates;
         }
       }
     }
+
+    // v13: migrate legacy settings.entityTypes into projectTypes[id].projectEntities
+    if (!s.schemaVersion || s.schemaVersion < 13) {
+      const legacyEntityTypes = (input as any)?.entityTypes;
+      if (legacyEntityTypes && typeof legacyEntityTypes === 'object') {
+        s.projectTypes = s.projectTypes ?? ({} as any);
+        for (const [typeId, registry] of Object.entries(legacyEntityTypes as Record<string, any>)) {
+          if (!registry || typeof registry !== 'object') continue;
+          const pt = (s.projectTypes as any)[typeId];
+          if (pt && typeof pt === 'object') {
+            pt.projectEntities = { ...(pt.projectEntities ?? {}), ...registry };
+          }
+        }
+      }
+      // Reset all project types so defaults (with projectEntities) are picked up fresh
+      if (s.projectTypes) {
+        delete (s.projectTypes as any).operational;
+        delete (s.projectTypes as any).learning;
+      }
+    }
+
     if (!s.ai) {
       s.ai = {
         enabled: false,
@@ -122,7 +126,6 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
         memoryLimit: 10,
         mixedOfferText: DEFAULT_MIXED_OFFER_TEXT,
         mcpServers: [],
-        toolLog: [],
       } as any;
     } else {
       s.ai = {
@@ -135,7 +138,6 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
         memoryLimit: Number.isFinite((s.ai as any).memoryLimit) ? (s.ai as any).memoryLimit : 10,
         mixedOfferText: (s.ai as any).mixedOfferText ?? DEFAULT_MIXED_OFFER_TEXT,
         mcpServers: Array.isArray((s.ai as any).mcpServers) ? (s.ai as any).mcpServers : [],
-        toolLog: Array.isArray((s.ai as any).toolLog) ? (s.ai as any).toolLog : [],
       } as any;
     }
     s.schemaVersion = CURRENT_SETTINGS_SCHEMA_VERSION;

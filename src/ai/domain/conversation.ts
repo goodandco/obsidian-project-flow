@@ -235,15 +235,6 @@ export class AiStateStore {
     await this.writeNow();
   }
 
-  recordToolLog(toolName: string, ok: boolean, error?: string): void {
-    if (!this.plugin.settings.ai) return;
-    const log = this.plugin.settings.ai.toolLog || [];
-    log.push({ ts: new Date().toISOString(), toolName, ok, error });
-    const trimmed = log.slice(-200);
-    this.plugin.settings.ai.toolLog = trimmed;
-    void this.plugin.saveSettings();
-  }
-
   getPendingPlan(): PendingPlan | null {
     const conversation = this.getActiveConversation();
     return conversation?.pendingPlan || null;

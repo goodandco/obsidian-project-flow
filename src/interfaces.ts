@@ -16,7 +16,6 @@ export interface ProjectFlowSettings {
   schemaVersion?: number; // lightweight settings schema version
   projectIndex?: ProjectIndex;
   projectGraph?: ProjectGraph;
-  entityTypes?: Record<string, EntityTypesRegistry>;
   projectTypes?: ProjectTypesRegistry;
   ai?: AISettings;
   // Nested map: dimension -> category -> projectId -> ProjectRecord
@@ -37,7 +36,6 @@ export interface AISettings {
   memoryLimit?: number;
   mixedOfferText?: string;
   mcpServers?: MCPServerConfig[];
-  toolLog?: AIToolLogEntry[];
   conversation?: Array<Pick<ChatMessage, "role" | "content" | "name" | "toolCallId">>;
   pendingPlan?: PendingPlan | null;
 }
@@ -49,12 +47,6 @@ export interface MCPServerConfig {
   apiKey?: string; // resolved at runtime from SecretStorage; never persisted
 }
 
-export interface AIToolLogEntry {
-  ts: string;
-  toolName: string;
-  ok: boolean;
-  error?: string;
-}
 
 export interface PendingPlan {
   originalInput: string;
@@ -144,7 +136,7 @@ export interface ProjectType {
   description?: string;
   folderStructure?: string[];
   initialNotes?: Array<{ fileName: string; template: string }>;
-  allowedEntityTypes?: string[];
+  projectEntities?: EntityTypesRegistry;
 }
 
 export type ProjectTypesRegistry = Record<string, ProjectType>;

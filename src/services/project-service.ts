@@ -249,7 +249,9 @@ async function createProjectTemplates(
   const templateDir = sanitizePath(`Templates/${projectName}_Templates`);
   await fm.ensureFolder(templateDir);
 
-  const entityTypes = mergeEntityTypes(plugin.settings.entityTypes, projectTypeId);
+  const { mergeProjectTypes } = await import("../core/registry-merge");
+  const projectTypes = mergeProjectTypes(plugin.settings.projectTypes);
+  const entityTypes = mergeEntityTypes(projectTypes, projectTypeId);
   for (const entityType of Object.values(entityTypes)) {
     if (!entityType?.templatePath) continue;
     const source = entityType.templatePath;

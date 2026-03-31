@@ -24,7 +24,9 @@ export async function createEntity(
     throw new Error("Project not found for reference.");
   }
 
-  const entityTypes = mergeEntityTypes(plugin.settings.entityTypes, resolved.record.info.projectTypeId);
+  const { mergeProjectTypes } = await import("../core/registry-merge");
+  const projectTypes = mergeProjectTypes(plugin.settings.projectTypes);
+  const entityTypes = mergeEntityTypes(projectTypes, resolved.record.info.projectTypeId);
   const entityType = entityTypes[req.entityTypeId];
   if (!entityType) {
     throw new Error(`Entity type not found: ${req.entityTypeId}`);
@@ -155,7 +157,7 @@ async function patchFieldsIntoMarkers(
 ): Promise<void> {
   if (!fields) return;
   const entries = Object.entries(fields)
-    .filter(([key, value]) => key.toLowerCase() === key)
+    .filter(([key]) => key.toLowerCase() === key)
     .filter(([key, value]) => key !== "title" && value != null && String(value).trim().length > 0);
 
   for (const [key, value] of entries) {

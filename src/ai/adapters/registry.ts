@@ -241,7 +241,8 @@ export function createSpecializedToolRegistry(
   if (!api) return [];
   const { mergeEntityTypes } = require("../../core/registry-merge");
 
-  const entityTypes = mergeEntityTypes(plugin.settings.entityTypes, projectTypeId);
+  const { mergeProjectTypes } = require("../../core/registry-merge");
+  const entityTypes = mergeEntityTypes(mergeProjectTypes(plugin.settings.projectTypes), projectTypeId);
   const tools: ToolDefinition[] = [];
 
   for (const [entityTypeId, rawDef] of Object.entries(entityTypes)) {

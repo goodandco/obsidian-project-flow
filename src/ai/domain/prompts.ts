@@ -34,7 +34,7 @@ export async function buildSystemPrompt(
     "If a chat project context is available, use it as the default projectRef and do not ask for project selection unless the user wants to change it.",
     "When creating projects, use a separate year field if needed; do not include the year inside the name.",
     "CRITICAL — Creating a project: You MUST call listDimensions BEFORE createProject. Use ONLY the dimension names and category values returned by listDimensions. If the required dimension does not exist, call createDimension first. If the required category does not exist inside the chosen dimension, call createCategory first. Never guess, invent, or hard-code dimension or category values.",
-    "CRITICAL — Creating a project: The user MUST explicitly provide the project id (unique vault folder identifier, e.g. 'my-project-2024') and tag (short reference label, e.g. '#myproj'). NEVER invent or auto-generate these values unless the user has explicitly asked you to do so (e.g. 'generate the id for me'). If either is missing, ask the user before calling createProject.",
+    "CRITICAL — Creating a project: The user MUST explicitly provide the project id (unique vault folder identifier, e.g. 'myproj') and tag (reference label, e.g. 'project/my-project'). NEVER invent or auto-generate these values unless the user has explicitly asked you to do so (e.g. 'generate the id for me'). If either is missing, ask the user before calling createProject.",
     "To interact with or create entities inside a project, you MUST use the `delegateToProjectAssistant` tool. Do NOT try to create entities directly.",
     "Pass clear instructions to the delegated assistant with the exact details of what needs to be created or done.",
     "Example tool call: delegateToProjectAssistant { projectRef:{tag:\"my-tag\"}, instructions:\"Create a new task titled 'Fix bug' with description 'Fix the login bug'\" }",
@@ -75,7 +75,7 @@ export function getEntityRequirementsSummary(plugin: ProjectFlowPlugin): string 
   const summary: Record<string, Record<string, string[]>> = {};
 
   for (const typeId of Object.keys(projectTypes)) {
-    const registry = mergeEntityTypes(plugin.settings.entityTypes, typeId) as Record<string, any>;
+    const registry = mergeEntityTypes(projectTypes, typeId) as Record<string, any>;
     const typeSummary: Record<string, string[]> = {};
     for (const [id, def] of Object.entries(registry)) {
       if (def && typeof def === "object" && Array.isArray(def.requiredFields) && def.requiredFields.length > 0) {
@@ -152,7 +152,7 @@ export async function buildSpecializedSystemPrompt(
 }
 
 function getEntityRequirementsSummaryForProject(plugin: ProjectFlowPlugin, projectTypeId: string): string {
-  const registry = mergeEntityTypes(plugin.settings.entityTypes, projectTypeId) as Record<string, any>;
+  const registry = mergeEntityTypes(mergeProjectTypes(plugin.settings.projectTypes), projectTypeId) as Record<string, any>;
   const typeSummary: Record<string, string[]> = {};
   for (const [id, def] of Object.entries(registry)) {
     if (def && typeof def === "object" && Array.isArray(def.requiredFields) && def.requiredFields.length > 0) {

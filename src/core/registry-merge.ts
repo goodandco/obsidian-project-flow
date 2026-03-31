@@ -1,13 +1,12 @@
 import type { EntityTypesRegistry, ProjectTypesRegistry } from "../interfaces";
-import { DEFAULT_ENTITY_TYPES, DEFAULT_PROJECT_TYPES } from "./registry-defaults";
+import { DEFAULT_PROJECT_TYPES } from "./registry-defaults";
 
 export function mergeEntityTypes(
-  userTypes?: Record<string, EntityTypesRegistry>,
+  projectTypes: ProjectTypesRegistry,
   projectTypeId?: string,
 ): EntityTypesRegistry {
   const merged: EntityTypesRegistry = {};
 
-  // Helper to merge a specific registry
   const mergeRegistry = (registry: EntityTypesRegistry) => {
     for (const [id, def] of Object.entries(registry)) {
       if (!def || typeof def !== "object") continue;
@@ -15,27 +14,12 @@ export function mergeEntityTypes(
     }
   };
 
-  // 1. Merge defaults
-  if (projectTypeId && DEFAULT_ENTITY_TYPES[projectTypeId]) {
-    mergeRegistry(DEFAULT_ENTITY_TYPES[projectTypeId]);
+  if (projectTypeId) {
+    const pt = projectTypes[projectTypeId];
+    if (pt?.projectEntities) mergeRegistry(pt.projectEntities);
   } else {
-    // Merge all defaults if no specific type requested
-    for (const typeRegistry of Object.values(DEFAULT_ENTITY_TYPES)) {
-      mergeRegistry(typeRegistry);
-    }
-  }
-
-  // 2. Merge user overrides
-  if (userTypes && typeof userTypes === "object") {
-    if (projectTypeId && userTypes[projectTypeId]) {
-      mergeRegistry(userTypes[projectTypeId]);
-    } else if (!projectTypeId) {
-      // Merge all user types if no specific type requested
-      for (const typeRegistry of Object.values(userTypes)) {
-        if (typeRegistry && typeof typeRegistry === "object") {
-          mergeRegistry(typeRegistry);
-        }
-      }
+    for (const pt of Object.values(projectTypes)) {
+      if (pt?.projectEntities) mergeRegistry(pt.projectEntities);
     }
   }
 
@@ -45,12 +29,28 @@ export function mergeEntityTypes(
 export function mergeProjectTypes(
   userTypes?: ProjectTypesRegistry,
 ): ProjectTypesRegistry {
-  const merged: ProjectTypesRegistry = { ...DEFAULT_PROJECT_TYPES };
+  const merged: ProjectTypesRegistry = {};
+
+  // Start with defaults
+  for (const [id, def] of Object.entries(DEFAULT_PROJECT_TYPES)) {
+    merged[id] = { ...def };
+  }
+
+  // Deep-merge user overrides
   if (userTypes && typeof userTypes === "object") {
     for (const [id, def] of Object.entries(userTypes)) {
       if (!def || typeof def !== "object") continue;
-      merged[id] = { ...merged[id], ...def, id };
+      merged[id] = {
+        ...merged[id],
+        ...def,
+        id,
+        projectEntities: {
+          ...(merged[id]?.projectEntities ?? {}),
+          ...(def.projectEntities ?? {}),
+        },
+      };
     }
   }
+
   return merged;
 }

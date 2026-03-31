@@ -2,7 +2,7 @@ import { Notice, PluginSettingTab, Setting, setIcon } from "obsidian";
 import * as Obsidian from "obsidian";
 import { ProjectFlowPlugin } from "./plugin";
 import { ProjectFlowSettings, type AIProvider } from "./interfaces";
-import { DEFAULT_ENTITY_TYPES, DEFAULT_PROJECT_TYPES } from "./core/registry-defaults";
+import { DEFAULT_PROJECT_TYPES } from "./core/registry-defaults";
 import { ConfirmResetModal } from "./confirm-reset-modal";
 import { deleteProjectById, archiveProjectByPromptInfo } from "./services/project-management-service";
 
@@ -49,7 +49,6 @@ export const DEFAULT_SETTINGS: ProjectFlowSettings = {
     strictExecution: false,
     memoryLimit: 10,
     mcpServers: [],
-    toolLog: [],
   },
   projectRecords: {},
   archivedRecords: {},
@@ -58,7 +57,6 @@ export const DEFAULT_SETTINGS: ProjectFlowSettings = {
     byFullName: {},
     archivedByFullName: {},
   },
-  entityTypes: DEFAULT_ENTITY_TYPES,
   projectTypes: DEFAULT_PROJECT_TYPES,
 };
 
@@ -625,7 +623,6 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
           memoryLimit: 10,
           mixedOfferText: defaultMixedOfferText,
           mcpServers: [],
-          toolLog: [],
         };
       }
       if (this.plugin.settings.ai.apiKeySecretName == null) this.plugin.settings.ai.apiKeySecretName = "";
@@ -639,7 +636,6 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
       if (this.plugin.settings.ai.memoryLimit == null) this.plugin.settings.ai.memoryLimit = 10;
       if (this.plugin.settings.ai.mixedOfferText == null) this.plugin.settings.ai.mixedOfferText = defaultMixedOfferText;
       if (!Array.isArray(this.plugin.settings.ai.mcpServers)) this.plugin.settings.ai.mcpServers = [];
-      if (!Array.isArray(this.plugin.settings.ai.toolLog)) this.plugin.settings.ai.toolLog = [];
       return this.plugin.settings.ai;
     };
 

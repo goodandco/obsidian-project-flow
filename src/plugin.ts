@@ -46,7 +46,7 @@ export class ProjectFlowPlugin extends Plugin {
     const raw = await this.loadData();
     try {
       const { migrateSettings, CURRENT_SETTINGS_SCHEMA_VERSION } = await import("./core/settings-schema");
-      const { DEFAULT_ENTITY_TYPES, DEFAULT_PROJECT_TYPES } = await import("./core/registry-defaults");
+      const { DEFAULT_PROJECT_TYPES } = await import("./core/registry-defaults");
       const { ensureProjectIndex } = await import("./core/project-index");
       const { ensureProjectGraph } = await import("./core/project-graph");
       this.settings = Object.assign({}, DEFAULT_SETTINGS, migrateSettings(raw));
@@ -74,20 +74,6 @@ export class ProjectFlowPlugin extends Plugin {
 
       if (!this.settings.templatesRoot) {
         this.settings.templatesRoot = "Templates/ProjectFlow";
-        changed = true;
-      }
-      if (this.settings.entityTypes && typeof this.settings.entityTypes === "object") {
-        const firstVal = Object.values(this.settings.entityTypes)[0];
-        // If the first value has a 'templatePath', it's the old flat format
-        if (firstVal && (firstVal as any).templatePath) {
-          const legacy = this.settings.entityTypes as any;
-          this.settings.entityTypes = { operational: legacy };
-          changed = true;
-        }
-      }
-
-      if (!this.settings.entityTypes || Object.keys(this.settings.entityTypes).length === 0) {
-        this.settings.entityTypes = DEFAULT_ENTITY_TYPES;
         changed = true;
       }
       if (!this.settings.projectTypes || Object.keys(this.settings.projectTypes).length === 0) {

@@ -176,7 +176,6 @@ export async function runAgentLoop(options: {
           content: JSON.stringify(payload),
         });
       }
-      options.state.recordToolLog(res.toolName, res.ok, res.error);
       options.messages.push({
         role: "tool",
         name: res.toolName,
