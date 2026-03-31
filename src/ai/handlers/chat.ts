@@ -14,19 +14,22 @@ import { streamProvider } from "../providers/provider";
 
 function buildPlanDisplayMessage(
   plan: string | undefined,
-  _context: string | undefined,
+  context: string | undefined,
   fields: Record<string, unknown> | undefined,
 ): string {
-  const parts: string[] = [];
-  if (plan) parts.push(plan);
   const filledFields = fields
     ? Object.entries(fields).filter(([, v]) => v != null && v !== "" && typeof v !== "object")
     : [];
-  if (filledFields.length > 0) {
-    const rows = filledFields.map(([k, v]) => `- **${k}:** ${String(v)}`).join("\n");
-    parts.push(rows);
-  }
-  return parts.length > 0 ? parts.join("\n\n") : "Ready to proceed.";
+  const fieldRows = filledFields.length > 0
+    ? filledFields.map(([k, v]) => `- **${k}:** ${String(v)}`).join("\n")
+    : null;
+
+  const header = plan || context;
+  if (header && fieldRows) return `${header}\n\n${fieldRows}`;
+  if (header) return header;
+  if (fieldRows) return `Planned action:\n${fieldRows}`;
+  
+  return "Ready to proceed.";
 }
 
 const CHAT_PROMPT = [

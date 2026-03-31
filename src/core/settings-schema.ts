@@ -1,7 +1,7 @@
 import type { ProjectFlowSettings } from '../interfaces';
 import { DEFAULT_ENTITY_TYPES, DEFAULT_PROJECT_TYPES } from './registry-defaults';
 
-export const CURRENT_SETTINGS_SCHEMA_VERSION = 11;
+export const CURRENT_SETTINGS_SCHEMA_VERSION = 12;
 
 const DEFAULT_MIXED_OFFER_TEXT = "I can also set this up for you. Shall I proceed?";
 
@@ -98,6 +98,17 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
       }
       if (s.projectTypes && (s.projectTypes as any).operational) {
         delete (s.projectTypes as any).operational;
+      }
+    }
+    // v12: Strip projectTemplates from all persisted project types — they are now always derived
+    // from registry defaults and must not be overridden by stale data.json values.
+    if (!s.schemaVersion || s.schemaVersion < 12) {
+      if (s.projectTypes && typeof s.projectTypes === 'object') {
+        for (const pt of Object.values(s.projectTypes as any)) {
+          if (pt && typeof pt === 'object') {
+            delete (pt as any).projectTemplates;
+          }
+        }
       }
     }
     if (!s.ai) {

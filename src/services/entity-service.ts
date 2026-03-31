@@ -188,8 +188,12 @@ async function resolveTemplatePath(
   const vaultDir = sanitizePath(plugin.settings.templatesRoot || "Templates/ProjectFlow");
   const builtinDir = `.obsidian/plugins/${plugin.manifest.id}/src/templates`;
 
+  const templateBasename = templateName.includes("/")
+    ? templateName.slice(templateName.lastIndexOf("/") + 1)
+    : templateName;
+
   const tryScopes = (scopes: TemplateScope[]) => scopes.map((scope) => {
-    if (scope === "project") return { scope, path: sanitizePath(`${projectDir}/${templateName}`) };
+    if (scope === "project") return { scope, path: sanitizePath(`${projectDir}/${templateBasename}`) };
     if (scope === "vault") return { scope, path: sanitizePath(`${vaultDir}/${templateName}`) };
     return { scope, path: `${builtinDir}/${templateName}` };
   });

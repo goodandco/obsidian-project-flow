@@ -97,7 +97,7 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
     }
 
     // Create template folder and its files using helper (non-critical)
-    await createProjectTemplates(plugin, projectInfo.name, variables, projectType);
+    await createProjectTemplates(plugin, projectInfo.name, variables, projectTypeId);
 
     // Record project creation in plugin data
     await recordProjectCreation(plugin, projectInfo, variables);
@@ -224,6 +224,10 @@ async function createProjectFile(
     const filePath = `${projectDir}/${fileName}`;
     const { SafeFileManager } = await import("./file-manager");
     const fm = new SafeFileManager(plugin.app);
+    const lastSlash = filePath.lastIndexOf('/');
+    if (lastSlash > 0) {
+      await fm.ensureFolder(filePath.substring(0, lastSlash));
+    }
     await fm.createIfAbsent(filePath, processedContent);
   } catch (error) {
     console.error(`Failed to create ${fileName}:`, error);
@@ -235,42 +239,25 @@ async function createProjectTemplates(
   plugin: IProjectFlowPlugin,
   projectName: string,
   variables: ProjectVariables,
-  projectType?: any, // Use any to avoid circular deps or define interface here
+  projectTypeId: string,
 ) {
-  const { sanitizePath, sanitizeFileName } = await import("../core/path-sanitizer");
+  const { sanitizePath } = await import("../core/path-sanitizer");
   const { SafeFileManager } = await import("./file-manager");
+  const { mergeEntityTypes } = await import("../core/registry-merge");
   const fm = new SafeFileManager(plugin.app);
 
   const templateDir = sanitizePath(`Templates/${projectName}_Templates`);
   await fm.ensureFolder(templateDir);
 
-  const templateMappings = projectType?.projectTemplates ?? [
-    { source: "template-meeting-daily.md", target: `${projectName}_Meeting_Daily_Template.md` },
-    { source: "template-meeting-discussion.md", target: `${projectName}_Meeting_Discussion_Template.md` },
-    { source: "template-meeting-knowledge.md", target: `${projectName}_Meeting_Knowledge_Template.md` },
-    { source: "template-meeting-planning.md", target: `${projectName}_Meeting_Planning_Template.md` },
-    { source: "template-meeting-refinement.md", target: `${projectName}_Meeting_Refinement_Template.md` },
-    { source: "template-meeting-retro.md", target: `${projectName}_Meeting_Retro_Template.md` },
-    { source: "template-meeting-demo.md", target: `${projectName}_Meeting_Demo_Template.md` },
-    { source: "template-sprint.md", target: `${projectName}_Sprint_Template.md` },
-    { source: "template-task.md", target: `${projectName}_Task_Template.md` },
-    { source: "template-idea.md", target: `${projectName}_Idea_Template.md` },
-    { source: "template-knowledge-base-item.md", target: `${projectName}_Knowledge_Item_Template.md` },
-  ];
-
-  for (const mapping of templateMappings) {
+  const entityTypes = mergeEntityTypes(plugin.settings.entityTypes, projectTypeId);
+  for (const entityType of Object.values(entityTypes)) {
+    if (!entityType?.templatePath) continue;
+    const source = entityType.templatePath;
+    const target = source.includes("/") ? source.slice(source.lastIndexOf("/") + 1) : source;
     try {
-      const resolvedTarget = await processTemplate(mapping.target, variables);
-      const safeTarget = sanitizeFileName(resolvedTarget);
-      await createProjectFile(
-        plugin,
-        templateDir,
-        safeTarget,
-        mapping.source,
-        variables,
-      );
+      await createProjectFile(plugin, templateDir, target, source, variables);
     } catch (error) {
-      console.warn(`Failed to create template ${mapping.target}: ${error}`);
+      console.warn(`Failed to create template ${target}: ${error}`);
     }
   }
 }

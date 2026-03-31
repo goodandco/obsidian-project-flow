@@ -1,3 +1,4 @@
+import { requestUrl } from "obsidian";
 import type { ChatMessage, ProviderStreamEvent, ToolCallDelta } from "../types/core";
 import type { ToolDefinition } from "../types/tools";
 
@@ -25,96 +26,57 @@ export async function* streamAnthropicMessages(
       description: t.description,
       input_schema: t.schema,
     })),
-    stream: true,
   };
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "x-api-key": config.apiKey,
-      "anthropic-version": "2023-06-01",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok || !res.body) {
-    const text = await safeReadText(res);
-    throw new Error(`Anthropic request failed: ${res.status} ${text || res.statusText}`);
+  // Use Obsidian's requestUrl to bypass CORS restrictions in the Electron renderer.
+  // Native fetch is blocked by CORS for app://obsidian.md origin; requestUrl routes
+  // through the main process where CORS does not apply.
+  let res: { status: number; text: string };
+  try {
+    res = await requestUrl({
+      url,
+      method: "POST",
+      headers: {
+        "x-api-key": config.apiKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      throw: false,
+    });
+  } catch (e: any) {
+    throw new Error(`Anthropic request failed: ${e?.message ?? e}`);
   }
 
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  const suppressInputDelta = new Set<number>();
-  let inputTokens = 0;
-  let outputTokens = 0;
+  if (res.status < 200 || res.status >= 300) {
+    throw new Error(`Anthropic request failed: ${res.status} ${res.text || ""}`);
+  }
 
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() || "";
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed.startsWith("data:")) continue;
-      const data = trimmed.replace(/^data:\s*/, "");
-      if (!data || data === "[DONE]") {
-        yield { type: "usage", usage: { inputTokens, outputTokens } };
-        yield { type: "done" };
-        return;
-      }
-      let json: any;
-      try {
-        json = JSON.parse(data);
-      } catch {
-        continue;
-      }
-      const type = json?.type;
-      if (type === "message_start") {
-        inputTokens = json.message?.usage?.input_tokens ?? 0;
-      }
-      if (type === "message_delta") {
-        outputTokens = json.usage?.output_tokens ?? 0;
-      }
-      if (type === "content_block_delta") {
-        const delta = json.delta;
-        if (delta?.type === "text_delta") {
-          yield { type: "content", delta: delta.text };
-        }
-        if (delta?.type === "input_json_delta") {
-          if (suppressInputDelta.has(json.index)) continue;
-          const toolCalls: ToolCallDelta[] = [{
-            index: json.index,
-            arguments: delta.partial_json,
-          }];
-          yield { type: "tool_call_delta", toolCalls };
-        }
-      }
-      if (type === "content_block_start") {
-        const block = json.content_block;
-        if (block?.type === "tool_use") {
-          const hasInput = block.input && Object.keys(block.input).length > 0;
-          if (hasInput) {
-            suppressInputDelta.add(json.index);
-          }
-          const toolCalls: ToolCallDelta[] = [{
-            index: json.index,
-            id: block.id,
-            name: block.name,
-            arguments: hasInput ? JSON.stringify(block.input) : "",
-          }];
-          yield { type: "tool_call_delta", toolCalls };
-        }
-      }
-      if (type === "message_stop") {
-        yield { type: "usage", usage: { inputTokens, outputTokens } };
-        yield { type: "done" };
-        return;
-      }
+  let json: any;
+  try {
+    json = JSON.parse(res.text);
+  } catch {
+    throw new Error("Anthropic returned non-JSON response");
+  }
+
+  const inputTokens: number = json.usage?.input_tokens ?? 0;
+  const outputTokens: number = json.usage?.output_tokens ?? 0;
+
+  for (const block of json.content ?? []) {
+    if (block.type === "text") {
+      yield { type: "content", delta: block.text };
+    }
+    if (block.type === "tool_use") {
+      const toolCalls: ToolCallDelta[] = [{
+        index: 0,
+        id: block.id,
+        name: block.name,
+        arguments: JSON.stringify(block.input ?? {}),
+      }];
+      yield { type: "tool_call_delta", toolCalls };
     }
   }
+
   yield { type: "usage", usage: { inputTokens, outputTokens } };
   yield { type: "done" };
 }
@@ -163,10 +125,3 @@ function toAnthropicMessages(messages: ChatMessage[]): { system: string; anthrop
   return { system, anthropicMessages: out };
 }
 
-async function safeReadText(res: Response): Promise<string> {
-  try {
-    return await res.text();
-  } catch {
-    return "";
-  }
-}

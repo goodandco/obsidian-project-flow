@@ -144,7 +144,6 @@ export interface ProjectType {
   description?: string;
   folderStructure?: string[];
   initialNotes?: Array<{ fileName: string; template: string }>;
-  projectTemplates?: Array<{ source: string; target: string }>;
   allowedEntityTypes?: string[];
 }
 

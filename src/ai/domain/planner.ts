@@ -23,7 +23,7 @@ const PLANNER_PROMPT = [
   "  This rule applies even if you think you can infer the values from context. Always ask.",
   "MANDATORY RULE — createProject: id and tag MUST be explicitly provided by the user.",
   "  id: a unique project identifier used in vault folder paths (e.g. 'my-project-2024'). Lowercase, hyphens allowed.",
-  "  tag: a short label used to reference the project in notes (e.g. '#myproj').",
+  "  tag: a short label used to reference the project in notes (e.g. 'myproj'). Do NOT include a leading '#'.",
   "  Step 1: Check whether the user has already stated an id and a tag in this conversation.",
   "  Step 2: If EITHER is missing AND the user has NOT explicitly asked you to generate/auto-generate/make up/choose them, set needsFollowup=true.",
   "  Step 3: In the follow-up question, ask for id and tag together. If dimension/category are also unknown, ask for all four in a single question — do NOT send separate follow-ups.",
