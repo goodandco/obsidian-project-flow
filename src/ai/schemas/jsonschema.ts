@@ -16,4 +16,8 @@ export interface JSONSchema7 {
   additionalProperties?: boolean;
   anyOf?: JSONSchema7[];
   oneOf?: JSONSchema7[];
+  minLength?: number;
+  maxLength?: number;
+  minimum?: number;
+  maximum?: number;
 }

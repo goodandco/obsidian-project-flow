@@ -66,6 +66,25 @@ export async function getNewProjectDetailsWithPrompt(app: App, settings: Project
     return [null, "Project creation cancelled. No category selected."];
   }
 
+  // Step 7: Project Type selection
+  const { mergeProjectTypes } = await import("../core/registry-merge");
+  const projectTypes = mergeProjectTypes(settings.projectTypes);
+  const typeIds = Object.keys(projectTypes);
+  let selectedTypeId = "operational";
+
+  if (typeIds.length > 1) {
+    const typeChoices = typeIds.map((id) => projectTypes[id].name);
+    const selectedTypeName = await promptForChoice(
+      app,
+      "Select project type:",
+      typeChoices,
+    );
+    if (!selectedTypeName) {
+      return [null, "Project creation cancelled. No project type selected."];
+    }
+    selectedTypeId = typeIds.find((id) => projectTypes[id].name === selectedTypeName) || "operational";
+  }
+
   const projectInfo: ProjectInfo = {
     name: projectName,
     tag: projectTag,
@@ -73,6 +92,7 @@ export async function getNewProjectDetailsWithPrompt(app: App, settings: Project
     parent: normalizedParent,
     dimension: selectedDimension,
     category: selectedCategory,
+    projectTypeId: selectedTypeId,
   };
 
   // Check for duplicate ID inside selected dimension/category
@@ -91,7 +111,7 @@ export async function getNewProjectDetailsWithPrompt(app: App, settings: Project
 
   // Validate inputs (lightweight)
   try {
-    const {validateProjectName, validateTag, ensureValidOrThrow} =
+    const { validateProjectName, validateTag, ensureValidOrThrow } =
       await import("../core/input-validator");
     ensureValidOrThrow(
       () => validateProjectName(projectInfo.name),
@@ -164,5 +184,5 @@ export async function getProjectDetailsWithPrompt(app: App, settings: ProjectFlo
     return [null, "Project action cancelled. No project selected."];
   }
 
-  return [{dimension, category, projectId}, "Project details collected."];
+  return [{ dimension, category, projectId }, "Project details collected."];
 }

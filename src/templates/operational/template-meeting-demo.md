@@ -1,6 +1,6 @@
 ---
 Type: "Meeting"
-MeetingType: "Planning"
+MeetingType: "Demo"
 Parent: "[[$_PROJECT_NAME Meetings]]"
 DateTime: <% tp.date.now("YYYY-MM-DD") %>T09:30:00
 Duration: 30 min
@@ -8,9 +8,9 @@ Project: "[[$_PROJECT_FULL_NAME]]"
 tags:
   - type/meeting
   - meeting
+  - demo
   - $_PROJECT_TAG
 ---
-<% await tp.file.move("$_PROJECT_PATH/Meetings/Planning/" + tp.date.now("YYYY.MM.DD") + " Sprint Planning") %>
 
 ## 🗓️ Agenda  
 <!-- ai:agenda -->

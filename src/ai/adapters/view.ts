@@ -24,6 +24,10 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
   private resizeObserver: ResizeObserver | null = null;
   private isNarrow = false;
   private sidebarVisible = true;
+  private toolGroupStack: Array<{ body: HTMLDivElement; label: HTMLSpanElement; arrow: HTMLSpanElement } | null> = [];
+  private typingIndicatorEl: HTMLDivElement | null = null;
+  private newMessagesBadgeEl: HTMLDivElement | null = null;
+  private handleScrollBound: (() => void) | null = null;
   private readonly emptyConversationTitle = "New chat";
 
   constructor(leaf: WorkspaceLeaf, plugin: ProjectFlowPlugin) {
@@ -85,8 +89,23 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
       this.updateHeaderTitle();
     };
 
-    const list = main.createDiv({ cls: "pf-ai-messages" });
+    const messagesWrap = main.createDiv({ cls: "pf-ai-messages-wrap" });
+    const list = messagesWrap.createDiv({ cls: "pf-ai-messages" });
     this.messageContainer = list;
+
+    const badge = messagesWrap.createDiv({ cls: "pf-ai-new-messages" });
+    badge.style.display = "none";
+    badge.setText("↓ New messages");
+    badge.onclick = () => {
+      if (this.messageContainer) {
+        this.messageContainer.scrollTo({ top: this.messageContainer.scrollHeight, behavior: "smooth" });
+      }
+      this.hideNewMessagesBadge();
+    };
+    this.newMessagesBadgeEl = badge;
+
+    this.handleScrollBound = this.handleScroll.bind(this);
+    list.addEventListener("scroll", this.handleScrollBound as EventListener);
 
     const inputWrap = main.createDiv({ cls: "pf-ai-input" });
     const textarea = inputWrap.createEl("textarea");
@@ -119,7 +138,10 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
   }
 
   async onClose(): Promise<void> {
-    this.controller?.onClose();
+    await this.controller?.onClose();
+    if (this.handleScrollBound && this.messageContainer) {
+      this.messageContainer.removeEventListener("scroll", this.handleScrollBound as EventListener);
+    }
     this.messageContainer = null;
     this.inputEl = null;
     this.sendBtn = null;
@@ -132,6 +154,8 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     this.shellEl = null;
     this.sidebarEl = null;
     this.sidebarToggleBtn = null;
+    this.newMessagesBadgeEl = null;
+    this.handleScrollBound = null;
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
   }
@@ -139,12 +163,52 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
   appendMessage(role: ChatRole, content: string): MessageHandle {
     if (!this.messageContainer) return null;
     const shouldScroll = this.shouldAutoScroll();
-    const item = this.messageContainer.createDiv({ cls: `pf-ai-message ${role}` });
+    const activeGroup = this.toolGroupStack[0] ?? null;
+    const container: HTMLElement = (role === "tool" && activeGroup)
+      ? activeGroup.body
+      : this.messageContainer;
+    const item = container.createDiv({ cls: `pf-ai-message ${role}` });
     this.renderMessage(item, content);
+    this.keepTypingIndicatorLast();
     if (shouldScroll) {
-      this.messageContainer.scrollTo({ top: this.messageContainer.scrollHeight, behavior: "smooth" });
+      this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
+    } else {
+      this.showNewMessagesBadge();
     }
     return item;
+  }
+
+  openToolGroup(): void {
+    if (this.toolGroupStack.length > 0) {
+      // Already inside a group — push a null slot so closeToolGroup pairing still works
+      this.toolGroupStack.push(null);
+      return;
+    }
+    if (!this.messageContainer) return;
+    const shouldScroll = this.shouldAutoScroll();
+    const group = this.messageContainer.createDiv({ cls: "pf-ai-tool-group" });
+    const header = group.createDiv({ cls: "pf-ai-tool-group-header" });
+    const arrow = header.createSpan({ cls: "pf-ai-tool-group-arrow", text: "▸" });
+    const label = header.createSpan({ cls: "pf-ai-tool-group-label", text: "…" });
+    const body = group.createDiv({ cls: "pf-ai-tool-group-body" });
+    header.onclick = () => {
+      const open = body.style.display !== "none";
+      body.style.display = open ? "none" : "flex";
+      arrow.setText(open ? "▸" : "▾");
+    };
+    this.toolGroupStack.push({ body, label, arrow });
+    this.keepTypingIndicatorLast();
+    if (shouldScroll) {
+      this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
+    } else {
+      this.showNewMessagesBadge();
+    }
+  }
+
+  closeToolGroup(label: string): void {
+    const top = this.toolGroupStack.pop();
+    if (top) top.label.setText(label);
+    // null slot = nested no-op open; label is intentionally discarded
   }
 
   updateMessage(el: MessageHandle, content: string): void {
@@ -153,7 +217,15 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     this.renderMessage(el, content);
     if (shouldScroll) {
       this.messageContainer?.scrollTo({ top: this.messageContainer.scrollHeight, behavior: "smooth" });
+    } else {
+      this.showNewMessagesBadge();
     }
+  }
+
+  showUsage(handle: MessageHandle, usage: { inputTokens: number; outputTokens: number }): void {
+    if (!handle) return;
+    const footer = handle.createEl("div", { cls: "pf-ai-token-usage" });
+    footer.setText(`↑ ${usage.inputTokens.toLocaleString()} · ↓ ${usage.outputTokens.toLocaleString()} tokens`);
   }
 
   appendConfirmationActions(): void {
@@ -188,25 +260,47 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
       this.updateHeaderTitle();
     };
     if (shouldScroll) {
-      this.messageContainer.scrollTo({ top: this.messageContainer.scrollHeight, behavior: "smooth" });
+      this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
+    } else {
+      this.showNewMessagesBadge();
     }
   }
 
   clearMessages(): void {
     this.messageContainer?.empty();
+    this.toolGroupStack = [];
+    this.typingIndicatorEl = null;
+    this.hideNewMessagesBadge();
   }
 
   setBusy(busy: boolean): void {
     if (this.sendBtn) this.sendBtn.disabled = busy;
-    if (this.statusEl) {
-      if (busy) {
-        this.statusEl.setText("Thinking...");
-        this.statusEl.style.display = "block";
-      } else {
-        this.statusEl.setText("");
-        this.statusEl.style.display = "none";
-      }
+    if (busy) {
+      this.showTypingIndicator();
+    } else {
+      this.hideTypingIndicator();
     }
+  }
+
+  private showTypingIndicator(): void {
+    if (!this.messageContainer || this.typingIndicatorEl) return;
+    const el = this.messageContainer.createDiv({ cls: "pf-ai-typing" });
+    el.createSpan({ cls: "pf-ai-typing-dot" });
+    el.createSpan({ cls: "pf-ai-typing-dot" });
+    el.createSpan({ cls: "pf-ai-typing-dot" });
+    this.typingIndicatorEl = el;
+  }
+
+  private hideTypingIndicator(): void {
+    this.typingIndicatorEl?.remove();
+    this.typingIndicatorEl = null;
+  }
+
+  /** Move the typing indicator to the last position in messageContainer so it's always visible. */
+  private keepTypingIndicatorLast(): void {
+    if (!this.typingIndicatorEl || !this.messageContainer) return;
+    // appendChild on an existing node moves it — no duplication
+    this.messageContainer.appendChild(this.typingIndicatorEl);
   }
 
   private async handleSend(): Promise<void> {
@@ -219,21 +313,24 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     this.hideSidebarIfNarrow();
   }
 
-  private handleNewConversation(): void {
+  private async handleNewConversation(): Promise<void> {
     if (!this.state) return;
     this.state.createConversation();
-    this.resetController();
+    await this.resetController();
     this.renderConversationList();
     this.renderActiveConversation();
     this.updateHeaderTitle();
     this.hideSidebarIfNarrow();
   }
 
-  private selectConversation(id: string): void {
+  private async selectConversation(id: string): Promise<void> {
     if (!this.state) return;
-    if (id === this.state.getActiveConversationId()) return;
+    if (id === this.state.getActiveConversationId()) {
+      this.hideSidebarIfNarrow();
+      return;
+    }
     this.state.setActiveConversation(id);
-    this.resetController();
+    await this.resetController();
     this.renderConversationList();
     this.renderActiveConversation();
     this.updateHeaderTitle();
@@ -250,11 +347,11 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     this.updateHeaderTitle();
   }
 
-  private handleRemoveConversation(id: string): void {
+  private async handleRemoveConversation(id: string): Promise<void> {
     if (!this.state) return;
     if (!window.confirm("Remove this conversation?")) return;
     this.state.removeConversation(id);
-    this.resetController();
+    await this.resetController();
     this.renderConversationList();
     this.renderActiveConversation();
     this.updateHeaderTitle();
@@ -264,9 +361,9 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     this.applySidebarState();
   }
 
-  private resetController(): void {
+  private async resetController(): Promise<void> {
     if (!this.state) return;
-    this.controller?.onClose();
+    await this.controller?.onClose();
     this.controller = new AiChatController(this.plugin, this, this.state);
   }
 
@@ -339,6 +436,22 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     if (!this.messageContainer) return;
     this.messageContainer.empty();
     for (const message of messages) {
+      if (message.role === "tool") continue;
+      if (!message.content) continue;
+      if (message.content.startsWith("[tool_calls:")) {
+        const group = this.messageContainer.createDiv({ cls: "pf-ai-tool-group" });
+        const header = group.createDiv({ cls: "pf-ai-tool-group-header" });
+        const arrow = header.createSpan({ cls: "pf-ai-tool-group-arrow", text: "▸" });
+        header.createSpan({ cls: "pf-ai-tool-group-label", text: "Tool calls..." });
+        const body = group.createDiv({ cls: "pf-ai-tool-group-body" });
+        body.createDiv({ cls: "pf-ai-message tool", text: "Details not available after reload." });
+        header.onclick = () => {
+          const open = body.style.display !== "none";
+          body.style.display = open ? "none" : "flex";
+          arrow.setText(open ? "▸" : "▾");
+        };
+        continue;
+      }
       const item = this.messageContainer.createDiv({ cls: `pf-ai-message ${message.role}` });
       this.renderMessage(item, message.content);
     }
@@ -378,6 +491,22 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
       return `\`\`\`json\n${pretty}\n\`\`\``;
     } catch {
       return null;
+    }
+  }
+
+  private showNewMessagesBadge(): void {
+    if (!this.newMessagesBadgeEl) return;
+    this.newMessagesBadgeEl.style.display = "flex";
+  }
+
+  private hideNewMessagesBadge(): void {
+    if (!this.newMessagesBadgeEl) return;
+    this.newMessagesBadgeEl.style.display = "none";
+  }
+
+  private handleScroll(): void {
+    if (this.shouldAutoScroll()) {
+      this.hideNewMessagesBadge();
     }
   }
 

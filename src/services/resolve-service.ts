@@ -13,10 +13,11 @@ export function resolveProject(
     ensureProjectIndex(plugin.settings.projectIndex, plugin.settings.projectRecords).index;
 
   const lookup = normalizeProjectRef(ref);
+  const value = (lookup.fullName || lookup.id || lookup.tag || '').replace(/^#/, '');
   const entry =
-    (lookup.fullName && index.byFullName[lookup.fullName]) ||
-    (lookup.id && index.byId[lookup.id]) ||
-    (lookup.tag && index.byTag[lookup.tag]);
+    index.byFullName[value] ||
+    index.byId[value] ||
+    index.byTag[value];
   if (!entry) return null;
 
   const record = plugin.settings.projectRecords?.[entry.dimension]?.[entry.category]?.[entry.projectId];
@@ -78,13 +79,12 @@ function findRecordByRef(
     for (const projects of Object.values(categories)) {
       for (const record of Object.values(projects)) {
         if (!record) continue;
-        if (lookup.fullName && record.variables.PROJECT_FULL_NAME === lookup.fullName) {
-          return record;
-        }
-        if (lookup.id && record.info.id === lookup.id) {
-          return record;
-        }
-        if (lookup.tag && record.variables.PROJECT_TAG === lookup.tag) {
+        const value = (lookup.fullName || lookup.id || lookup.tag || '').replace(/^#/, '');
+        if (
+          record.variables.PROJECT_FULL_NAME === value ||
+          record.info.id === value ||
+          record.variables.PROJECT_TAG === value
+        ) {
           return record;
         }
       }

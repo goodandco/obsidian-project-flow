@@ -21,9 +21,9 @@ export function generateProjectVariables(projectInfo: ProjectInfo, settings: Pro
 
   return {
     PROJECT_NAME: projectInfo.name,
-    PROJECT_TAG: projectInfo.tag,
+    PROJECT_TAG: projectInfo.tag.replace(/^#/, ''),
     PROJECT_PARENT: projectInfo.parent ? projectInfo.parent : "",
-    PARENT_TAG: projectInfo.parent ? projectInfo.tag : "",
+    PARENT_TAG: projectInfo.parent ? projectInfo.tag.replace(/^#/, '') : "",
     YEAR: year,
     DATE: date,
     PROJECT_FULL_NAME: projectFullName,

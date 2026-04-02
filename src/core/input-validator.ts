@@ -18,7 +18,7 @@ export function validateProjectName(name: string): ValidationResult {
 
 export function validateTag(tag: string): ValidationResult {
   if (!tag || !tag.trim()) return { ok: false, reason: 'Tag is required' };
-  const t = tag.trim();
+  const t = tag.trim().replace(/^#/, '');
   if (!TAG_REGEX.test(t)) return { ok: false, reason: 'Tag must be 2-63 chars, start with letter/digit; may include -, _, /' };
   return { ok: true };
 }

@@ -42,6 +42,7 @@ export async function* streamChatCompletion(
     })),
     tool_choice: "auto",
     stream: true,
+    stream_options: { include_usage: true },
   };
 
   const headers: Record<string, string> = {
@@ -64,6 +65,8 @@ export async function* streamChatCompletion(
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let inputTokens = 0;
+  let outputTokens = 0;
 
   while (true) {
     const { value, done } = await reader.read();
@@ -76,6 +79,7 @@ export async function* streamChatCompletion(
       if (!trimmed.startsWith("data:")) continue;
       const data = trimmed.replace(/^data:\s*/, "");
       if (data === "[DONE]") {
+        yield { type: "usage", usage: { inputTokens, outputTokens } };
         yield { type: "done" };
         return;
       }
@@ -83,6 +87,12 @@ export async function* streamChatCompletion(
       try {
         json = JSON.parse(data);
       } catch {
+        continue;
+      }
+      // Final chunk with usage (choices is empty array)
+      if (json?.usage && (!json.choices || json.choices.length === 0)) {
+        inputTokens = json.usage.prompt_tokens ?? 0;
+        outputTokens = json.usage.completion_tokens ?? 0;
         continue;
       }
       const delta = json?.choices?.[0]?.delta;
@@ -101,6 +111,7 @@ export async function* streamChatCompletion(
       }
     }
   }
+  yield { type: "usage", usage: { inputTokens, outputTokens } };
   yield { type: "done" };
 }
 

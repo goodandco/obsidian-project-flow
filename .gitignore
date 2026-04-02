@@ -1,3 +1,11 @@
 node_modules
 .idea
+playwright-report/
+test-results/
+
+# AI/Claude dev files
+CLAUDE.md
+.claude/
+.cursor/
+.junie/
 

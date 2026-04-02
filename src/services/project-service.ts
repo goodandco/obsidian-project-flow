@@ -11,8 +11,8 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
     const variables = generateProjectVariables(projectInfo, plugin.settings);
     const projectsDir = plugin.settings.projectsRoot || "1. Projects";
 
-    const {sanitizePath, sanitizeFileName} = await import("../core/path-sanitizer");
-    const {SafeFileManager} = await import("./file-manager");
+    const { sanitizePath, sanitizeFileName } = await import("../core/path-sanitizer");
+    const { SafeFileManager } = await import("./file-manager");
     const fm = new SafeFileManager(plugin.app);
 
     // Build sanitized paths
@@ -37,7 +37,7 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
       "People",
     ];
     const folderOps = [
-      {type: "folder" as const, path: safeProjectDir},
+      { type: "folder" as const, path: safeProjectDir },
       ...subdirs.map((s) => ({
         type: "folder" as const,
         path: sanitizePath(`${safeProjectDir}/${s}`),
@@ -56,9 +56,9 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
         fileName: `${projectInfo.name} Meetings.md`,
         template: "meetings.md",
       },
-      {fileName: `${projectInfo.name} People.md`, template: "people.md"},
-      {fileName: `${projectInfo.name} Work.md`, template: "work.md"},
-      {fileName: `${projectInfo.name} Knowledge Base.md`, template: "knowledge-base.md"},
+      { fileName: `${projectInfo.name} People.md`, template: "people.md" },
+      { fileName: `${projectInfo.name} Work.md`, template: "work.md" },
+      { fileName: `${projectInfo.name} Knowledge Base.md`, template: "knowledge-base.md" },
     ];
 
     const fileOps = [] as Array<{ type: "file"; path: string; data: string }>;
@@ -75,10 +75,17 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
         templateContent,
         variables,
       );
+      // Support nested paths like "Overview/Goals.md" by only sanitizing the
+      // filename segment; the directory segment must already exist (via folderStructure).
+      const lastSlash = resolvedFileName.lastIndexOf('/');
+      const dirSegment = lastSlash >= 0 ? resolvedFileName.substring(0, lastSlash) : '';
+      const fileSegment = lastSlash >= 0 ? resolvedFileName.substring(lastSlash + 1) : resolvedFileName;
       const safeFilePath = sanitizePath(
-        `${safeProjectDir}/${sanitizeFileName(resolvedFileName)}`,
+        dirSegment
+          ? `${safeProjectDir}/${dirSegment}/${sanitizeFileName(fileSegment)}`
+          : `${safeProjectDir}/${sanitizeFileName(fileSegment)}`,
       );
-      fileOps.push({type: "file", path: safeFilePath, data: processed});
+      fileOps.push({ type: "file", path: safeFilePath, data: processed });
     }
 
     // Batch create folders and files with rollback on file errors
@@ -90,7 +97,7 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
     }
 
     // Create template folder and its files using helper (non-critical)
-    await createProjectTemplates(plugin, projectInfo.name, variables);
+    await createProjectTemplates(plugin, projectInfo.name, variables, projectTypeId);
 
     // Record project creation in plugin data
     await recordProjectCreation(plugin, projectInfo, variables);
@@ -215,8 +222,12 @@ async function createProjectFile(
     );
 
     const filePath = `${projectDir}/${fileName}`;
-    const {SafeFileManager} = await import("./file-manager");
+    const { SafeFileManager } = await import("./file-manager");
     const fm = new SafeFileManager(plugin.app);
+    const lastSlash = filePath.lastIndexOf('/');
+    if (lastSlash > 0) {
+      await fm.ensureFolder(filePath.substring(0, lastSlash));
+    }
     await fm.createIfAbsent(filePath, processedContent);
   } catch (error) {
     console.error(`Failed to create ${fileName}:`, error);
@@ -228,40 +239,25 @@ async function createProjectTemplates(
   plugin: IProjectFlowPlugin,
   projectName: string,
   variables: ProjectVariables,
+  projectTypeId: string,
 ) {
-  const {sanitizePath, sanitizeFileName} = await import("../core/path-sanitizer");
-  const {SafeFileManager} = await import("./file-manager");
+  const { sanitizePath } = await import("../core/path-sanitizer");
+  const { SafeFileManager } = await import("./file-manager");
+  const { mergeEntityTypes } = await import("../core/registry-merge");
   const fm = new SafeFileManager(plugin.app);
-  
+
   const templateDir = sanitizePath(`Templates/${projectName}_Templates`);
   await fm.ensureFolder(templateDir);
 
-  const templateMappings = [
-    { source: "template-meeting-daily.md", target: `${projectName}_Meeting_Daily_Template.md` },
-    { source: "template-meeting-discussion.md", target: `${projectName}_Meeting_Discussion_Template.md` },
-    { source: "template-meeting-knowledge.md", target: `${projectName}_Meeting_Knowledge_Template.md` },
-    { source: "template-meeting-planning.md", target: `${projectName}_Meeting_Planning_Template.md` },
-    { source: "template-meeting-refinement.md", target: `${projectName}_Meeting_Refinement_Template.md` },
-    { source: "template-meeting-retro.md", target: `${projectName}_Meeting_Retro_Template.md` },
-    { source: "template-meeting-demo.md", target: `${projectName}_Meeting_Demo_Template.md` },
-    { source: "template-sprint.md", target: `${projectName}_Sprint_Template.md` },
-    { source: "template-task.md", target: `${projectName}_Task_Template.md` },
-    { source: "template-idea.md", target: `${projectName}_Idea_Template.md` },
-    { source: "template-knowledge-base-item.md", target: `${projectName}_Knowledge_Item_Template.md` },
-  ];
-
-  for (const mapping of templateMappings) {
+  const entityTypes = mergeEntityTypes(plugin.settings.entityTypes, projectTypeId);
+  for (const entityType of Object.values(entityTypes)) {
+    if (!entityType?.templatePath) continue;
+    const source = entityType.templatePath;
+    const target = source.includes("/") ? source.slice(source.lastIndexOf("/") + 1) : source;
     try {
-      const safeTarget = sanitizeFileName(mapping.target);
-      await createProjectFile(
-        plugin,
-        templateDir,
-        safeTarget,
-        mapping.source,
-        variables,
-      );
+      await createProjectFile(plugin, templateDir, target, source, variables);
     } catch (error) {
-      console.warn(`Failed to create template ${mapping.target}: ${error}`);
+      console.warn(`Failed to create template ${target}: ${error}`);
     }
   }
 }

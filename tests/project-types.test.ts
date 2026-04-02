@@ -51,4 +51,35 @@ describe("projectTypes", () => {
 
     expect(projectTypeId).toBe("operational");
   });
+
+  it("resolves the learning project type from defaults", async () => {
+    const { DEFAULT_PROJECT_TYPES } = await import("../src/core/registry-defaults");
+    const settings = {
+      projectTypes: DEFAULT_PROJECT_TYPES,
+    } as ProjectFlowSettings;
+
+    const { projectTypeId, projectType } = resolveProjectType(settings, {
+      name: "Machine Learning",
+      tag: "ml",
+      id: "ML",
+      dimension: "Education",
+      category: "AI",
+      projectTypeId: "learning",
+    });
+
+    expect(projectTypeId).toBe("learning");
+    expect(projectType.name).toBe("Course / Learning");
+    expect(projectType.folderStructure).toContain("Modules");
+    expect(projectType.folderStructure).toContain("Overview");
+    expect(projectType.folderStructure).toContain("Notes");
+    expect(projectType.folderStructure).toContain("Assignments");
+    expect(projectType.folderStructure).toContain("Reviews");
+    expect(projectType.folderStructure).toContain("Resources");
+    expect(projectType.allowedEntityTypes).toContain("module");
+    expect(projectType.allowedEntityTypes).toContain("lesson");
+    expect(projectType.allowedEntityTypes).toContain("note");
+    expect(projectType.allowedEntityTypes).toContain("assignment");
+    expect(projectType.allowedEntityTypes).toContain("review");
+    expect(projectType.allowedEntityTypes).not.toContain("idea");
+  });
 });

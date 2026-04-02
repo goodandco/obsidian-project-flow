@@ -7,7 +7,6 @@ tags:
   - type/knowledge
   - $_PROJECT_TAG
 ---
-<% await tp.file.move("$_PROJECT_PATH/Knowledge Base/" + tp.file.title) %>
 
 ## Context  
 <!-- ai:context -->
