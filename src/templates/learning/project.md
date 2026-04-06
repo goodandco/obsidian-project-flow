@@ -45,7 +45,7 @@ dv.table(['File'], sections);
 
 ```dataviewjs
 const modules = dv.pages('#type/module and #$_PROJECT_TAG')
-  .where(b => !dv.func.contains(b.file.name, "Template"))
+  .where(b => !dv.func.contains(b.file.name.toLowerCase(), "Template"))
   .sort(p => p.Order, 'asc');
 
 let completed = 0;

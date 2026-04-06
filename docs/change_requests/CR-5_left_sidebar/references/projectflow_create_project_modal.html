@@ -1,0 +1,272 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.wrap{min-height:700px;background:rgba(0,0,0,0.32);display:flex;align-items:flex-start;justify-content:center;border-radius:12px;padding:20px;font-family:var(--font-sans);}
+.modal{background:var(--color-background-primary);border-radius:14px;border:0.5px solid var(--color-border-tertiary);width:100%;max-width:460px;overflow:hidden;display:flex;flex-direction:column;}
+
+.m-hdr{padding:18px 20px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--color-border-tertiary);}
+.m-title{font-size:16px;font-weight:600;color:var(--color-text-primary);}
+.m-close{width:32px;height:32px;border-radius:7px;border:0.5px solid var(--color-border-tertiary);background:transparent;font-size:16px;color:var(--color-text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+.m-body{padding:18px 20px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;max-height:620px;}
+
+.f-label{font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;display:block;}
+.hint{font-size:11px;color:var(--color-text-tertiary);margin-top:3px;line-height:1.5;}
+
+/* ── Horizontal scrolling type selector ── */
+.type-scroll-wrap{position:relative;}
+.type-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;}
+.type-scroll::-webkit-scrollbar{height:3px;}
+.type-scroll::-webkit-scrollbar-track{background:transparent;}
+.type-scroll::-webkit-scrollbar-thumb{background:var(--color-border-tertiary);border-radius:2px;}
+/* Fade edge to hint at scroll */
+.type-scroll-wrap::after{content:'';position:absolute;right:0;top:0;bottom:4px;width:32px;background:linear-gradient(to right,transparent,var(--color-background-primary));pointer-events:none;}
+
+.type-card{flex:0 0 148px;padding:11px 13px;border-radius:9px;border:0.5px solid var(--color-border-tertiary);cursor:pointer;transition:all 0.15s;background:var(--color-background-secondary);scroll-snap-align:start;}
+.type-card:hover{border-color:var(--color-border-secondary);}
+.type-card.active{border-width:1.5px;}
+.type-card-dot{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.type-card-name{font-size:13px;font-weight:600;color:var(--color-text-primary);margin-bottom:2px;}
+.type-card-desc{font-size:11px;color:var(--color-text-secondary);line-height:1.4;}
+
+/* Inputs */
+.pf-input{width:100%;font-size:13px;padding:7px 10px;border-radius:7px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-primary);outline:none;font-family:var(--font-sans);transition:border-color 0.12s;}
+.pf-input:focus{border-color:var(--color-border-primary);background:var(--color-background-primary);}
+.pf-input::placeholder{color:var(--color-text-tertiary);}
+.pf-select{width:100%;font-size:13px;padding:7px 10px;border-radius:7px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-primary);outline:none;font-family:var(--font-sans);cursor:pointer;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.id-tag-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.input-group{display:flex;}
+.id-prefix{font-size:12px;color:var(--color-text-tertiary);padding:7px 0 7px 10px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-right:none;border-radius:7px 0 0 7px;white-space:nowrap;font-family:var(--font-mono);}
+.id-input{font-size:12px;padding:7px 10px 7px 4px;border-radius:0 7px 7px 0;border:0.5px solid var(--color-border-tertiary);border-left:none;background:var(--color-background-secondary);color:var(--color-text-primary);outline:none;font-family:var(--font-mono);width:100%;}
+.id-input::placeholder{color:var(--color-text-tertiary);}
+.tag-prefix{font-size:12px;padding:7px 2px 7px 10px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-right:none;border-radius:7px 0 0 7px;font-family:var(--font-mono);font-weight:600;}
+.tag-input{font-size:12px;padding:7px 10px 7px 2px;border-radius:0 7px 7px 0;border:0.5px solid var(--color-border-tertiary);border-left:none;background:var(--color-background-secondary);color:var(--color-text-primary);outline:none;font-family:var(--font-mono);width:100%;}
+.tag-input::placeholder{color:var(--color-text-tertiary);}
+
+/* Preview box */
+.preview-box{background:var(--color-background-secondary);border-radius:9px;border:0.5px solid var(--color-border-tertiary);overflow:hidden;}
+.preview-section{padding:10px 12px;border-bottom:0.5px solid var(--color-border-tertiary);}
+.preview-section:last-child{border-bottom:none;}
+.preview-section-title{font-size:10px;font-weight:600;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px;}
+.folder-tree{font-size:11px;font-family:var(--font-mono);line-height:1.9;color:var(--color-text-secondary);}
+.fvar{color:#185FA5;}
+.chip-row{display:flex;flex-wrap:wrap;gap:5px;}
+.chip{font-size:11px;padding:2px 8px;border-radius:4px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary);}
+.eph-row{display:flex;align-items:center;justify-content:space-between;padding:3px 0;}
+.eph-name{font-size:11px;color:var(--color-text-secondary);display:flex;align-items:center;gap:5px;}
+.eph-key{font-size:10px;font-family:var(--font-mono);padding:1px 5px;border-radius:3px;background:var(--color-background-info);color:var(--color-text-info);border:0.5px solid var(--color-border-info);}
+
+.m-footer{padding:12px 20px 16px;border-top:0.5px solid var(--color-border-tertiary);display:flex;gap:8px;justify-content:flex-end;}
+.btn-cancel{padding:8px 16px;border-radius:8px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);font-size:13px;font-weight:500;color:var(--color-text-primary);cursor:pointer;font-family:var(--font-sans);}
+.btn-create{padding:8px 16px;border-radius:8px;border:none;background:var(--color-text-primary);font-size:13px;font-weight:500;color:var(--color-background-primary);cursor:pointer;font-family:var(--font-sans);}
+.btn-create:hover{opacity:0.82;}
+</style>
+
+<div class="wrap">
+<div class="modal">
+
+  <div class="m-hdr">
+    <span class="m-title">Create new project</span>
+    <button class="m-close">×</button>
+  </div>
+
+  <div class="m-body">
+
+    <!-- Project type — horizontal scroll -->
+    <div>
+      <label class="f-label">Project type <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--color-text-tertiary);">scroll to see more →</span></label>
+      <div class="type-scroll-wrap">
+        <div class="type-scroll" id="type-scroll"></div>
+      </div>
+    </div>
+
+    <!-- Project name -->
+    <div>
+      <label class="f-label">Project name</label>
+      <input class="pf-input" placeholder="e.g. API Gateway Refactor" id="proj-name" oninput="syncDerived()">
+    </div>
+
+    <!-- ID + Tag -->
+    <div class="id-tag-row">
+      <div>
+        <label class="f-label">Project ID</label>
+        <div class="input-group">
+          <span class="id-prefix">#</span>
+          <input class="id-input" id="proj-id" placeholder="api-gateway" oninput="idEdited=true">
+        </div>
+        <p class="hint">Unique. Used for <code style="font-size:10px;font-family:var(--font-mono);">id:</code> filter.</p>
+      </div>
+      <div>
+        <label class="f-label">Project tag</label>
+        <div class="input-group">
+          <span class="tag-prefix" id="tag-prefix" style="color:#1D9E75;">#</span>
+          <input class="tag-input" id="proj-tag" placeholder="api-gateway" oninput="tagEdited=true">
+        </div>
+        <p class="hint">Baked into templates. Used for <code style="font-size:10px;font-family:var(--font-mono);">tag:</code> filter.</p>
+      </div>
+    </div>
+
+    <!-- Dimension + Category -->
+    <div class="two-col">
+      <div>
+        <label class="f-label">Dimension</label>
+        <select class="pf-select" id="dim-sel" onchange="syncCategories();updatePreview();">
+          <option value="work">Work</option>
+          <option value="personal">Personal</option>
+          <option value="research">Research</option>
+        </select>
+      </div>
+      <div>
+        <label class="f-label">Category</label>
+        <select class="pf-select" id="cat-sel">
+          <option>Backend</option>
+          <option>Frontend</option>
+          <option>Design</option>
+          <option>Infra</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Project will create -->
+    <div>
+      <label class="f-label">Project will create</label>
+      <div class="preview-box">
+        <div class="preview-section">
+          <div class="preview-section-title">Folder structure</div>
+          <div class="folder-tree" id="folder-tree"></div>
+        </div>
+        <div class="preview-section">
+          <div class="preview-section-title">Structural files</div>
+          <div class="chip-row" id="structural-chips"></div>
+        </div>
+        <div class="preview-section">
+          <div class="preview-section-title">Ephemeral templates — generated at creation</div>
+          <div id="eph-list"></div>
+          <p class="hint" style="margin-top:6px;">Personalised with your project tag and paths, stored in <span style="font-family:var(--font-mono);font-size:10px;">Templates/</span> inside the project folder.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="m-footer">
+    <button class="btn-cancel">Cancel</button>
+    <button class="btn-create" id="btn-create">Create project →</button>
+  </div>
+
+</div>
+</div>
+
+<script>
+const projectTypes = [
+  { id:'op',      name:'Operational', desc:'Tasks, goals, deliverables',   color:'#1D9E75',
+    structural:['README.md','Work.md','Meetings.md'], subfolders:['tasks/'],
+    ephemeral:[{icon:'T',bg:'#EAF3DE',fg:'#3B6D11',name:'Task',key:'task'},{icon:'N',bg:'#E6F1FB',fg:'#185FA5',name:'Note',key:'note'},{icon:'G',bg:'#FAEEDA',fg:'#854F0B',name:'Goal',key:'goal'}]},
+  { id:'learn',   name:'Learning',    desc:'Notes, resources, milestones', color:'#378ADD',
+    structural:['README.md','Resources.md','Progress.md'], subfolders:['notes/','resources/'],
+    ephemeral:[{icon:'N',bg:'#E6F1FB',fg:'#185FA5',name:'Note',key:'note'},{icon:'R',bg:'#EEEDFE',fg:'#534AB7',name:'Resource',key:'resource'},{icon:'G',bg:'#FAEEDA',fg:'#854F0B',name:'Goal',key:'goal'}]},
+  { id:'research',name:'Research',    desc:'Papers, experiments, findings',color:'#7F77DD',
+    structural:['README.md','Literature.md','Experiments.md'], subfolders:['notes/','data/'],
+    ephemeral:[{icon:'N',bg:'#E6F1FB',fg:'#185FA5',name:'Note',key:'note'},{icon:'R',bg:'#EEEDFE',fg:'#534AB7',name:'Resource',key:'resource'}]},
+  { id:'client',  name:'Client work', desc:'Deliverables, meetings, briefs',color:'#D85A30',
+    structural:['README.md','Brief.md','Meetings.md','People.md'], subfolders:['tasks/','deliverables/'],
+    ephemeral:[{icon:'T',bg:'#EAF3DE',fg:'#3B6D11',name:'Task',key:'task'},{icon:'N',bg:'#E6F1FB',fg:'#185FA5',name:'Note',key:'note'},{icon:'G',bg:'#FAEEDA',fg:'#854F0B',name:'Goal',key:'goal'}]},
+  { id:'personal',name:'Personal',    desc:'Habits, goals, reflections',   color:'#D4537E',
+    structural:['README.md','Journal.md'], subfolders:['notes/'],
+    ephemeral:[{icon:'N',bg:'#E6F1FB',fg:'#185FA5',name:'Note',key:'note'},{icon:'G',bg:'#FAEEDA',fg:'#854F0B',name:'Goal',key:'goal'}]},
+];
+
+const dimCategories = {
+  work:['Backend','Frontend','Design','Infra'],
+  personal:['Health','Finance','Home','Travel'],
+  research:['Papers','Experiments','Literature','Notes']
+};
+
+let curTypeId = 'op';
+let idEdited = false;
+let tagEdited = false;
+
+function renderTypeScroll() {
+  const scroll = document.getElementById('type-scroll');
+  scroll.innerHTML = projectTypes.map(t => `
+    <div class="type-card${t.id===curTypeId?' active':''}" id="tc-${t.id}" onclick="selectType('${t.id}')"
+      style="${t.id===curTypeId?`border-color:${t.color};background:${t.color}18;`:''}">
+      <div class="type-card-dot" style="background:${t.color};${t.id===curTypeId?'':'opacity:0.4;'}"></div>
+      <div class="type-card-name" style="${t.id===curTypeId?`color:${t.color};`:''}">${t.name}</div>
+      <div class="type-card-desc">${t.desc}</div>
+    </div>`).join('');
+  // update tag prefix color
+  const cur = projectTypes.find(t=>t.id===curTypeId);
+  document.getElementById('tag-prefix').style.color = cur.color;
+  document.getElementById('btn-create').style.background = cur ? cur.color : 'var(--color-text-primary)';
+}
+
+function selectType(id) {
+  curTypeId = id;
+  renderTypeScroll();
+  updatePreview();
+}
+
+function slugify(s){
+  return s.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'');
+}
+
+function syncDerived(){
+  const name = document.getElementById('proj-name').value;
+  const slug = slugify(name);
+  if(!idEdited) document.getElementById('proj-id').value = slug;
+  if(!tagEdited) document.getElementById('proj-tag').value = slug;
+  updatePreview();
+}
+
+function syncCategories(){
+  const dim = document.getElementById('dim-sel').value;
+  const cats = dimCategories[dim]||[];
+  document.getElementById('cat-sel').innerHTML = cats.map(c=>`<option>${c}</option>`).join('');
+}
+
+function updatePreview(){
+  const name = document.getElementById('proj-name').value;
+  const slug = slugify(name)||'project-name';
+  const dim = document.getElementById('dim-sel').value;
+  const dimLabel = dim.charAt(0).toUpperCase()+dim.slice(1);
+  const t = projectTypes.find(x=>x.id===curTypeId);
+
+  // Folder tree
+  const entries = [
+    ...t.structural.map((f,i,a)=>`${i<a.length-1||t.subfolders.length?'├':'└'}─ 📄 ${f}`),
+    ...t.subfolders.map((f,i,a)=>`${i<a.length-1?'├':'└'}─ 📁 ${f}`),
+    '└─ 📁 Templates/'
+  ];
+  // fix last entry prefix
+  for(let i=entries.length-2;i>=0;i--){
+    if(entries[i].startsWith('└')) { entries[i]=entries[i]; break; }
+    if(entries[i].startsWith('├') && i===entries.length-2){
+      // the last non-templates entry should be └ only if templates follows
+    }
+  }
+  document.getElementById('folder-tree').innerHTML =
+    `<div>📁 Projects/${dimLabel}/</div>` +
+    `<div style="padding-left:12px;">└─ 📁 <span class="fvar">${slug}</span>/</div>` +
+    entries.map(e=>`<div style="padding-left:24px;">${e}</div>`).join('');
+
+  // Structural chips
+  document.getElementById('structural-chips').innerHTML =
+    t.structural.map(f=>`<span class="chip">${f}</span>`).join('');
+
+  // Ephemeral list
+  document.getElementById('eph-list').innerHTML = t.ephemeral.map(e=>`
+    <div class="eph-row">
+      <span class="eph-name">
+        <span style="width:14px;height:14px;border-radius:3px;background:${e.bg};color:${e.fg};font-size:8px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">${e.icon}</span>
+        ${e.name} template
+      </span>
+      <span class="eph-key">${e.key}</span>
+    </div>`).join('');
+}
+
+// Init
+renderTypeScroll();
+updatePreview();
+</script>

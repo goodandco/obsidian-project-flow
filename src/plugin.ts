@@ -5,6 +5,7 @@ import { showAddProjectPrompt } from "./commands/add-project";
 import { showRemoveProjectPrompt } from "./commands/remove-project";
 import { showArchiveProjectPrompt } from "./commands/archive-project";
 import { AI_VIEW_TYPE, ProjectFlowAIChatView } from "./ai";
+import { BROWSER_VIEW_TYPE, ProjectFlowBrowserView } from "./ui/browser-view";
 
 export class ProjectFlowPlugin extends Plugin {
   settings: ProjectFlowSettings;
@@ -15,6 +16,7 @@ export class ProjectFlowPlugin extends Plugin {
     await this.loadSettings();
     this.addSettingTab(new ProjectFlowSettingTab(this.app, this));
     this.registerView(AI_VIEW_TYPE, (leaf) => new ProjectFlowAIChatView(leaf, this));
+    this.registerView(BROWSER_VIEW_TYPE, (leaf) => new ProjectFlowBrowserView(leaf, this));
 
     this.addCommand({
       id: "add-project-info",
@@ -35,11 +37,20 @@ export class ProjectFlowPlugin extends Plugin {
     });
 
     await this.exposeCoreApi();
-    if (this.settings.ai?.enabled) {
-      this.app.workspace.onLayoutReady(() => {
+    this.app.workspace.onLayoutReady(() => {
+      this.activateBrowserView();
+      if (this.settings.ai?.enabled) {
         this.toggleAiView(true);
-      });
-    }
+      }
+    });
+  }
+
+  async activateBrowserView(): Promise<void> {
+    const leaves = this.app.workspace.getLeavesOfType(BROWSER_VIEW_TYPE);
+    if (leaves.length > 0) return;
+    const leaf = this.app.workspace.getLeftLeaf(false);
+    if (!leaf) return;
+    await leaf.setViewState({ type: BROWSER_VIEW_TYPE, active: true });
   }
 
   async loadSettings() {
@@ -260,6 +271,7 @@ export class ProjectFlowPlugin extends Plugin {
 
   onunload() {
     this.app.workspace.detachLeavesOfType(AI_VIEW_TYPE);
+    this.app.workspace.detachLeavesOfType(BROWSER_VIEW_TYPE);
   }
 
   private async exposeCoreApi() {

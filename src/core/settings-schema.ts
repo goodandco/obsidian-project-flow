@@ -1,7 +1,7 @@
 import type { ProjectFlowSettings } from '../interfaces';
 import { DEFAULT_PROJECT_TYPES } from './registry-defaults';
 
-export const CURRENT_SETTINGS_SCHEMA_VERSION = 13;
+export const CURRENT_SETTINGS_SCHEMA_VERSION = 15;
 
 const DEFAULT_MIXED_OFFER_TEXT = "I can also set this up for you. Shall I proceed?";
 
@@ -113,6 +113,11 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
         delete (s.projectTypes as any).operational;
         delete (s.projectTypes as any).learning;
       }
+    }
+
+    // v14: add pinnedProjects
+    if (!s.schemaVersion || s.schemaVersion < 14) {
+      (s as any).pinnedProjects = (input as any)?.pinnedProjects ?? [];
     }
 
     if (!s.ai) {

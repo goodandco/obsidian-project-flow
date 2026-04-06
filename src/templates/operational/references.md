@@ -4,12 +4,12 @@ Project: "[[$_PROJECT_FULL_NAME]]"
 Date: $_DATE
 tags:
   - type/section
-  - knowledge-base
+  - references
   - $_PROJECT_TAG
 ---
 
 ```dataview
 
-TABLE FROM #$_PROJECT_TAG AND #type/knowledge WHERE !contains(file.name, "Template")
+TABLE FROM #$_PROJECT_TAG AND #type/reference WHERE !contains(lower(file.name), "template")
 ```
 

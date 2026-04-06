@@ -17,7 +17,7 @@ tags:
 const getList = (pages, sort="desc") => pages  
   .where(b => dv.func.contains(b.Project, dv.current().Project) && 
   //dv.func.contains(b.Parent, dv.current().file.link) &&
-  !dv.func.contains(b.file.name, "Template"))  
+  !dv.func.contains(b.file.name.toLowerCase(), "template"))  
   .sort(p => p.StartedAt, sort);  
 const f = (d) => moment(new Date(d))  
   .format("YYYY-MM-DD");
@@ -74,7 +74,7 @@ dv.el("p", `Sprints: ${sprints.length}. Stories: ${allStories}. Story points: ${
 
 ```dataview
 
-TABLE Status, Date FROM #ideas AND #$_PROJECT_TAG WHERE !contains(file.name, "Template") SORT Status DESC
+TABLE Status, Date FROM #ideas AND #$_PROJECT_TAG WHERE !contains(lower(file.name), "template") SORT Status DESC
 
 ```
 

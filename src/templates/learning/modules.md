@@ -15,7 +15,7 @@ tags:
 
 ```dataviewjs
 const modules = dv.pages('#type/module and #$_PROJECT_TAG')
-  .where(b => !dv.func.contains(b.file.name, "Template"))
+  .where(b => !dv.func.contains(b.file.name.toLowerCase(), "template"))
   .sort(p => p.Order, 'asc');
 
 for (const m of modules) {
@@ -26,7 +26,7 @@ for (const m of modules) {
 
   const lessons = dv.pages('#type/lesson and #$_PROJECT_TAG')
     .where(b => dv.func.contains(b.Module, m.file.link)
-      && !dv.func.contains(b.file.name, "Template"))
+      && !dv.func.contains(b.file.name.toLowerCase(), "template"))
     .sort(p => p.Order, 'asc')
     .map(l => ([l.file.link, l.Status, l.Order]));
 
@@ -43,7 +43,7 @@ for (const m of modules) {
 
 
 ```dataview
-TABLE Status, Date FROM #type/note AND #$_PROJECT_TAG WHERE !contains(file.name, "Template") SORT Date DESC
+TABLE Status, Date FROM #type/note AND #$_PROJECT_TAG WHERE !contains(lower(file.name), "template") SORT Date DESC
 ```
 
 ---

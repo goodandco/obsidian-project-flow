@@ -13,7 +13,7 @@ tags:
 <!-- /ai:assignments -->
 
 ```dataview
-TABLE Status, DueDate FROM #type/assignment AND #$_PROJECT_TAG WHERE !contains(file.name, "Template") SORT DueDate ASC
+TABLE Status, DueDate FROM #type/assignment AND #$_PROJECT_TAG WHERE !contains(lower(file.name), "template") SORT DueDate ASC
 ```
 
 ---
@@ -23,7 +23,7 @@ TABLE Status, DueDate FROM #type/assignment AND #$_PROJECT_TAG WHERE !contains(f
 <!-- /ai:reviews -->
 
 ```dataview
-TABLE Date FROM #type/review AND #$_PROJECT_TAG WHERE !contains(file.name, "Template") SORT Date DESC
+TABLE Date FROM #type/review AND #$_PROJECT_TAG WHERE !contains(lower(file.name), "template") SORT Date DESC
 ```
 
 ---
@@ -33,5 +33,5 @@ TABLE Date FROM #type/review AND #$_PROJECT_TAG WHERE !contains(file.name, "Temp
 <!-- /ai:notes -->
 
 ```dataview
-TABLE Date FROM #type/note AND #$_PROJECT_TAG WHERE !contains(file.name, "Template") SORT Date DESC
+TABLE Date FROM #type/note AND #$_PROJECT_TAG WHERE !contains(lower(file.name), "template") SORT Date DESC
 ```

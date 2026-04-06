@@ -21,6 +21,7 @@ export interface ProjectFlowSettings {
   // Nested map: dimension -> category -> projectId -> ProjectRecord
   projectRecords?: Record<string, Record<string, Record<string, ProjectRecord>>>;
   archivedRecords?: Record<string, Record<string, Record<string, ProjectRecord>>>; // archived projects map
+  pinnedProjects?: string[]; // array of pinned project IDs, max length 5, default []
 }
 
 export type AIProvider = "openai" | "anthropic" | "ollama";

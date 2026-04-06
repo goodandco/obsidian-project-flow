@@ -1,0 +1,250 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.wrap{padding:16px 0;display:flex;justify-content:center;font-family:var(--font-sans);}
+.panel{width:272px;border:0.5px solid var(--color-border-tertiary);border-radius:12px;overflow:hidden;background:var(--color-background-primary);}
+
+.p-hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 12px 9px;border-bottom:0.5px solid var(--color-border-tertiary);}
+.p-hdr-title{font-size:12px;font-weight:600;color:var(--color-text-primary);text-transform:uppercase;letter-spacing:0.04em;}
+.p-hdr-icons{display:flex;gap:4px;}
+.icon-btn{width:24px;height:24px;border-radius:5px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-secondary);font-size:14px;}
+.icon-btn:hover{background:var(--color-background-secondary);}
+
+.dim-tabs{display:flex;gap:4px;padding:7px 10px 5px;flex-wrap:wrap;border-bottom:0.5px solid var(--color-border-tertiary);}
+.dim-tab{font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;border:0.5px solid var(--color-border-tertiary);background:transparent;cursor:pointer;color:var(--color-text-secondary);transition:all 0.12s;}
+.dim-tab.active{background:var(--color-background-secondary);border-color:var(--color-border-primary);color:var(--color-text-primary);}
+.cat-row{display:flex;gap:4px;padding:5px 10px 4px;overflow-x:auto;border-bottom:0.5px solid var(--color-border-tertiary);}
+.cat-row::-webkit-scrollbar{display:none;}
+.cat-chip{font-size:10px;padding:2px 7px;border-radius:3px;background:var(--color-background-secondary);color:var(--color-text-tertiary);cursor:pointer;white-space:nowrap;border:0.5px solid transparent;transition:all 0.1s;}
+.cat-chip.active{color:var(--color-text-info);background:var(--color-background-info);border-color:var(--color-border-info);}
+.search-row{padding:5px 10px 6px;border-bottom:0.5px solid var(--color-border-tertiary);}
+.search-input{width:100%;font-size:11px;padding:5px 9px;border-radius:6px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-primary);outline:none;font-family:var(--font-sans);}
+.search-input::placeholder{color:var(--color-text-tertiary);}
+
+.project-list{overflow-y:auto;max-height:440px;}
+.project-list::-webkit-scrollbar{width:3px;}
+.project-list::-webkit-scrollbar-thumb{background:var(--color-border-tertiary);border-radius:2px;}
+.section-lbl{font-size:10px;font-weight:600;color:var(--color-text-tertiary);padding:7px 12px 2px;text-transform:uppercase;letter-spacing:0.05em;}
+
+.proj-row{display:flex;align-items:center;gap:7px;padding:7px 12px;cursor:pointer;border-left:2px solid transparent;transition:background 0.1s;}
+.proj-row:hover{background:var(--color-background-secondary);}
+.proj-row.active{background:var(--color-background-secondary);border-left-color:#1D9E75;}
+.proj-pin{font-size:9px;color:var(--color-text-tertiary);flex-shrink:0;opacity:0.6;}
+.proj-info{flex:1;min-width:0;}
+.proj-name{font-size:12px;font-weight:600;color:var(--color-text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.proj-meta{font-size:10px;color:var(--color-text-tertiary);margin-top:1px;display:flex;align-items:center;gap:4px;}
+.e-dot{width:5px;height:5px;border-radius:50%;display:inline-block;flex-shrink:0;}
+.proj-badge{font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;flex-shrink:0;}
+
+/* Entity expansion — create buttons only */
+.entity-expand{display:none;border-left:2px solid #1D9E75;background:var(--color-background-secondary);border-bottom:0.5px solid var(--color-border-tertiary);padding:8px 10px 10px;}
+.entity-expand.on{display:block;}
+.expand-label{font-size:10px;color:var(--color-text-tertiary);margin-bottom:6px;padding-left:2px;}
+.create-btns{display:flex;gap:5px;flex-wrap:wrap;}
+.create-btn{font-size:11px;font-weight:500;padding:5px 10px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;transition:all 0.12s;font-family:var(--font-sans);}
+.create-btn:hover{background:var(--color-background-secondary);}
+.btn-ico{width:13px;height:13px;border-radius:2px;display:inline-flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;flex-shrink:0;}
+
+.p-footer{padding:8px 10px 10px;border-top:0.5px solid var(--color-border-tertiary);}
+.new-proj-btn{width:100%;padding:7px 0;border-radius:7px;border:0.5px solid var(--color-border-secondary);background:transparent;font-size:12px;font-weight:500;color:var(--color-text-primary);cursor:pointer;font-family:var(--font-sans);transition:all 0.12s;}
+.new-proj-btn:hover{background:var(--color-background-secondary);}
+
+/* Popup */
+.popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity 0.15s;}
+.popup-overlay.on{opacity:1;pointer-events:all;}
+.popup{background:var(--color-background-primary);border-radius:12px;border:0.5px solid var(--color-border-tertiary);width:320px;overflow:hidden;transform:translateY(6px);transition:transform 0.15s;}
+.popup-overlay.on .popup{transform:translateY(0);}
+.popup-hdr{padding:14px 16px 12px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:space-between;}
+.popup-title{font-size:13px;font-weight:600;color:var(--color-text-primary);display:flex;align-items:center;gap:7px;}
+.popup-close{font-size:18px;color:var(--color-text-tertiary);cursor:pointer;background:none;border:none;line-height:1;padding:0;}
+.popup-body{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.pf-label{font-size:10px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;display:block;}
+.pf-input{width:100%;font-size:12px;padding:6px 9px;border-radius:7px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-primary);outline:none;font-family:var(--font-sans);transition:border-color 0.12s;}
+.pf-input:focus{border-color:var(--color-border-primary);background:var(--color-background-primary);}
+.pf-input::placeholder{color:var(--color-text-tertiary);}
+.pf-textarea{width:100%;font-size:12px;padding:6px 9px;border-radius:7px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-primary);outline:none;font-family:var(--font-sans);resize:none;line-height:1.5;transition:border-color 0.12s;}
+.pf-textarea:focus{border-color:var(--color-border-primary);background:var(--color-background-primary);}
+.pf-textarea::placeholder{color:var(--color-text-tertiary);}
+.pf-select{width:100%;font-size:12px;padding:6px 9px;border-radius:7px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-primary);outline:none;font-family:var(--font-sans);cursor:pointer;}
+.popup-footer{padding:10px 16px 14px;border-top:0.5px solid var(--color-border-tertiary);display:flex;gap:7px;justify-content:flex-end;}
+.btn-cancel{font-size:12px;padding:6px 13px;border-radius:7px;border:0.5px solid var(--color-border-tertiary);background:transparent;color:var(--color-text-secondary);cursor:pointer;font-family:var(--font-sans);}
+.btn-create{font-size:12px;font-weight:500;padding:6px 13px;border-radius:7px;border:none;background:var(--color-text-primary);color:var(--color-background-primary);cursor:pointer;font-family:var(--font-sans);}
+.btn-create:hover{opacity:0.82;}
+</style>
+
+<div class="wrap">
+<div class="panel">
+  <div class="p-hdr">
+    <span class="p-hdr-title">ProjectFlow</span>
+    <div class="p-hdr-icons">
+      <button class="icon-btn">⌕</button>
+      <button class="icon-btn">⚙</button>
+    </div>
+  </div>
+  <div class="dim-tabs">
+    <button class="dim-tab active">Work</button>
+    <button class="dim-tab">Personal</button>
+    <button class="dim-tab">Research</button>
+  </div>
+  <div class="cat-row">
+    <span class="cat-chip active">All</span>
+    <span class="cat-chip">Backend</span>
+    <span class="cat-chip">Frontend</span>
+    <span class="cat-chip">Design</span>
+  </div>
+  <div class="search-row">
+    <input class="search-input" placeholder="Filter by name, tag: or id:">
+  </div>
+
+  <div class="project-list">
+    <div class="section-lbl">Pinned</div>
+
+    <div class="proj-row" id="pr-design" onclick="toggle('design')">
+      <span class="proj-pin">📌</span>
+      <div class="proj-info">
+        <div class="proj-name">Design System v2</div>
+        <div class="proj-meta">Design · Frontend &nbsp;<span class="e-dot" style="background:#1D9E75;"></span>7 &nbsp;<span class="e-dot" style="background:#EF9F27;"></span>1</div>
+      </div>
+      <span class="proj-badge" style="background:#EAF3DE;color:#3B6D11;">Op</span>
+    </div>
+    <div class="entity-expand" id="ex-design">
+      <div class="expand-label">Create entity</div>
+      <div class="create-btns">
+        <button class="create-btn" onclick="openPopup('task','Design System v2',event)"><span class="btn-ico" style="background:#EAF3DE;color:#3B6D11;">T</span>+ task</button>
+        <button class="create-btn" onclick="openPopup('goal','Design System v2',event)"><span class="btn-ico" style="background:#FAEEDA;color:#854F0B;">G</span>+ goal</button>
+        <button class="create-btn" onclick="openPopup('note','Design System v2',event)"><span class="btn-ico" style="background:#E6F1FB;color:#185FA5;">N</span>+ note</button>
+      </div>
+    </div>
+
+    <div class="section-lbl">Active · 3</div>
+
+    <div class="proj-row active" id="pr-api" onclick="toggle('api')">
+      <div class="proj-info">
+        <div class="proj-name">API Gateway Refactor</div>
+        <div class="proj-meta">Backend &nbsp;<span class="e-dot" style="background:#1D9E75;"></span>4 &nbsp;<span class="e-dot" style="background:#378ADD;"></span>2</div>
+      </div>
+      <span class="proj-badge" style="background:#EAF3DE;color:#3B6D11;">Op</span>
+    </div>
+    <div class="entity-expand on" id="ex-api">
+      <div class="expand-label">Create entity</div>
+      <div class="create-btns">
+        <button class="create-btn" onclick="openPopup('task','API Gateway Refactor',event)"><span class="btn-ico" style="background:#EAF3DE;color:#3B6D11;">T</span>+ task</button>
+        <button class="create-btn" onclick="openPopup('meeting.demo','API Gateway Refactor',event)"><span class="btn-ico" style="background:#EEEDFE;color:#534AB7;">M</span>+ meeting demo</button>
+        <button class="create-btn" onclick="openPopup('meeting.daily','API Gateway Refactor',event)"><span class="btn-ico" style="background:#EEEDFE;color:#534AB7;">M</span>+ meeting daily</button>
+        <button class="create-btn" onclick="openPopup('note','API Gateway Refactor',event)"><span class="btn-ico" style="background:#E6F1FB;color:#185FA5;">N</span>+ note</button>
+      </div>
+    </div>
+
+    <div class="proj-row" id="pr-rust" onclick="toggle('rust')">
+      <div class="proj-info">
+        <div class="proj-name">Rust Deep Dive</div>
+        <div class="proj-meta">Backend &nbsp;<span class="e-dot" style="background:#378ADD;"></span>6 &nbsp;<span class="e-dot" style="background:#EF9F27;"></span>3</div>
+      </div>
+      <span class="proj-badge" style="background:#E6F1FB;color:#185FA5;">Learn</span>
+    </div>
+    <div class="entity-expand" id="ex-rust">
+      <div class="expand-label">Create entity</div>
+      <div class="create-btns">
+        <button class="create-btn" onclick="openPopup('note','Rust Deep Dive',event)"><span class="btn-ico" style="background:#378ADD;color:#fff;font-size:6px;">N</span>+ note</button>
+        <button class="create-btn" onclick="openPopup('resource','Rust Deep Dive',event)"><span class="btn-ico" style="background:#EEEDFE;color:#534AB7;">R</span>+ resource</button>
+        <button class="create-btn" onclick="openPopup('goal','Rust Deep Dive',event)"><span class="btn-ico" style="background:#FAEEDA;color:#854F0B;">G</span>+ goal</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="p-footer">
+    <button class="new-proj-btn">+ New project</button>
+  </div>
+</div>
+</div>
+
+<div class="popup-overlay" id="popup-overlay" onclick="handleOverlay(event)">
+<div class="popup" onclick="event.stopPropagation()">
+  <div class="popup-hdr">
+    <div class="popup-title">
+      <span id="popup-ico" style="width:18px;height:18px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;"></span>
+      <span id="popup-title-text"></span>
+    </div>
+    <button class="popup-close" onclick="closePopup()">×</button>
+  </div>
+  <div class="popup-body" id="popup-body"></div>
+  <div class="popup-footer">
+    <button class="btn-cancel" onclick="closePopup()">Cancel</button>
+    <button class="btn-create" onclick="closePopup()">Create →</button>
+  </div>
+</div>
+</div>
+
+<script>
+let activeProject = 'api';
+
+const templates = {
+  task:{name:'Task',ico:'T',bg:'#EAF3DE',fg:'#3B6D11',fields:[
+    {label:'Name',type:'text',placeholder:'Task name…',required:true,span:2},
+    {label:'Description',type:'textarea',placeholder:'Optional…',span:2},
+    {label:'Priority',type:'select',options:['P0 — Critical','P1 — High','P2 — Medium','P3 — Low']},
+    {label:'Due date',type:'date'},
+    {label:'Assignee',type:'text',placeholder:'@username'},
+    {label:'Sprint',type:'select',options:['Sprint 1','Sprint 2','Sprint 3','Backlog']},
+  ]},
+  'meeting.demo':{name:'Meeting demo',ico:'M',bg:'#EEEDFE',fg:'#534AB7',fields:[
+    {label:'Name',type:'text',placeholder:'Demo name…',required:true,span:2},
+    {label:'Date',type:'date'},
+    {label:'Attendees',type:'text',placeholder:'@alice, @bob'},
+    {label:'Demo scope',type:'textarea',placeholder:'What will be demoed…',span:2},
+  ]},
+  'meeting.daily':{name:'Meeting daily',ico:'M',bg:'#EEEDFE',fg:'#534AB7',fields:[
+    {label:'Name',type:'text',placeholder:'Daily standup…',required:true,span:2},
+    {label:'Date',type:'date'},
+    {label:'Blockers',type:'textarea',placeholder:'Any blockers…',span:2},
+  ]},
+  note:{name:'Note',ico:'N',bg:'#E6F1FB',fg:'#185FA5',fields:[
+    {label:'Name',type:'text',placeholder:'Note title…',required:true,span:2},
+    {label:'Tags',type:'text',placeholder:'tag1, tag2',span:2},
+  ]},
+  goal:{name:'Goal',ico:'G',bg:'#FAEEDA',fg:'#854F0B',fields:[
+    {label:'Name',type:'text',placeholder:'Goal name…',required:true,span:2},
+    {label:'Target date',type:'date'},
+    {label:'Progress',type:'text',placeholder:'0%'},
+  ]},
+  resource:{name:'Resource',ico:'R',bg:'#EEEDFE',fg:'#534AB7',fields:[
+    {label:'Name',type:'text',placeholder:'Resource title…',required:true,span:2},
+    {label:'URL',type:'text',placeholder:'https://…',span:2},
+    {label:'Tags',type:'text',placeholder:'tag1, tag2'},
+    {label:'Source',type:'text',placeholder:'e.g. arxiv'},
+  ]},
+};
+
+function toggle(id) {
+  const wasActive = activeProject === id;
+  if(activeProject) {
+    document.getElementById('pr-'+activeProject)?.classList.remove('active');
+    document.getElementById('ex-'+activeProject)?.classList.remove('on');
+  }
+  activeProject = wasActive ? null : id;
+  if(activeProject) {
+    document.getElementById('pr-'+activeProject)?.classList.add('active');
+    document.getElementById('ex-'+activeProject)?.classList.add('on');
+  }
+}
+
+function openPopup(key, project, event) {
+  event.stopPropagation();
+  const t = templates[key]; if(!t) return;
+  document.getElementById('popup-ico').style.cssText += `;background:${t.bg};color:${t.fg};`;
+  document.getElementById('popup-ico').textContent = t.ico;
+  document.getElementById('popup-title-text').textContent = 'New '+t.name.toLowerCase();
+  document.getElementById('popup-body').innerHTML = t.fields.map(f=>{
+    const s = f.span===2?'grid-column:1/-1;':'';
+    let inp = f.type==='textarea'
+      ? `<textarea class="pf-textarea" rows="2" placeholder="${f.placeholder||''}"></textarea>`
+      : f.type==='select'
+      ? `<select class="pf-select">${f.options.map(o=>`<option>${o}</option>`).join('')}</select>`
+      : `<input class="pf-input" type="${f.type==='date'?'date':'text'}" placeholder="${f.placeholder||''}">`;
+    return `<div style="${s}"><label class="pf-label">${f.label}${f.required?' *':''}</label>${inp}</div>`;
+  }).join('');
+  document.getElementById('popup-overlay').classList.add('on');
+}
+function closePopup(){document.getElementById('popup-overlay').classList.remove('on');}
+function handleOverlay(e){if(e.target===document.getElementById('popup-overlay'))closePopup();}
+</script>

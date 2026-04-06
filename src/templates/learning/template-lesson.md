@@ -29,7 +29,7 @@ tags:
 ```dataviewjs
 const assignments = dv.pages('#type/assignment and #$_PROJECT_TAG')
   .where(b => dv.func.contains(b.Parent, dv.current().file.link)
-    && !dv.func.contains(b.file.name, "Template"))
+    && !dv.func.contains(b.file.name.toLowerCase(), "template"))
   .sort(p => p.Date, 'desc')
   .map(a => ([a.file.link, a.Status, a.DueDate]));
 
@@ -40,7 +40,7 @@ dv.el('p', '---');
 
 const reviews = dv.pages('#type/review and #$_PROJECT_TAG')
   .where(b => dv.func.contains(b.Parent, dv.current().file.link)
-    && !dv.func.contains(b.file.name, "Template"))
+    && !dv.func.contains(b.file.name.toLowerCase(), "template"))
   .sort(p => p.Date, 'desc')
   .map(r => ([r.file.link, r.Date]));
 

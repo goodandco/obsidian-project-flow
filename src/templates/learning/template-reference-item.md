@@ -1,14 +1,14 @@
 ---
-Type: "Knowledge"
-Parent: "[[$_PROJECT_NAME Knowledge Base]]"
+Type: "Reference"
+Parent: "[[$_PROJECT_NAME References]]"
 Date: <% tp.date.now("YYYY-MM-DD") %>
 Project: "[[$_PROJECT_FULL_NAME]]"
 tags:
-  - type/knowledge
+  - type/reference
   - $_PROJECT_TAG
 ---
 
-## Context  
+## Context
 <!-- ai:context -->
 <!-- /ai:context -->
 

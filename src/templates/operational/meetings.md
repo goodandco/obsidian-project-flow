@@ -22,7 +22,7 @@ const CAT_LIMIT = 15;
 const map = {};
 
 const meetings = dv.pages('#type/meeting AND #$_PROJECT_TAG')  
-  .where(b => b.DateTime && !dv.func.contains(b.file.name, "Template"))
+  .where(b => b.DateTime && !dv.func.contains(b.file.name.toLowerCase(), "template"))
   .sort(p => p['DateTime'], 'desc')
   .slice(0, 50);
 
