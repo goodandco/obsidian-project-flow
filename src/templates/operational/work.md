@@ -74,7 +74,7 @@ dv.el("p", `Sprints: ${sprints.length}. Stories: ${allStories}. Story points: ${
 
 ```dataview
 
-TABLE Status, Date FROM #ideas AND #$_PROJECT_TAG WHERE !contains(lower(file.name), "template") SORT Status DESC
+TABLE Status, Date FROM #type/idea AND #$_PROJECT_TAG WHERE !contains(lower(file.name), "template") SORT Status DESC
 
 ```
 

@@ -20,15 +20,6 @@ const projectRefSchema: JSONSchema7 = {
   additionalProperties: false,
 };
 
-const fieldsSchema: JSONSchema7 = {
-  type: "object",
-  description: "Fields to set on the entity (camelCase, e.g. title, description).",
-  properties: {
-    title: { type: "string" },
-    description: { type: "string" },
-  },
-  additionalProperties: true,
-};
 
 export function createToolRegistry(plugin: ProjectFlowPlugin, ui: ChatUi, state: AiStateStore): ToolDefinition[] {
   const api = plugin.getApi();
@@ -228,7 +219,6 @@ const FIELD_DESCRIPTIONS: Record<string, string> = {
   title: "The name/title for this entity.",
   description: "A description of the entity.",
   parentFolder: "FULL relative path from the project root to the parent folder. MUST match an existing folder exactly. ALWAYS call listProjectFiles first to discover the real path. Examples: '' (empty) = course root, 'Modules/Module 1 - Intro' = that module folder, 'Modules/Module 1 - Intro/Lessons/Lesson 1 - Intro' = that lesson folder. Never guess or construct this path manually.",
-  module: "The title of the parent module (last segment of parentFolder, e.g. 'Module 1 - Intro'). Extract from the parentFolder path after calling listProjectFiles.",
 };
 
 export function createSpecializedToolRegistry(
@@ -259,14 +249,30 @@ export function createSpecializedToolRegistry(
     const propFields: any = {};
     const required: string[] = [];
 
-    // Map entityType requirements to the tool schema with descriptions
-    if (entityType.requiredFields) {
+    // All migrated entity types use fields; legacy fallback kept for any user-defined types
+    if (entityType.fields && Object.keys(entityType.fields).length > 0) {
+      for (const [key, schema] of Object.entries(entityType.fields)) {
+        if (schema.role === "index") continue; // auto-generated, not user-supplied
+
+        // Build description: field description, then resolveHint, then generic fallback.
+        // For parentFolder fields, append allowedParents so the agent knows valid targets.
+        let desc = schema.description ?? schema.resolveHint ?? FIELD_DESCRIPTIONS[key];
+        if (schema.role === "parentFolder" && schema.allowedParents?.length) {
+          desc = `${desc ?? ""} Allowed parent types: ${schema.allowedParents.join(", ")}.`.trim();
+        }
+
+        propFields[key] = {
+          type: schema.type === "number" ? "number" : "string",
+          ...(desc ? { description: desc } : {}),
+          ...(schema.enum ? { enum: schema.enum } : {}),
+        };
+        if (schema.required) required.push(key);
+      }
+    } else if (entityType.requiredFields) {
+      // Legacy fallback (user-defined entity types that have not adopted fields)
       for (const field of entityType.requiredFields) {
         const description = entityType.fieldDescriptions?.[field] ?? FIELD_DESCRIPTIONS[field];
-        propFields[field] = {
-          type: "string",
-          ...(description ? { description } : {}),
-        };
+        propFields[field] = { type: "string", ...(description ? { description } : {}) };
         required.push(field);
       }
     }

@@ -1,7 +1,7 @@
 import { Modal, TFile } from "obsidian";
 import type { App } from "obsidian";
 import type { ProjectFlowPlugin } from "../plugin";
-import type { ProjectIndexEntry } from "../interfaces";
+import type { EntityFieldSchema, ProjectIndexEntry } from "../interfaces";
 import { mergeProjectTypes, mergeEntityTypes } from "../core/registry-merge";
 
 function hashStr(str: string): number {
@@ -94,7 +94,15 @@ export class EntityCreateModal extends Modal {
     const apiError = contentEl.createDiv({ cls: "pf-ecm-api-error" });
     apiError.style.display = "none";
 
+    // Determine which fields have role: "parentFolder" — handled by the two-stage picker
+    const parentFolderKeys = new Set(
+      Object.entries(et.fields ?? {})
+        .filter(([, s]) => s.role === "parentFolder")
+        .map(([k]) => k)
+    );
+
     // Build field list: title first, then other required fields, then described fields
+    // Exclude parentFolder keys (handled separately below)
     const requiredFields = et.requiredFields ?? [];
     const describedFields = Object.keys(et.fieldDescriptions ?? {});
     const allFieldKeys = [
@@ -104,11 +112,11 @@ export class EntityCreateModal extends Modal {
         (k) => k !== "title" && !requiredFields.includes(k),
       ),
     ];
-    // Dedupe
+    // Dedupe and exclude parentFolder keys
     const seen = new Set<string>();
     const fieldKeys: string[] = [];
     for (const k of allFieldKeys) {
-      if (!seen.has(k)) {
+      if (!seen.has(k) && !parentFolderKeys.has(k)) {
         seen.add(k);
         fieldKeys.push(k);
       }
@@ -162,6 +170,13 @@ export class EntityCreateModal extends Modal {
       this.fieldInputs.set(key, input);
     }
 
+    // Render two-stage picker for each parentFolder field
+    for (const [key, schema] of Object.entries(et.fields ?? {})) {
+      if (schema.role === "parentFolder" && schema.allowedParents?.length) {
+        this.renderParentFolderPicker(body, key, schema);
+      }
+    }
+
     // Footer buttons
     const footer = contentEl.createDiv({ cls: "pf-ecm-footer" });
     const cancelBtn = footer.createEl("button", { cls: "pf-ecm-btn-cancel", text: "Cancel" });
@@ -175,6 +190,102 @@ export class EntityCreateModal extends Modal {
     this.fieldInputs.clear();
   }
 
+  private renderParentFolderPicker(
+    container: HTMLElement,
+    fieldKey: string,
+    schema: EntityFieldSchema,
+  ): void {
+    const allowedParents = schema.allowedParents!;
+    const LABELS: Record<string, string> = {
+      project: "Project (root level)",
+      module: "Module",
+      lesson: "Lesson",
+      assignment: "Assignment",
+      review: "Review",
+    };
+
+    // Type selector
+    const typeWrapper = container.createDiv({ cls: "pf-ecm-field" });
+    const typeLabel = typeWrapper.createEl("label", {
+      cls: "pf-ecm-label",
+      text: "Parent type *",
+    });
+    const typeSelect = typeWrapper.createEl("select", { cls: "pf-ecm-input" });
+    typeLabel.setAttribute("for", `pf-ecm-field-parentType`);
+    typeSelect.id = `pf-ecm-field-parentType`;
+
+    for (const pt of allowedParents) {
+      const opt = typeSelect.createEl("option", { value: pt, text: LABELS[pt] ?? pt });
+      if (pt === "project") opt.selected = true;
+    }
+
+    // Folder picker (hidden when "project" selected)
+    const folderWrapper = container.createDiv({ cls: "pf-ecm-field" });
+    const folderLabel = folderWrapper.createEl("label", {
+      cls: "pf-ecm-label",
+      text: "Parent folder *",
+    });
+    const folderSelect = folderWrapper.createEl("select", { cls: "pf-ecm-input" });
+    folderLabel.setAttribute("for", `pf-ecm-field-${fieldKey}`);
+    folderSelect.id = `pf-ecm-field-${fieldKey}`;
+    folderWrapper.style.display = "none"; // hidden initially (project is default)
+
+    // Hidden input used by handleSubmit via this.fieldInputs
+    const hidden = container.createEl("input", { attr: { type: "hidden", value: "" } });
+    hidden.id = `pf-ecm-field-${fieldKey}-hidden`;
+    this.fieldInputs.set(fieldKey, hidden);
+
+    const refresh = async (parentType: string) => {
+      if (parentType === "project") {
+        folderWrapper.style.display = "none";
+        hidden.value = ""; // empty string = project root
+        return;
+      }
+      folderWrapper.style.display = "";
+      folderSelect.empty();
+      const folders = await this.discoverFolders(parentType);
+      if (folders.length === 0) {
+        folderSelect.createEl("option", { value: "", text: "(no folders found)" });
+        hidden.value = "";
+      } else {
+        for (const f of folders) {
+          folderSelect.createEl("option", { value: f, text: f });
+        }
+        hidden.value = folders[0];
+      }
+      folderSelect.addEventListener("change", () => { hidden.value = folderSelect.value; });
+    };
+
+    typeSelect.addEventListener("change", () => refresh(typeSelect.value));
+    // Initialize with default (project)
+    void refresh(allowedParents.includes("project") ? "project" : allowedParents[0]);
+  }
+
+  private async discoverFolders(parentType: string): Promise<string[]> {
+    const projectPath = this.projectEntry.path;
+    if (!projectPath) return [];
+
+    // Folder patterns per parent type (relative to project root)
+    const patterns: Record<string, (rel: string) => boolean> = {
+      module: (rel) => /^Modules\/[^/]+$/.test(rel),
+      lesson: (rel) => /^Modules\/[^/]+\/Lessons\/[^/]+$/.test(rel),
+      assignment: (rel) => /^(Modules\/[^/]+\/Lessons\/[^/]+\/)?Assignments\/[^/]+$/.test(rel),
+      review: (rel) => /^(Modules\/[^/]+\/Lessons\/[^/]+\/)?Reviews\/[^/]+$/.test(rel),
+    };
+
+    const matcher = patterns[parentType];
+    if (!matcher) return [];
+
+    const results: string[] = [];
+    for (const f of this.plugin.app.vault.getAllLoadedFiles()) {
+      if (!(f as any).children) continue; // only TFolder
+      if (!f.path.startsWith(projectPath + "/")) continue;
+      const rel = f.path.slice(projectPath.length + 1);
+      if (matcher(rel)) results.push(rel);
+    }
+    return results.sort();
+  }
+
   private async handleSubmit(
     et: ReturnType<typeof mergeEntityTypes>[string],
     apiErrorEl: HTMLElement,
@@ -182,11 +293,11 @@ export class EntityCreateModal extends Modal {
     const requiredFields = et.requiredFields ?? [];
     const allRequired = ["title", ...requiredFields.filter((k: string) => k !== "title")];
 
-    // Validate
+    // Validate — parentFolder is allowed to be empty (project root)
     let firstError: HTMLElement | null = null;
     for (const key of allRequired) {
       const input = this.fieldInputs.get(key);
-      if (!input || input.value.trim() === "") {
+      if (!input || (input.value.trim() === "" && key !== "parentFolder")) {
         const wrapper = input?.closest(".pf-ecm-field") as HTMLElement;
         if (wrapper) {
           wrapper.addClass("pf-ecm-field-error");
@@ -202,11 +313,11 @@ export class EntityCreateModal extends Modal {
       return;
     }
 
-    // Build fields object
+    // Build fields object — include parentFolder even when empty (project root = "")
     const fields: Record<string, string> = {};
     for (const [key, input] of this.fieldInputs.entries()) {
       const v = input.value.trim();
-      if (v) fields[key] = v;
+      if (v !== "" || key === "parentFolder") fields[key] = v;
     }
 
     apiErrorEl.style.display = "none";

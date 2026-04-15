@@ -28,12 +28,18 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "operational/template-task.md",
         targetFolder: "Work/Tasks",
         filenameRule: "${PROJECT_ID}-${taskIndex}-${title}",
-        requiredFields: ["title", "description", "sprint"],
-        indexField: "taskIndex",
-        fieldDescriptions: {
-          sprint: "Title of the sprint this task belongs to. Call listProjectFiles with subfolder='Work/Sprints' to discover available sprints, then use the sprint filename (without .md) as the value.",
-        },
         patchMarkers: ["AI:CONTENT", "AI:ACTIONS"],
+        fields: {
+          title:       { type: "string", required: true, role: "title" },
+          description: { type: "string", required: true },
+          taskIndex:   { type: "number", role: "index" },
+          sprint: {
+            type: "reference", required: true,
+            refersTo: { kind: "entity", entityType: "sprint" },
+            description: "The sprint this task belongs to.",
+            resolveHint: "Call listProjectFiles with subfolder='Work/Sprints'; use the filename without .md.",
+          },
+        },
       },
       "meeting.planning": {
         id: "meeting.planning",
@@ -41,8 +47,10 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "operational/template-meeting-planning.md",
         targetFolder: "Meetings/Planning",
         filenameRule: "${DATE} ${title}",
-        requiredFields: ["title"],
         patchMarkers: ["AI:AGENDA", "AI:NOTES", "AI:ACTIONS"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+        },
       },
       "meeting.refinement": {
         id: "meeting.refinement",
@@ -50,8 +58,10 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "operational/template-meeting-refinement.md",
         targetFolder: "Meetings/Refinement",
         filenameRule: "${DATE} ${title}",
-        requiredFields: ["title"],
         patchMarkers: ["AI:AGENDA", "AI:NOTES", "AI:ACTIONS"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+        },
       },
       "meeting.retro": {
         id: "meeting.retro",
@@ -59,8 +69,10 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "operational/template-meeting-retro.md",
         targetFolder: "Meetings/Retro",
         filenameRule: "${DATE} ${title}",
-        requiredFields: ["title"],
         patchMarkers: ["AI:AGENDA", "AI:NOTES", "AI:ACTIONS"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+        },
       },
       "meeting.demo": {
         id: "meeting.demo",
@@ -68,8 +80,10 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "operational/template-meeting-demo.md",
         targetFolder: "Meetings/Demo",
         filenameRule: "${DATE} ${title}",
-        requiredFields: ["title"],
         patchMarkers: ["AI:AGENDA", "AI:NOTES", "AI:ACTIONS"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+        },
       },
       "meeting.daily": {
         id: "meeting.daily",
@@ -77,8 +91,10 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "operational/template-meeting-daily.md",
         targetFolder: "Meetings/Daily",
         filenameRule: "${DATE} ${title}",
-        requiredFields: ["title"],
         patchMarkers: ["AI:AGENDA", "AI:NOTES", "AI:ACTIONS"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+        },
       },
       "meeting.knowledge": {
         id: "meeting.knowledge",
@@ -86,8 +102,10 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "operational/template-meeting-knowledge.md",
         targetFolder: "Meetings/Knowledge",
         filenameRule: "${DATE} ${title}",
-        requiredFields: ["title"],
         patchMarkers: ["AI:AGENDA", "AI:NOTES", "AI:ACTIONS"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+        },
       },
       sprint: {
         id: "sprint",
@@ -95,15 +113,15 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "operational/template-sprint.md",
         targetFolder: "Work/Sprints",
         filenameRule: "Sprint ${title}",
-        requiredFields: ["title"],
-        fieldDescriptions: {
-          title: "Short sprint identifier only — e.g. '1', '2', 'Q1 2024', 'March Week 1'. Do NOT include the project name or the word 'Sprint'.",
-        },
-        fieldDefaults: {
-          startedAt: "today",
-          finishedAt: "today+14d",
-        },
         patchMarkers: ["AI:CONTENT", "AI:ACTIONS"],
+        fields: {
+          title: {
+            type: "string", required: true, role: "title",
+            description: "Short sprint identifier only — e.g. '1', '2', 'Q1 2024', 'March Week 1'. Do NOT include the project name or the word 'Sprint'.",
+          },
+          startedAt:  { type: "date", default: "today" },
+          finishedAt: { type: "date", default: "today+14d" },
+        },
       },
       idea: {
         id: "idea",
@@ -111,8 +129,10 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "operational/template-idea.md",
         targetFolder: "Work/Ideas",
         filenameRule: "Idea ${title}",
-        requiredFields: ["title"],
         patchMarkers: ["AI:CONTENT"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+        },
       },
       reference: {
         id: "reference",
@@ -120,8 +140,10 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "operational/template-reference-item.md",
         targetFolder: "References",
         filenameRule: "${title}",
-        requiredFields: ["title"],
         patchMarkers: ["AI:CONTENT", "AI:SUMMARY"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+        },
       },
     } as EntityTypesRegistry,
   },
@@ -155,9 +177,11 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "learning/template-module.md",
         targetFolder: "Modules/${title}",
         filenameRule: "${title}",
-        requiredFields: ["title"],
         patchMarkers: ["AI:CONTENT", "AI:OBJECTIVES", "AI:SUMMARY"],
         childFolders: ["Lessons", "Notes", "Assignments", "Reviews"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+        },
       },
       lesson: {
         id: "lesson",
@@ -165,9 +189,16 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "learning/template-lesson.md",
         targetFolder: "${parentFolder}/Lessons/${title}",
         filenameRule: "${title}",
-        requiredFields: ["title", "parentFolder", "module"],
         patchMarkers: ["AI:CONTENT", "AI:NOTES", "AI:SUMMARY"],
         childFolders: ["Notes", "Assignments", "Reviews"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+          parentFolder: {
+            type: "string", required: true, role: "parentFolder",
+            allowedParents: ["module", "project"],
+            description: "Existing folder path within the project. Use a module folder (e.g. 'Modules/Module 1 - Intro') or '' for project root. Call listProjectFiles with subfolder='Modules' to discover available folders. The system automatically appends /Lessons/{title}.",
+          },
+        },
       },
       note: {
         id: "note",
@@ -175,8 +206,15 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "learning/template-note.md",
         targetFolder: "${parentFolder}/Notes",
         filenameRule: "${DATE} ${title}",
-        requiredFields: ["title", "parentFolder"],
         patchMarkers: ["AI:CONTENT", "AI:SUMMARY"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+          parentFolder: {
+            type: "string", required: true, role: "parentFolder",
+            allowedParents: ["module", "lesson", "project", "assignment", "review"],
+            description: "Existing folder path within the project. Call listProjectFiles with subfolder='Modules' to discover available folders. Use '' for project root.",
+          },
+        },
       },
       assignment: {
         id: "assignment",
@@ -184,8 +222,15 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "learning/template-assignment.md",
         targetFolder: "${parentFolder}/Assignments",
         filenameRule: "Assignment ${title}",
-        requiredFields: ["title", "parentFolder"],
         patchMarkers: ["AI:CONTENT", "AI:REQUIREMENTS", "AI:SUBMISSION"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+          parentFolder: {
+            type: "string", required: true, role: "parentFolder",
+            allowedParents: ["module", "lesson", "project"],
+            description: "Existing folder path within the project. Call listProjectFiles with subfolder='Modules' to discover available folders. Use '' for project root.",
+          },
+        },
       },
       review: {
         id: "review",
@@ -193,8 +238,15 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "learning/template-review.md",
         targetFolder: "${parentFolder}/Reviews",
         filenameRule: "${DATE} Review ${title}",
-        requiredFields: ["title", "parentFolder"],
         patchMarkers: ["AI:CONTENT", "AI:REFLECTION", "AI:ACTIONS"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+          parentFolder: {
+            type: "string", required: true, role: "parentFolder",
+            allowedParents: ["project", "module", "lesson", "assignment"],
+            description: "Existing folder path within the project. Call listProjectFiles with subfolder='Modules' to discover available folders. Use '' for project root.",
+          },
+        },
       },
       reference: {
         id: "reference",
@@ -202,8 +254,10 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         templatePath: "learning/template-reference-item.md",
         targetFolder: "References",
         filenameRule: "${title}",
-        requiredFields: ["title"],
         patchMarkers: ["AI:CONTENT", "AI:SUMMARY"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+        },
       },
     } as EntityTypesRegistry,
   },

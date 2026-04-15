@@ -72,23 +72,30 @@ const AGENT_RESOLVED_FIELDS = new Set(["parentFolder"]);
 
 export function getEntityRequirementsSummary(plugin: ProjectFlowPlugin): string {
   const projectTypes = mergeProjectTypes(plugin.settings.projectTypes);
-  const summary: Record<string, Record<string, string[]>> = {};
+  const summary: Record<string, Record<string, Record<string, string>>> = {};
 
   for (const typeId of Object.keys(projectTypes)) {
     const registry = mergeEntityTypes(projectTypes, typeId) as Record<string, any>;
-    const typeSummary: Record<string, string[]> = {};
+    const typeSummary: Record<string, Record<string, string>> = {};
     for (const [id, def] of Object.entries(registry)) {
-      if (def && typeof def === "object" && Array.isArray(def.requiredFields) && def.requiredFields.length > 0) {
-        // Exclude agent-resolved fields — the planner should never ask the user for these.
-        const userFields = (def.requiredFields as string[]).filter((f) => !AGENT_RESOLVED_FIELDS.has(f));
-        if (userFields.length > 0) {
-          typeSummary[id] = userFields;
+      if (!def?.fields) continue;
+      const fieldSummary: Record<string, string> = {};
+      for (const [key, schema] of Object.entries(def.fields as Record<string, any>)) {
+        if (schema.role === "index") {
+          fieldSummary[key] = "auto-index";
+          continue;
+        }
+        // Exclude agent-resolved fields from user-facing planner summary
+        if (AGENT_RESOLVED_FIELDS.has(key)) continue;
+        if (schema.type === "reference" && schema.refersTo?.entityType) {
+          fieldSummary[key] = `reference:${schema.refersTo.entityType}`;
+        } else {
+          fieldSummary[key] = schema.required ? "required" : "optional";
         }
       }
+      if (Object.keys(fieldSummary).length > 0) typeSummary[id] = fieldSummary;
     }
-    if (Object.keys(typeSummary).length > 0) {
-      summary[typeId] = typeSummary;
-    }
+    if (Object.keys(typeSummary).length > 0) summary[typeId] = typeSummary;
   }
 
   try {
@@ -122,24 +129,26 @@ export async function buildSpecializedSystemPrompt(
       "This project uses deeply nested folders. Module folders live under Modules/. Lesson folders live under Modules/{moduleTitle}/Lessons/.",
       "",
       "Folder layout:",
-      "  Modules/{moduleTitle}/                    ← module folder (title is the full name e.g. 'Module 1 - Intro')",
-      "  Modules/{moduleTitle}/{moduleTitle}.md     ← module file",
-      "  Modules/{moduleTitle}/Lessons/{lessonTitle}/              ← lesson folder",
-      "  Modules/{moduleTitle}/Lessons/{lessonTitle}/{lessonTitle}.md ← lesson file",
+      "  Modules/{moduleTitle}/                                              ← module folder",
+      "  Modules/{moduleTitle}/{moduleTitle}.md                             ← module file",
+      "  Modules/{moduleTitle}/Lessons/{lessonTitle}/                       ← lesson folder",
+      "  Modules/{moduleTitle}/Lessons/{lessonTitle}/{lessonTitle}.md       ← lesson file",
       "",
       "CRITICAL RULE — parentFolder:",
       "  parentFolder MUST be the EXACT existing folder path from the project root.",
       "  You MUST call listProjectFiles (with subfolder='Modules') BEFORE creating any lesson, note, assignment, or review.",
       "  Use the returned folder paths verbatim as parentFolder. Never construct the path from the title alone.",
-      "  When creating a lesson, also set 'module' = last segment of parentFolder (e.g. parentFolder 'Modules/Module 1 - Intro' → module 'Module 1 - Intro').",
       "",
-      "  *** LESSON parentFolder RULE (CRITICAL) ***",
-      "  For createLesson: parentFolder = the MODULE folder (e.g. 'Modules/Module 1 - Intro').",
+      "  Allowed parentFolder targets per entity type (from the fields schema):",
+      "  - createLesson:     module folder or project root (e.g. 'Modules/Module 1 - Intro' or '')",
+      "  - createNote:       module, lesson, project root, assignment, or review folder",
+      "  - createAssignment: module, lesson, or project root",
+      "  - createReview:     project root, module, lesson, or assignment folder",
+      "",
+      "  LESSON parentFolder (CRITICAL):",
+      "  parentFolder for a lesson = the MODULE folder (e.g. 'Modules/Module 1 - Intro').",
       "  The system AUTOMATICALLY appends /Lessons/{title} to place the lesson inside the Lessons subfolder.",
-      "  NEVER pass the Lessons subfolder (e.g. 'Modules/Module 1 - Intro/Lessons') as parentFolder for a lesson.",
-      "  NEVER pass a lesson folder (e.g. 'Modules/Module 1 - Intro/Lessons/Lesson 2') as parentFolder for a lesson.",
-      "  When you see 'Lessons', 'Notes', 'Assignments', 'Reviews' subfolders in listProjectFiles results,",
-      "  IGNORE them when determining parentFolder for a new lesson. Only use the module-level folder.",
+      "  NEVER pass a Lessons subfolder (e.g. 'Modules/Module 1 - Intro/Lessons') as parentFolder for a lesson.",
       "",
       "  parentFolder examples (after calling listProjectFiles):",
       "  - '' (empty string) → course-level, entities go to root Notes/, Assignments/, Reviews/",
@@ -153,11 +162,22 @@ export async function buildSpecializedSystemPrompt(
 
 function getEntityRequirementsSummaryForProject(plugin: ProjectFlowPlugin, projectTypeId: string): string {
   const registry = mergeEntityTypes(mergeProjectTypes(plugin.settings.projectTypes), projectTypeId) as Record<string, any>;
-  const typeSummary: Record<string, string[]> = {};
+  const typeSummary: Record<string, Record<string, string>> = {};
   for (const [id, def] of Object.entries(registry)) {
-    if (def && typeof def === "object" && Array.isArray(def.requiredFields) && def.requiredFields.length > 0) {
-      typeSummary[id] = def.requiredFields;
+    if (!def?.fields) continue;
+    const fieldSummary: Record<string, string> = {};
+    for (const [key, schema] of Object.entries(def.fields as Record<string, any>)) {
+      if (schema.role === "index") {
+        fieldSummary[key] = "auto-index";
+        continue;
+      }
+      if (schema.type === "reference" && schema.refersTo?.entityType) {
+        fieldSummary[key] = `reference:${schema.refersTo.entityType}`;
+      } else {
+        fieldSummary[key] = schema.required ? "required" : "optional";
+      }
     }
+    if (Object.keys(fieldSummary).length > 0) typeSummary[id] = fieldSummary;
   }
   try {
     return JSON.stringify(typeSummary);

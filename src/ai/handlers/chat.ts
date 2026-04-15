@@ -298,7 +298,7 @@ export class AiChatController {
     if (!aiSettings) throw new Error("AI settings are missing.");
     const assistantEl = this.ui.appendMessage("assistant", "");
     let content = "";
-    let totalUsage = { inputTokens: 0, outputTokens: 0 };
+    const totalUsage = { inputTokens: 0, outputTokens: 0 };
     for await (const evt of streamProvider(aiSettings, messages, [])) {
       if (evt.type === "content" && evt.delta) {
         content += evt.delta;

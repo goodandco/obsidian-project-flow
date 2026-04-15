@@ -1,7 +1,7 @@
 import type { ProjectFlowSettings } from '../interfaces';
 import { DEFAULT_PROJECT_TYPES } from './registry-defaults';
 
-export const CURRENT_SETTINGS_SCHEMA_VERSION = 15;
+export const CURRENT_SETTINGS_SCHEMA_VERSION = 16;
 
 const DEFAULT_MIXED_OFFER_TEXT = "I can also set this up for you. Shall I proceed?";
 
@@ -119,6 +119,9 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
     if (!s.schemaVersion || s.schemaVersion < 14) {
       (s as any).pinnedProjects = (input as any)?.pinnedProjects ?? [];
     }
+
+    // v16: unified fields schema (normalization handled at runtime in registry-merge)
+    // No data migration needed — registry-merge synthesizes legacy props from fields at read time.
 
     if (!s.ai) {
       s.ai = {

@@ -101,6 +101,28 @@ export interface ProjectRecord {
 
 export type TemplateScope = "project" | "vault" | "builtin";
 
+export interface EntityFieldSchema {
+  type: "string" | "number" | "boolean" | "date" | "reference";
+  required?: boolean;
+  enum?: string[];
+  default?: string | number | boolean;
+  role?: "title" | "index" | "parentFolder";
+  description?: string;
+  example?: string;
+  refersTo?: {
+    kind: "entity" | "project" | "folder";
+    entityType?: string;
+  };
+  resolveHint?: string;
+  /**
+   * For role: "parentFolder" only.
+   * Lists which entity types (by id) or "project" are valid parent targets.
+   * Used by the AI agent to filter listProjectFiles results to relevant folders.
+   * Examples: ["module", "project"], ["module", "lesson", "project"]
+   */
+  allowedParents?: string[];
+}
+
 export interface EntityType {
   id: string;
   name?: string;
@@ -127,6 +149,7 @@ export interface EntityType {
    * injects the next sequential number as this variable name (e.g. "taskIndex" → ${taskIndex} = 1, 2, 3…).
    */
   indexField?: string;
+  fields?: Record<string, EntityFieldSchema>;
 }
 
 export type EntityTypesRegistry = Record<string, EntityType>;

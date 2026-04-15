@@ -1,4 +1,4 @@
-import { App } from "obsidian";
+import { App, TFile } from "obsidian";
 
 export type PatchMode = "lenient" | "strict";
 
@@ -87,17 +87,17 @@ export async function patchMarkerInFile(
   app: App,
   req: PatchMarkerRequest,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const adapter: any = (app.vault as any).adapter;
   const patchMode = req.patchMode ?? "lenient";
-  if (!(await adapter.exists(req.path))) {
+  const file = app.vault.getAbstractFileByPath(req.path);
+  if (!(file instanceof TFile)) {
     return { ok: false, error: `File not found: ${req.path}` };
   }
-  const text = await adapter.read(req.path);
+  const text = await app.vault.read(file);
   const res = patchTextByMarker(text, req.marker, req.content, patchMode, req.fallbackHeading);
   if (!res.updated) {
     return { ok: false, error: "Marker or heading not found in strict mode." };
   }
-  await adapter.write(req.path, res.text);
+  await app.vault.modify(file, res.text);
   return { ok: true };
 }
 
@@ -105,17 +105,16 @@ export async function patchSectionInFile(
   app: App,
   req: PatchSectionRequest,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const adapter: any = (app.vault as any).adapter;
-  const patchMode = req.patchMode ?? "lenient";
-  if (!(await adapter.exists(req.path))) {
+  const file = app.vault.getAbstractFileByPath(req.path);
+  if (!(file instanceof TFile)) {
     return { ok: false, error: `File not found: ${req.path}` };
   }
-  const text = await adapter.read(req.path);
-  const res = patchTextByHeading(text, req.heading, req.content, patchMode);
+  const text = await app.vault.read(file);
+  const res = patchTextByHeading(text, req.heading, req.content, req.patchMode ?? "lenient");
   if (!res.updated) {
     return { ok: false, error: "Heading not found in strict mode." };
   }
-  await adapter.write(req.path, res.text);
+  await app.vault.modify(file, res.text);
   return { ok: true };
 }
 
