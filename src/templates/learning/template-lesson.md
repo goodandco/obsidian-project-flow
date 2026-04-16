@@ -1,7 +1,6 @@
 ---
 Type: "Lesson"
-Module: "[[${module}]]"
-Parent: ""
+Parent: "${parent}"
 Status: "New"
 Order: ""
 Project: "[[$_PROJECT_FULL_NAME]]"

@@ -1,6 +1,6 @@
 ---
 Type: "Review"
-Parent: ""
+Parent: "${parent}"
 Status: "New"
 Date: "$_DATE"
 Project: "[[$_PROJECT_FULL_NAME]]"

@@ -111,6 +111,11 @@ export interface EntityFieldSchema {
   example?: string;
   refersTo?: {
     kind: "entity" | "project" | "folder";
+    /**
+     * The entity type ID to reference.
+     * Use `"$dynamic"` when combined with `role: "parentFolder"` — the resolved
+     * entity type is chosen at runtime from the `allowedParents` list.
+     */
     entityType?: string;
   };
   resolveHint?: string;

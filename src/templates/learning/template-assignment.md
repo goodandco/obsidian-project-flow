@@ -1,6 +1,6 @@
 ---
 Type: "Assignment"
-Parent: ""
+Parent: "${parent}"
 Status: "Pending"
 Project: "[[$_PROJECT_FULL_NAME]]"
 DueDate: ""

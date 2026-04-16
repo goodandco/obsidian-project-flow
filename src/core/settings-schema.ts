@@ -1,7 +1,7 @@
 import type { ProjectFlowSettings } from '../interfaces';
 import { DEFAULT_PROJECT_TYPES } from './registry-defaults';
 
-export const CURRENT_SETTINGS_SCHEMA_VERSION = 17;
+export const CURRENT_SETTINGS_SCHEMA_VERSION = 19;
 
 const DEFAULT_MIXED_OFFER_TEXT = "I can also set this up for you. Shall I proceed?";
 
@@ -122,6 +122,30 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
 
     // v16: unified fields schema (normalization handled at runtime in registry-merge)
     // No data migration needed — registry-merge synthesizes legacy props from fields at read time.
+
+    // v19: learning project type folderStructure simplified (removed Notes/Assignments/Reviews/Resources
+    // root folders) and initialNotes updated (Knowledge Base → Overview, References moved to root,
+    // ReadingList removed). Reset stored values so updated defaults are used.
+    if (!s.schemaVersion || s.schemaVersion < 19) {
+      const storedLearning = (s.projectTypes as any)?.learning;
+      if (storedLearning && typeof storedLearning === "object") {
+        delete storedLearning.folderStructure;
+        delete storedLearning.initialNotes;
+      }
+    }
+
+    // v18: parentFolder fields on learning entity types changed from type:"string" to
+    // type:"reference" ($dynamic). Reset the four affected built-in entities so the
+    // updated field schema is picked up from defaults. Preserves any other learning
+    // project type customisations (folder structure, custom entity types, etc.).
+    if (!s.schemaVersion || s.schemaVersion < 18) {
+      const learningEntities = (s.projectTypes as any)?.learning?.projectEntities;
+      if (learningEntities && typeof learningEntities === "object") {
+        for (const entityId of ["lesson", "note", "assignment", "review"]) {
+          delete learningEntities[entityId];
+        }
+      }
+    }
 
     // v17: merge missing folderStructure entries and initialNotes from defaults into stored
     // operational project type (additive only — preserves any user customisations)

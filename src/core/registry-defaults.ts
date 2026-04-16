@@ -179,21 +179,16 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
     folderStructure: [
       "Overview",
       "Modules",
-      "Notes",
-      "Assignments",
-      "Reviews",
-      "Resources",
       "References",
     ],
     initialNotes: [
       { fileName: "${PROJECT_FULL_NAME}.md", template: "learning/project.md" },
       { fileName: "${PROJECT_NAME} Modules.md", template: "learning/modules.md" },
-      { fileName: "${PROJECT_NAME} Knowledge Base.md", template: "learning/knowledge-base.md" },
+      { fileName: "${PROJECT_NAME} Overview.md", template: "learning/overview.md" },
       { fileName: "Overview/Roadmap.md", template: "learning/roadmap.md" },
       { fileName: "Overview/Resources.md", template: "learning/resources.md" },
       { fileName: "Overview/Goals.md", template: "learning/goals.md" },
-      { fileName: "Resources/ReadingList.md", template: "learning/reading-list.md" },
-      { fileName: "Resources/References.md", template: "learning/references.md" },
+      { fileName: "${PROJECT_NAME} References.md", template: "learning/references.md" },
     ],
     projectEntities: {
       module: {
@@ -219,9 +214,11 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         fields: {
           title: { type: "string", required: true, role: "title" },
           parentFolder: {
-            type: "string", required: true, role: "parentFolder",
+            type: "reference", required: true, role: "parentFolder",
+            refersTo: { kind: "entity", entityType: "$dynamic" },
             allowedParents: ["module", "project"],
-            description: "Existing folder path within the project. Use a module folder (e.g. 'Modules/Module 1 - Intro') or '' for project root. Call listProjectFiles with subfolder='Modules' to discover available folders. The system automatically appends /Lessons/{title}.",
+            description: "Parent entity for this lesson. Pick 'module' to nest inside a module folder, or 'project' for root level.",
+            resolveHint: "Pick an entity type from allowedParents. For 'module', call listProjectFiles with subfolder='Modules' and use the folder path of the chosen module. Use '' for project root. The system automatically appends /Lessons/{title}.",
           },
         },
       },
@@ -235,9 +232,11 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         fields: {
           title: { type: "string", required: true, role: "title" },
           parentFolder: {
-            type: "string", required: true, role: "parentFolder",
+            type: "reference", required: true, role: "parentFolder",
+            refersTo: { kind: "entity", entityType: "$dynamic" },
             allowedParents: ["module", "lesson", "project", "assignment", "review"],
-            description: "Existing folder path within the project. Call listProjectFiles with subfolder='Modules' to discover available folders. Use '' for project root.",
+            description: "Parent entity for this note. Pick the entity type that best contextualises the note.",
+            resolveHint: "Pick an entity type from allowedParents, call listProjectFiles to find entities of that type, then return its folder path relative to the project root. Use '' for project root.",
           },
         },
       },
@@ -251,9 +250,11 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         fields: {
           title: { type: "string", required: true, role: "title" },
           parentFolder: {
-            type: "string", required: true, role: "parentFolder",
+            type: "reference", required: true, role: "parentFolder",
+            refersTo: { kind: "entity", entityType: "$dynamic" },
             allowedParents: ["module", "lesson", "project"],
-            description: "Existing folder path within the project. Call listProjectFiles with subfolder='Modules' to discover available folders. Use '' for project root.",
+            description: "Parent entity for this assignment.",
+            resolveHint: "Pick an entity type from allowedParents, call listProjectFiles to find entities of that type, then return its folder path relative to the project root. Use '' for project root.",
           },
         },
       },
@@ -267,9 +268,11 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         fields: {
           title: { type: "string", required: true, role: "title" },
           parentFolder: {
-            type: "string", required: true, role: "parentFolder",
+            type: "reference", required: true, role: "parentFolder",
+            refersTo: { kind: "entity", entityType: "$dynamic" },
             allowedParents: ["project", "module", "lesson", "assignment"],
-            description: "Existing folder path within the project. Call listProjectFiles with subfolder='Modules' to discover available folders. Use '' for project root.",
+            description: "Parent entity for this review.",
+            resolveHint: "Pick an entity type from allowedParents, call listProjectFiles to find entities of that type, then return its folder path relative to the project root. Use '' for project root.",
           },
         },
       },

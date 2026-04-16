@@ -41,12 +41,32 @@ export async function createEntity(
     ? await computeNextIndex(plugin, entityType, resolved.record.variables.PROJECT_PATH)
     : null;
 
-  const variables = {
+  const variables: Record<string, any> = {
     ...(resolved.record.variables as any),
     ...resolveFieldDefaults(entityType, wrappedFields),
     ...(wrappedFields || {}),
     ...(nextIndex !== null && entityType.indexField ? { [entityType.indexField]: String(nextIndex) } : {}),
   };
+
+  // Derive `parent` wiki-link from the parentFolder role field so templates can use ${parent}
+  if (!variables.parent) {
+    const entityFields: Record<string, any> = entityType.fields ?? {};
+    let parentFolderKey: string | undefined;
+    for (const k of Object.keys(entityFields)) {
+      if (entityFields[k]?.role === "parentFolder") { parentFolderKey = k; break; }
+    }
+    if (parentFolderKey !== undefined) {
+      const folderVal = String(variables[parentFolderKey] ?? "");
+      if (folderVal === "") {
+        // Project root — link to the project itself
+        variables.parent = `[[${variables.PROJECT_FULL_NAME ?? ""}]]`;
+      } else {
+        // Entity parent — last segment of the folder path is the entity title
+        const lastSegment = folderVal.split("/").pop() ?? "";
+        variables.parent = lastSegment ? `[[${lastSegment}]]` : "";
+      }
+    }
+  }
 
   const resolvedTemplate = await resolveTemplatePath(
     plugin,
@@ -139,6 +159,7 @@ function wrapReferenceFields(
   for (const key of Object.keys(entityFields)) {
     const schema = entityFields[key];
     if (schema.type !== "reference") continue;
+    if (schema.role === "parentFolder") continue; // folder path — must not become [[...]]
     const val = out[key];
     if (val && typeof val === "string" && !val.startsWith("[[")) {
       out[key] = `[[${val}]]`;
@@ -149,9 +170,13 @@ function wrapReferenceFields(
 
 function validateRequiredFields(entityType: EntityType, fields?: Record<string, any>): void {
   if (!entityType.requiredFields || entityType.requiredFields.length === 0) return;
-  const missing = entityType.requiredFields.filter(
-    (k) => fields == null || fields[k] == null || String(fields[k]).trim() === "",
-  );
+  const entityFields: Record<string, any> = entityType.fields ?? {};
+  const missing = entityType.requiredFields.filter((k) => {
+    if (fields != null && fields[k] != null && String(fields[k]).trim() !== "") return false;
+    // parentFolder is allowed to be empty — empty string means project root
+    if (entityFields[k]?.role === "parentFolder") return false;
+    return true;
+  });
   if (missing.length > 0) {
     throw new Error(`Missing required fields: ${missing.join(", ")}`);
   }

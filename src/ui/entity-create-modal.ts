@@ -3,6 +3,7 @@ import type { App } from "obsidian";
 import type { ProjectFlowPlugin } from "../plugin";
 import type { EntityFieldSchema, ProjectIndexEntry } from "../interfaces";
 import { mergeProjectTypes, mergeEntityTypes } from "../core/registry-merge";
+import { templateToFolderRegex } from "../core/template-folder-regex";
 
 function hashStr(str: string): number {
   let h = 0;
@@ -329,23 +330,19 @@ export class EntityCreateModal extends Modal {
     const projectPath = this.projectEntry.path;
     if (!projectPath) return [];
 
-    // Folder patterns per parent type (relative to project root)
-    const patterns: Record<string, (rel: string) => boolean> = {
-      module: (rel) => /^Modules\/[^/]+$/.test(rel),
-      lesson: (rel) => /^Modules\/[^/]+\/Lessons\/[^/]+$/.test(rel),
-      assignment: (rel) => /^(Modules\/[^/]+\/Lessons\/[^/]+\/)?Assignments\/[^/]+$/.test(rel),
-      review: (rel) => /^(Modules\/[^/]+\/Lessons\/[^/]+\/)?Reviews\/[^/]+$/.test(rel),
-    };
+    const allTypes = mergeProjectTypes(this.plugin.settings.projectTypes);
+    const entityTypes = mergeEntityTypes(allTypes);
+    const et = entityTypes[parentType];
+    if (!et?.targetFolder) return [];
 
-    const matcher = patterns[parentType];
-    if (!matcher) return [];
+    const regex = templateToFolderRegex(et.targetFolder);
 
     const results: string[] = [];
     for (const f of this.plugin.app.vault.getAllLoadedFiles()) {
       if (!(f as any).children) continue; // only TFolder
       if (!f.path.startsWith(projectPath + "/")) continue;
       const rel = f.path.slice(projectPath.length + 1);
-      if (matcher(rel)) results.push(rel);
+      if (regex.test(rel)) results.push(rel);
     }
     return results.sort();
   }
