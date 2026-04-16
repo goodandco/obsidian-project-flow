@@ -55,6 +55,7 @@ This is purely additive UI — no changes to Core API, services, or the right-si
 ### 1.2 Browser view shell
 
 - Create `src/ui/browser-view.ts`:
+
   ```ts
   export const BROWSER_VIEW_TYPE = "projectflow-browser";
   export class ProjectFlowBrowserView extends ItemView { ... }
