@@ -25,6 +25,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Zip templates
+        run: zip -r templates.zip src/templates/
+
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
@@ -32,3 +35,4 @@ jobs:
             manifest.json
             main.js
             styles.css
+            templates.zip
