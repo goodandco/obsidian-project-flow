@@ -1,6 +1,7 @@
 ---
 Type: "Section"
 Project: "[[$_PROJECT_FULL_NAME]]"
+Parent: "[[$_PROJECT_FULL_NAME]]"
 Date: "$_DATE"
 tags:
   - type/section
@@ -9,8 +10,6 @@ tags:
 ---
 
 ## Sprints
-<!-- ai:sprints -->
-<!-- /ai:sprints -->
 
 
 ```dataviewjs
@@ -67,10 +66,16 @@ dv.el("p", `Sprints: ${sprints.length}. Stories: ${allStories}. Story points: ${
 
 ---
 
-## Proposals / Ideas
-<!-- ai:proposals-ideas -->
-<!-- /ai:proposals-ideas -->
+## Proposals
 
+
+```dataview
+
+TABLE Status, Date FROM #type/proposal AND #$_PROJECT_TAG WHERE !contains(lower(file.name), "template") SORT Status DESC
+
+```
+
+##  Ideas
 
 ```dataview
 

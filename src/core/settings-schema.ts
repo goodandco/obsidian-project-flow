@@ -1,7 +1,7 @@
 import type { ProjectFlowSettings } from '../interfaces';
 import { DEFAULT_PROJECT_TYPES } from './registry-defaults';
 
-export const CURRENT_SETTINGS_SCHEMA_VERSION = 16;
+export const CURRENT_SETTINGS_SCHEMA_VERSION = 17;
 
 const DEFAULT_MIXED_OFFER_TEXT = "I can also set this up for you. Shall I proceed?";
 
@@ -122,6 +122,29 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
 
     // v16: unified fields schema (normalization handled at runtime in registry-merge)
     // No data migration needed — registry-merge synthesizes legacy props from fields at read time.
+
+    // v17: merge missing folderStructure entries and initialNotes from defaults into stored
+    // operational project type (additive only — preserves any user customisations)
+    if (!s.schemaVersion || s.schemaVersion < 17) {
+      const defaultOp = DEFAULT_PROJECT_TYPES.operational;
+      const storedOp = (s.projectTypes as any)?.operational;
+      if (storedOp && defaultOp) {
+        const existingFolders = new Set<string>(storedOp.folderStructure ?? []);
+        for (const folder of defaultOp.folderStructure ?? []) {
+          if (!existingFolders.has(folder)) {
+            storedOp.folderStructure = [...(storedOp.folderStructure ?? []), folder];
+            existingFolders.add(folder);
+          }
+        }
+        const existingNotes = new Set<string>((storedOp.initialNotes ?? []).map((n: any) => n.fileName));
+        for (const note of defaultOp.initialNotes ?? []) {
+          if (!existingNotes.has(note.fileName)) {
+            storedOp.initialNotes = [...(storedOp.initialNotes ?? []), note];
+            existingNotes.add(note.fileName);
+          }
+        }
+      }
+    }
 
     if (!s.ai) {
       s.ai = {

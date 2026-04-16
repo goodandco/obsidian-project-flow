@@ -12,6 +12,8 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
       "Work/Tasks",
       "Work/Sprints",
       "Work/Ideas",
+      "Work/Proposals",
+      "Decisions",
       "People",
     ],
     initialNotes: [
@@ -20,6 +22,7 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
       { fileName: "${PROJECT_NAME} People.md", template: "operational/people.md" },
       { fileName: "${PROJECT_NAME} Work.md", template: "operational/work.md" },
       { fileName: "${PROJECT_NAME} References.md", template: "operational/references.md" },
+      { fileName: "${PROJECT_NAME} Decisions.md", template: "operational/decisions.md" },
     ],
     projectEntities: {
       task: {
@@ -141,6 +144,28 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         targetFolder: "References",
         filenameRule: "${title}",
         patchMarkers: ["AI:CONTENT", "AI:SUMMARY"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+        },
+      },
+      decision: {
+        id: "decision",
+        name: "Decision",
+        templatePath: "operational/template-decision.md",
+        targetFolder: "Decisions",
+        filenameRule: "${DATE} ${title}",
+        patchMarkers: ["AI:CONTENT", "AI:SUMMARY"],
+        fields: {
+          title: { type: "string", required: true, role: "title" },
+        },
+      },
+      proposal: {
+        id: "proposal",
+        name: "Proposal",
+        templatePath: "operational/template-proposal.md",
+        targetFolder: "Work/Proposals",
+        filenameRule: "${DATE} ${title}",
+        patchMarkers: ["AI:CONTENT"],
         fields: {
           title: { type: "string", required: true, role: "title" },
         },

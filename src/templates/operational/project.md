@@ -27,14 +27,12 @@ Deadline: ""
 > - some link
 
 
-```dataviewjs
+```dataview
 
-const sections = dv.pages('#type/section and #$_PROJECT_TAG')  
-  .sort(p => p.Date, 'asc')
-  .map((p) => ([ p.file.link ]));
-
-dv.header(2, 'Sections');
-dv.table(['File'],  sections);
+TABLE Date
+FROM #type/section AND #$_PROJECT_TAG
+WHERE contains(Parent, this.file.link)
+SORT Date ASC
 
 ```
 
