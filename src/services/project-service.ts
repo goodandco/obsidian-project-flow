@@ -29,13 +29,18 @@ export async function createProject(
     );
 
     const subdirs = projectType?.folderStructure ?? [
-      "Knowledge Base",
+      "References",
       "Meetings",
       "Work",
       "Work/Tasks",
       "People",
     ];
+    const safeDimDir = sanitizePath(`${safeProjectsDir}/${safeDimension}`);
+    const safeCatDir = sanitizePath(`${safeProjectsDir}/${safeDimension}/${safeCategory}`);
     const folderOps = [
+      { type: "folder" as const, path: safeProjectsDir },
+      { type: "folder" as const, path: safeDimDir },
+      { type: "folder" as const, path: safeCatDir },
       { type: "folder" as const, path: safeProjectDir },
       ...subdirs.map((s) => ({
         type: "folder" as const,

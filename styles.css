@@ -1331,6 +1331,15 @@ body {
 
 /* ── Project Create Modal ───────────────────────────────────────────── */
 .pf-pcm {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+.pf-pcm-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 .pf-pcm-title {
   font-size: 16px;

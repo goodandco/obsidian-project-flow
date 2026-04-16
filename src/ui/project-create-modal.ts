@@ -68,14 +68,16 @@ export class ProjectCreateModal extends Modal {
     contentEl.empty();
     contentEl.addClass("pf-pcm");
 
-    contentEl.createEl("h2", { cls: "pf-pcm-title", text: "Create new project" });
+    const body = contentEl.createDiv({ cls: "pf-pcm-body" });
 
-    this.apiErrorEl = contentEl.createDiv({ cls: "pf-pcm-api-error" });
+    body.createEl("h2", { cls: "pf-pcm-title", text: "Create new project" });
+
+    this.apiErrorEl = body.createDiv({ cls: "pf-pcm-api-error" });
     this.apiErrorEl.style.display = "none";
 
-    this.renderTypeSelector(contentEl);
-    this.renderFormFields(contentEl);
-    this.previewEl = contentEl.createDiv({ cls: "pf-pcm-preview" });
+    this.renderTypeSelector(body);
+    this.renderFormFields(body);
+    this.previewEl = body.createDiv({ cls: "pf-pcm-preview" });
     this.renderPreview();
     this.renderFooter(contentEl);
   }

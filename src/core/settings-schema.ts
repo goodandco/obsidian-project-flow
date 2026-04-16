@@ -81,7 +81,8 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
     }
 
     // v10–v11: reset stale learning/operational project types
-    if (!s.schemaVersion || s.schemaVersion < 11) {
+    // Guard with `input != null` so fresh installs (null input) keep the defaults just set above.
+    if (input != null && (!s.schemaVersion || s.schemaVersion < 11)) {
       if (s.projectTypes) {
         delete (s.projectTypes as any).learning;
         delete (s.projectTypes as any).operational;
@@ -110,8 +111,9 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
           }
         }
       }
-      // Reset all project types so defaults (with projectEntities) are picked up fresh
-      if (s.projectTypes) {
+      // Reset all project types so defaults (with projectEntities) are picked up fresh.
+      // Guard with `input != null` so fresh installs keep the defaults just set above.
+      if (input != null && s.projectTypes) {
         delete (s.projectTypes as any).operational;
         delete (s.projectTypes as any).learning;
       }
