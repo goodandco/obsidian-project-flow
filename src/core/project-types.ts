@@ -7,9 +7,7 @@ export function resolveProjectType(
 ): { projectTypeId: string; projectType: ProjectType } {
   const projectTypes = mergeProjectTypes(settings.projectTypes);
   const requestedId = projectInfo?.projectTypeId;
-  const projectTypeId = requestedId && projectTypes[requestedId]
-    ? requestedId
-    : "operational";
+  const projectTypeId = requestedId && projectTypes[requestedId] ? requestedId : "operational";
   const projectType = projectTypes[projectTypeId] || projectTypes.operational;
   return { projectTypeId, projectType };
 }

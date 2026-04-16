@@ -48,7 +48,6 @@ export interface MCPServerConfig {
   apiKey?: string; // resolved at runtime from SecretStorage; never persisted
 }
 
-
 export interface PendingPlan {
   originalInput: string;
   plan?: string;
@@ -200,5 +199,5 @@ export interface ProjectGraph {
 }
 
 export interface IProjectFlowPlugin extends Plugin {
-  settings: ProjectFlowSettings
+  settings: ProjectFlowSettings;
 }

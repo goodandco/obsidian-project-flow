@@ -1,7 +1,9 @@
 # Plan Review — CR-6: Unified fields Schema
+
 Overall the plan is solid and well-structured. I found several issues and gaps that need adjustments before implementation.
 
 ## Issues to Fix
+
 1. Lesson targetFolder change is risky — needs a transition strategy
 
 The plan changes lesson's targetFolder from ${parentFolder}/Lessons/${title} to ${module}/Lessons/${title}. This changes the meaning of the field: parentFolder was a full relative path (e.g. Modules/Module 1 - Intro), but module in the plan's fields spec says it's also a full path ("The full module folder path"). This is fine semantically, but:
@@ -41,14 +43,15 @@ The modal reads requiredFields, fieldDescriptions, and fieldDefaults directly. T
 The proposed code: schema.description ?? schema.resolveHint ?? FIELD_DESCRIPTIONS[key]. The resolveHint is an instruction to the AI agent ("Call listProjectFiles with..."), not a schema description. Using it as the JSON schema description conflates two different purposes. In the current code, fieldDescriptions.sprint contains the resolveHint-style text, so this is actually consistent with current behavior — but the plan should note this is intentional, not accidental.
 
 ## Minor Suggestions
+
 Step 3 forward pass: the code synthesizes type: "string" for all legacy fields. This is fine as a default, but indexField should get type: "number" — the plan already does this correctly.
 Step 4: the plan says "no data migration needed." This is correct — just bump the version. But add a comment in the migration noting that normalization happens at merge time, not migration time.
 
 ## Summary of Required Plan Adjustments
 
-1	Step 5	Update/remove stale FIELD_DESCRIPTIONS.module entry
-2	Step 6	Skip role: "parentFolder" from user-facing requirement summaries
-3	Step 3	Add fieldDescriptions to backward pass derivation
-4	Step 2	Clarify that name and other existing properties are preserved
-5	Step 5	Note that resolveHint as schema description is intentional
-6	Verification	Add check that entity-create-modal works via backward-compat path
+1 Step 5 Update/remove stale FIELD_DESCRIPTIONS.module entry
+2 Step 6 Skip role: "parentFolder" from user-facing requirement summaries
+3 Step 3 Add fieldDescriptions to backward pass derivation
+4 Step 2 Clarify that name and other existing properties are preserved
+5 Step 5 Note that resolveHint as schema description is intentional
+6 Verification Add check that entity-create-modal works via backward-compat path

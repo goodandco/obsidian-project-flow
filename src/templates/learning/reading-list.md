@@ -9,7 +9,9 @@ tags:
 ---
 
 ## Required
+
 - [ ] Book/Article 1
 
 ## Recommended
+
 - [ ] Book/Article 1

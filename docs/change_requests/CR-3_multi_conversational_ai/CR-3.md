@@ -29,10 +29,10 @@ User → Intent Classifier → Router
 
 Routes:
 
-- chat     → Conversational LLM (no tools)
-- action   → Planner → Confirmation → Agent Loop
-- mixed    → Chat response → Offer action → Planner if confirmed
-- unclear  → Clarifying question
+- chat → Conversational LLM (no tools)
+- action → Planner → Confirmation → Agent Loop
+- mixed → Chat response → Offer action → Planner if confirmed
+- unclear → Clarifying question
 
 Diagram:
 
@@ -43,24 +43,19 @@ Intent Classifier
 ┌──────── chat ─────────┐  
 │ Conversational reply │  
 └──────── action ──────┘  
-            ↓  
-         Planner  
-            ↓  
-      Confirmation  
-            ↓  
-        Agent Loop  
+ ↓  
+ Planner  
+ ↓  
+ Confirmation  
+ ↓  
+ Agent Loop
 
 ---
 
 ## Intent Types
 
 ```ts
-export type Intent =
-  | "chat"
-  | "action"
-  | "mixed"
-  | "unclear";
-
+export type Intent = "chat" | "action" | "mixed" | "unclear";
 ```
 
 **Definitions:**
@@ -69,7 +64,6 @@ export type Intent =
 - action: user explicitly wants to create/update/delete projects/tasks/etc
 - mixed: both explanation + action request
 - unclear: insufficient info
-
 
 ## Intent Classifier Prompt
 
@@ -117,7 +111,6 @@ User:
 In handleNewRequest:
 
 ```typescript
-
 const intent = await classifyIntent(input);
 
 switch (intent.intent) {
@@ -133,7 +126,6 @@ switch (intent.intent) {
   case "unclear":
     return askClarification();
 }
-
 ```
 
 ## Implementation Notes
@@ -174,18 +166,16 @@ If the user implies possible actions, suggest them softly.
 Example of Implementation:
 
 ```typescript
-
 async function handleChat(input: string) {
   const messages = [
     { role: "system", content: CHAT_PROMPT },
     ...history,
-    { role: "user", content: input }
+    { role: "user", content: input },
   ];
 
   const reply = await runChatCompletion({ messages });
   ui.appendMessage("assistant", reply);
 }
-
 ```
 
 ### Action Path
@@ -195,7 +185,6 @@ This is an existing pipeline:
 action → runPlanningStage → confirmation → runAgentLoop
 
 No changes required except that it is now only triggered for intent === "action".
-
 
 ### Mixed Path
 
@@ -216,7 +205,6 @@ Assistant:
 If user confirms → enter Action Path.
 
 Implementation sketch:
-
 
 ```typescript
 async function handleMixed(input: string) {
@@ -239,7 +227,6 @@ Simply ask:
 ### Planner Prompt (Narrow Responsibility)
 
 ```markdown
-
 You are a planning module for ProjectFlow AI.
 
 IMPORTANT:
@@ -247,6 +234,7 @@ This planner is invoked ONLY after the system has already determined that the us
 Assume the user intent is ACTION.
 
 Your responsibilities:
+
 - Produce a short step-by-step action plan
 - Extract structured fields required for execution
 - Detect missing required information
@@ -271,11 +259,13 @@ Rules:
 Behavior:
 
 If required information is missing:
+
 - set needsFollowup=true
 - ask ONE concise clarification question in "question"
 - leave "plan", "context", and "fields" empty or minimal
 
 If enough information is available:
+
 - set needsFollowup=false
 - provide:
   - a short step-by-step plan
@@ -285,7 +275,6 @@ If enough information is available:
 Fields must include required values for createEntity / createProject when applicable (for example: TITLE, DESCRIPTION).
 
 Never include markdown. Never include commentary outside JSON.
-
 ```
 
 ## Testing

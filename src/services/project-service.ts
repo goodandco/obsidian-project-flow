@@ -1,7 +1,10 @@
 import { ProjectInfo, ProjectVariables, ProjectRecord, IProjectFlowPlugin } from "../interfaces";
 import { generateProjectVariables, processTemplate } from "../core/project-utils";
 
-export async function createProject(plugin: IProjectFlowPlugin, projectInfo: ProjectInfo): Promise<[boolean, string]> {
+export async function createProject(
+  plugin: IProjectFlowPlugin,
+  projectInfo: ProjectInfo,
+): Promise<[boolean, string]> {
   try {
     const { resolveProjectType } = await import("../core/project-types");
     const { projectTypeId, projectType } = resolveProjectType(plugin.settings, projectInfo);
@@ -17,12 +20,8 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
 
     // Build sanitized paths
     const safeProjectsDir = sanitizePath(projectsDir);
-    const dimMeta = plugin.settings.dimensions.find(
-      (d) => d.name === projectInfo.dimension,
-    );
-    const dimensionFolder = dimMeta
-      ? `${dimMeta.order}. ${dimMeta.name}`
-      : projectInfo.dimension;
+    const dimMeta = plugin.settings.dimensions.find((d) => d.name === projectInfo.dimension);
+    const dimensionFolder = dimMeta ? `${dimMeta.order}. ${dimMeta.name}` : projectInfo.dimension;
     const safeDimension = sanitizeFileName(dimensionFolder);
     const safeCategory = sanitizeFileName(projectInfo.category);
     const safeProjectDir = sanitizePath(
@@ -71,15 +70,13 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
         throw new Error(`Template file not found: ${spec.template}`);
       }
       const templateContent = await adapter.read(templatePath);
-      const processed = await processTemplate(
-        templateContent,
-        variables,
-      );
+      const processed = await processTemplate(templateContent, variables);
       // Support nested paths like "Overview/Goals.md" by only sanitizing the
       // filename segment; the directory segment must already exist (via folderStructure).
-      const lastSlash = resolvedFileName.lastIndexOf('/');
-      const dirSegment = lastSlash >= 0 ? resolvedFileName.substring(0, lastSlash) : '';
-      const fileSegment = lastSlash >= 0 ? resolvedFileName.substring(lastSlash + 1) : resolvedFileName;
+      const lastSlash = resolvedFileName.lastIndexOf("/");
+      const dirSegment = lastSlash >= 0 ? resolvedFileName.substring(0, lastSlash) : "";
+      const fileSegment =
+        lastSlash >= 0 ? resolvedFileName.substring(lastSlash + 1) : resolvedFileName;
       const safeFilePath = sanitizePath(
         dirSegment
           ? `${safeProjectDir}/${dirSegment}/${sanitizeFileName(fileSegment)}`
@@ -91,9 +88,7 @@ export async function createProject(plugin: IProjectFlowPlugin, projectInfo: Pro
     // Batch create folders and files with rollback on file errors
     const res = await fm.createBatch([...folderOps, ...fileOps]);
     if (!("ok" in res) || !res.ok) {
-      throw new Error(
-        `Batch creation failed: ${(res as any).error || "unknown"}`,
-      );
+      throw new Error(`Batch creation failed: ${(res as any).error || "unknown"}`);
     }
 
     // Create template folder and its files using helper (non-critical)
@@ -151,15 +146,9 @@ async function recordProjectCreation(
     const dim = info.dimension;
     const cat = info.category;
     const id = info.id;
-    if (
-      !plugin.settings.projectRecords ||
-      Array.isArray(plugin.settings.projectRecords)
-    ) {
+    if (!plugin.settings.projectRecords || Array.isArray(plugin.settings.projectRecords)) {
       // migrate any array to map
-      const migrated: Record<
-        string,
-        Record<string, Record<string, ProjectRecord>>
-      > = {};
+      const migrated: Record<string, Record<string, Record<string, ProjectRecord>>> = {};
       const arr = Array.isArray(plugin.settings.projectRecords)
         ? (plugin.settings.projectRecords as any as ProjectRecord[])
         : [];
@@ -180,9 +169,7 @@ async function recordProjectCreation(
     map[dim] = map[dim] || {};
     map[dim][cat] = map[dim][cat] || {};
     if (map[dim][cat][id]) {
-      throw new Error(
-        `Project with id "${id}" already exists in ${dim}:${cat}`,
-      );
+      throw new Error(`Project with id "${id}" already exists in ${dim}:${cat}`);
     }
     map[dim][cat][id] = record;
     const { index } = ensureProjectIndex(plugin.settings.projectIndex, map);
@@ -216,15 +203,12 @@ async function createProjectFile(
       throw new Error(`Template file not found: ${templateName}`);
     }
     const templateContent = await adapter.read(templatePath);
-    const processedContent = await processTemplate(
-      templateContent,
-      variables,
-    );
+    const processedContent = await processTemplate(templateContent, variables);
 
     const filePath = `${projectDir}/${fileName}`;
     const { SafeFileManager } = await import("./file-manager");
     const fm = new SafeFileManager(plugin.app);
-    const lastSlash = filePath.lastIndexOf('/');
+    const lastSlash = filePath.lastIndexOf("/");
     if (lastSlash > 0) {
       await fm.ensureFolder(filePath.substring(0, lastSlash));
     }

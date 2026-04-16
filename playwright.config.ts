@@ -1,14 +1,14 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  testDir: './e2e/tests',
+  testDir: "./e2e/tests",
   timeout: 60_000,
-  workers: 1,          // Obsidian is single-instance — never run tests in parallel
+  workers: 1, // Obsidian is single-instance — never run tests in parallel
   fullyParallel: false,
-  globalSetup: './e2e/global-setup.ts',
-  reporter: [['list'], ['html', { open: 'never' }]],
+  globalSetup: "./e2e/global-setup.ts",
+  reporter: [["list"], ["html", { open: "never" }]],
   use: {
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    screenshot: "only-on-failure",
+    video: "retain-on-failure",
   },
 });

@@ -1,5 +1,5 @@
-import type { ProjectFlowSettings } from '../interfaces';
-import { DEFAULT_PROJECT_TYPES } from './registry-defaults';
+import type { ProjectFlowSettings } from "../interfaces";
+import { DEFAULT_PROJECT_TYPES } from "./registry-defaults";
 
 export const CURRENT_SETTINGS_SCHEMA_VERSION = 19;
 
@@ -12,9 +12,9 @@ export interface VersionedSettings extends ProjectFlowSettings {
 export function migrateSettings(input: Partial<VersionedSettings> | undefined): VersionedSettings {
   const s: VersionedSettings = {
     dimensions: (input?.dimensions as any) ?? [],
-    projectsRoot: input?.projectsRoot ?? '1. Projects',
-    archiveRoot: (input as any)?.archiveRoot ?? '4. Archive',
-    templatesRoot: (input as any)?.templatesRoot ?? 'Templates/ProjectFlow',
+    projectsRoot: input?.projectsRoot ?? "1. Projects",
+    archiveRoot: (input as any)?.archiveRoot ?? "4. Archive",
+    templatesRoot: (input as any)?.templatesRoot ?? "Templates/ProjectFlow",
     ai: (input as any)?.ai,
     schemaVersion: input?.schemaVersion ?? 0,
     projectRecords: {} as any,
@@ -26,7 +26,7 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
 
   // Normalize projectRecords to nested map
   const pr = (input as any)?.projectRecords;
-  if (pr && typeof pr === 'object' && !Array.isArray(pr)) {
+  if (pr && typeof pr === "object" && !Array.isArray(pr)) {
     s.projectRecords = pr as any;
   } else if (Array.isArray(pr)) {
     const migrated: Record<string, Record<string, Record<string, any>>> = {};
@@ -49,10 +49,10 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
   if (Array.isArray(s.dimensions)) {
     let orderCounter = 1;
     s.dimensions = (s.dimensions as any[]).map((d: any) => {
-      if (d && typeof d === 'object') {
-        let name = d.name ?? '';
+      if (d && typeof d === "object") {
+        let name = d.name ?? "";
         let order = d.order;
-        const m = typeof name === 'string' ? name.match(/^\s*(\d+)\.\s*(.+)$/) : null;
+        const m = typeof name === "string" ? name.match(/^\s*(\d+)\.\s*(.+)$/) : null;
         if (m) {
           order = parseInt(m[1], 10);
           name = m[2];
@@ -62,7 +62,7 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
         }
         return { name, order, categories: Array.isArray(d.categories) ? d.categories : [] };
       }
-      return { name: String(d ?? ''), order: orderCounter++, categories: [] };
+      return { name: String(d ?? ""), order: orderCounter++, categories: [] };
     }) as any;
   } else {
     s.dimensions = [] as any;
@@ -70,7 +70,9 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
 
   // Normalize order to be 1..n unique
   const sorted = [...(s.dimensions as any[])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  sorted.forEach((d, i) => { d.order = i + 1; });
+  sorted.forEach((d, i) => {
+    d.order = i + 1;
+  });
   s.dimensions = sorted as any;
 
   if (!s.schemaVersion || s.schemaVersion < CURRENT_SETTINGS_SCHEMA_VERSION) {
@@ -88,9 +90,9 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
 
     // v12: strip stale projectTemplates
     if (!s.schemaVersion || s.schemaVersion < 12) {
-      if (s.projectTypes && typeof s.projectTypes === 'object') {
+      if (s.projectTypes && typeof s.projectTypes === "object") {
         for (const pt of Object.values(s.projectTypes as any)) {
-          if (pt && typeof pt === 'object') delete (pt as any).projectTemplates;
+          if (pt && typeof pt === "object") delete (pt as any).projectTemplates;
         }
       }
     }
@@ -98,12 +100,12 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
     // v13: migrate legacy settings.entityTypes into projectTypes[id].projectEntities
     if (!s.schemaVersion || s.schemaVersion < 13) {
       const legacyEntityTypes = (input as any)?.entityTypes;
-      if (legacyEntityTypes && typeof legacyEntityTypes === 'object') {
+      if (legacyEntityTypes && typeof legacyEntityTypes === "object") {
         s.projectTypes = s.projectTypes ?? ({} as any);
         for (const [typeId, registry] of Object.entries(legacyEntityTypes as Record<string, any>)) {
-          if (!registry || typeof registry !== 'object') continue;
+          if (!registry || typeof registry !== "object") continue;
           const pt = (s.projectTypes as any)[typeId];
-          if (pt && typeof pt === 'object') {
+          if (pt && typeof pt === "object") {
             pt.projectEntities = { ...(pt.projectEntities ?? {}), ...registry };
           }
         }
@@ -160,7 +162,9 @@ export function migrateSettings(input: Partial<VersionedSettings> | undefined): 
             existingFolders.add(folder);
           }
         }
-        const existingNotes = new Set<string>((storedOp.initialNotes ?? []).map((n: any) => n.fileName));
+        const existingNotes = new Set<string>(
+          (storedOp.initialNotes ?? []).map((n: any) => n.fileName),
+        );
         for (const note of defaultOp.initialNotes ?? []) {
           if (!existingNotes.has(note.fileName)) {
             storedOp.initialNotes = [...(storedOp.initialNotes ?? []), note];

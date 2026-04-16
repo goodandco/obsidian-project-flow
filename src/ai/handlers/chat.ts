@@ -20,15 +20,16 @@ function buildPlanDisplayMessage(
   const filledFields = fields
     ? Object.entries(fields).filter(([, v]) => v != null && v !== "" && typeof v !== "object")
     : [];
-  const fieldRows = filledFields.length > 0
-    ? filledFields.map(([k, v]) => `- **${k}:** ${String(v)}`).join("\n")
-    : null;
+  const fieldRows =
+    filledFields.length > 0
+      ? filledFields.map(([k, v]) => `- **${k}:** ${String(v)}`).join("\n")
+      : null;
 
   const header = plan || context;
   if (header && fieldRows) return `${header}\n\n${fieldRows}`;
   if (header) return header;
   if (fieldRows) return `Planned action:\n${fieldRows}`;
-  
+
   return "Ready to proceed.";
 }
 
@@ -113,7 +114,9 @@ export class AiChatController {
             ? `Clarifications: ${pending.clarifications.join(" | ")}`
             : "",
           "User confirmed to proceed.",
-        ].filter(Boolean).join("\n");
+        ]
+          .filter(Boolean)
+          .join("\n");
         const messages: ChatMessage[] = [
           { role: "system", content: systemMessage },
           ...history,
@@ -131,7 +134,10 @@ export class AiChatController {
       }
       if (isNegative(input)) {
         this.setPendingPlan(null);
-        this.ui.appendMessage("assistant", "Cancelled. Tell me if you want to try a different action.");
+        this.ui.appendMessage(
+          "assistant",
+          "Cancelled. Tell me if you want to try a different action.",
+        );
         this.state.appendMessage({
           role: "assistant",
           content: "Cancelled. Tell me if you want to try a different action.",
@@ -158,7 +164,9 @@ export class AiChatController {
       pending.plan ? `Plan so far: ${pending.plan}` : "",
       pending.context ? `Context so far: ${pending.context}` : "",
       `User clarification: ${input}`,
-    ].filter(Boolean).join("\n");
+    ]
+      .filter(Boolean)
+      .join("\n");
     const messages: ChatMessage[] = [
       { role: "system", content: systemMessage },
       ...history,
@@ -189,7 +197,11 @@ export class AiChatController {
     pending.fields = planResult.fields;
     pending.status = "awaiting_confirmation";
     this.setPendingPlan(pending);
-    const planMessage = buildPlanDisplayMessage(planResult.plan, planResult.context, planResult.fields);
+    const planMessage = buildPlanDisplayMessage(
+      planResult.plan,
+      planResult.context,
+      planResult.fields,
+    );
     this.ui.appendMessage("assistant", planMessage);
     this.state.appendMessage({ role: "assistant", content: planMessage });
     this.ui.appendConfirmationActions();
@@ -361,7 +373,11 @@ export class AiChatController {
       return;
     }
 
-    const planMessage = buildPlanDisplayMessage(planResult.plan, planResult.context, planResult.fields);
+    const planMessage = buildPlanDisplayMessage(
+      planResult.plan,
+      planResult.context,
+      planResult.fields,
+    );
     this.ui.appendMessage("assistant", planMessage);
     this.state.appendMessage({ role: "assistant", content: planMessage });
     this.setPendingPlan({
@@ -417,7 +433,11 @@ export class AiChatController {
     return text || DEFAULT_MIXED_OFFER_TEXT;
   }
 
-  private getChatProjectContext(): { projectId: string; projectTag: string; fullName: string } | null {
+  private getChatProjectContext(): {
+    projectId: string;
+    projectTag: string;
+    fullName: string;
+  } | null {
     const stateAny = this.state as any;
     if (stateAny && typeof stateAny.getProjectContext === "function") {
       return stateAny.getProjectContext();

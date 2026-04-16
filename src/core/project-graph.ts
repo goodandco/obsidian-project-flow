@@ -93,20 +93,12 @@ export function cleanArchivedGraph(
   return graph;
 }
 
-export function getChildren(
-  graph: ProjectGraph,
-  fullName: string,
-  archived: boolean,
-): string[] {
+export function getChildren(graph: ProjectGraph, fullName: string, archived: boolean): string[] {
   const target = archived ? graph.archivedByFullName : graph.byFullName;
   return target[fullName]?.children ?? [];
 }
 
-export function getParents(
-  graph: ProjectGraph,
-  fullName: string,
-  archived: boolean,
-): string[] {
+export function getParents(graph: ProjectGraph, fullName: string, archived: boolean): string[] {
   const target = archived ? graph.archivedByFullName : graph.byFullName;
   const parents: string[] = [];
   let current = target[fullName]?.parent ?? null;

@@ -9,9 +9,9 @@ tags:
 ---
 
 ## Modules
+
 <!-- ai:modules -->
 <!-- /ai:modules -->
-
 
 ```dataviewjs
 const modules = dv.pages('#type/module and #$_PROJECT_TAG')
@@ -38,9 +38,9 @@ for (const m of modules) {
 ---
 
 ## Notes
+
 <!-- ai:notes -->
 <!-- /ai:notes -->
-
 
 ```dataview
 TABLE Status, Date FROM #type/note AND #$_PROJECT_TAG WHERE !contains(lower(file.name), "template") SORT Date DESC
@@ -49,5 +49,6 @@ TABLE Status, Date FROM #type/note AND #$_PROJECT_TAG WHERE !contains(lower(file
 ---
 
 ## Journal
+
 <!-- ai:journal -->
 <!-- /ai:journal -->

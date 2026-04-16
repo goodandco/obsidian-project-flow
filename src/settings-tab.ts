@@ -4,7 +4,10 @@ import { ProjectFlowPlugin } from "./plugin";
 import { ProjectFlowSettings, type AIProvider } from "./interfaces";
 import { DEFAULT_PROJECT_TYPES } from "./core/registry-defaults";
 import { ConfirmResetModal } from "./confirm-reset-modal";
-import { deleteProjectById, archiveProjectByPromptInfo } from "./services/project-management-service";
+import {
+  deleteProjectById,
+  archiveProjectByPromptInfo,
+} from "./services/project-management-service";
 
 const DEFAULT_DIMENSIONS = [
   {
@@ -22,15 +25,7 @@ const DEFAULT_DIMENSIONS = [
   {
     name: "Personal",
     order: 5,
-    categories: [
-      "R&D",
-      "Languages",
-      "SelfManagement",
-      "Writing",
-      "Reading",
-      "Music",
-      "Sports",
-    ],
+    categories: ["R&D", "Languages", "SelfManagement", "Writing", "Reading", "Music", "Sports"],
   },
   { name: "Residence", order: 6, categories: [] },
 ];
@@ -116,38 +111,32 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
     };
 
     // General settings should be first and not use a heading.
-    new Setting(containerEl)
-      .setName("Projects root")
-      .addText((text) => {
-        text.setPlaceholder("e.g. 1. Projects");
-        text.setValue(this.plugin.settings.projectsRoot || "1. Projects");
-        text.onChange(async (value) => {
-          this.plugin.settings.projectsRoot = value.trim() || "1. Projects";
-          await this.plugin.saveSettings();
-        });
+    new Setting(containerEl).setName("Projects root").addText((text) => {
+      text.setPlaceholder("e.g. 1. Projects");
+      text.setValue(this.plugin.settings.projectsRoot || "1. Projects");
+      text.onChange(async (value) => {
+        this.plugin.settings.projectsRoot = value.trim() || "1. Projects";
+        await this.plugin.saveSettings();
       });
+    });
 
-    new Setting(containerEl)
-      .setName("Archive root")
-      .addText((text) => {
-        text.setPlaceholder("e.g. 4. Archive");
-        text.setValue(this.plugin.settings.archiveRoot || "4. Archive");
-        text.onChange(async (value) => {
-          this.plugin.settings.archiveRoot = value.trim() || "4. Archive";
-          await this.plugin.saveSettings();
-        });
+    new Setting(containerEl).setName("Archive root").addText((text) => {
+      text.setPlaceholder("e.g. 4. Archive");
+      text.setValue(this.plugin.settings.archiveRoot || "4. Archive");
+      text.onChange(async (value) => {
+        this.plugin.settings.archiveRoot = value.trim() || "4. Archive";
+        await this.plugin.saveSettings();
       });
+    });
 
-    new Setting(containerEl)
-      .setName("Templates root")
-      .addText((text) => {
-        text.setPlaceholder("e.g. Templates/ProjectFlow");
-        text.setValue(this.plugin.settings.templatesRoot || "Templates/ProjectFlow");
-        text.onChange(async (value) => {
-          this.plugin.settings.templatesRoot = value.trim() || "Templates/ProjectFlow";
-          await this.plugin.saveSettings();
-        });
+    new Setting(containerEl).setName("Templates root").addText((text) => {
+      text.setPlaceholder("e.g. Templates/ProjectFlow");
+      text.setValue(this.plugin.settings.templatesRoot || "Templates/ProjectFlow");
+      text.onChange(async (value) => {
+        this.plugin.settings.templatesRoot = value.trim() || "Templates/ProjectFlow";
+        await this.plugin.saveSettings();
       });
+    });
 
     // Dimensions section
     new Setting(containerEl).setName("Dimensions").setHeading();
@@ -287,11 +276,7 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
             cleanup();
             return;
           }
-          if (
-            this.plugin.settings.dimensions.some(
-              (d) => d !== dim && d.name === next,
-            )
-          ) {
+          if (this.plugin.settings.dimensions.some((d) => d !== dim && d.name === next)) {
             new Notice("A dimension with this name already exists.");
             return; // keep input to let user fix
           }
@@ -355,12 +340,18 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
               wrap.createSpan({ cls: ["gc-id-tag", idHueClass(pid)], text: pid });
 
               // Actions (hidden until hover)
-              const actions = wrap.createSpan({ cls: 'gc-id-actions' });
+              const actions = wrap.createSpan({ cls: "gc-id-actions" });
 
-              const delBtn = actions.createEl('button', { cls: ['gc-icon-button', 'clickable-icon'] });
-              delBtn.setAttr('aria-label', `Delete ${pid}`);
-              delBtn.setAttr('title', `Delete ${pid}`);
-              try { setIcon(delBtn, 'trash'); } catch { delBtn.setText('Del'); }
+              const delBtn = actions.createEl("button", {
+                cls: ["gc-icon-button", "clickable-icon"],
+              });
+              delBtn.setAttr("aria-label", `Delete ${pid}`);
+              delBtn.setAttr("title", `Delete ${pid}`);
+              try {
+                setIcon(delBtn, "trash");
+              } catch {
+                delBtn.setText("Del");
+              }
               delBtn.onclick = async (ev: MouseEvent) => {
                 ev.stopPropagation();
                 const [, msg] = await deleteProjectById(this.plugin, dimName, cat, pid);
@@ -368,10 +359,16 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
                 this.display();
               };
 
-              const archBtn = actions.createEl('button', { cls: ['gc-icon-button', 'clickable-icon'] });
-              archBtn.setAttr('aria-label', `Archive ${pid}`);
-              archBtn.setAttr('title', `Archive ${pid}`);
-              try { setIcon(archBtn, 'archive'); } catch { archBtn.setText('Arc'); }
+              const archBtn = actions.createEl("button", {
+                cls: ["gc-icon-button", "clickable-icon"],
+              });
+              archBtn.setAttr("aria-label", `Archive ${pid}`);
+              archBtn.setAttr("title", `Archive ${pid}`);
+              try {
+                setIcon(archBtn, "archive");
+              } catch {
+                archBtn.setText("Arc");
+              }
               archBtn.onclick = async (ev: MouseEvent) => {
                 ev.stopPropagation();
                 const [, msg] = await archiveProjectByPromptInfo(this.plugin, dimName, cat, pid);
@@ -533,7 +530,10 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
 
     // Archive section
     new Setting(containerEl).setName("Archive").setHeading();
-    const archivedRaw = (this.plugin.settings.archivedRecords || {}) as Record<string, Record<string, Record<string, any>>>;
+    const archivedRaw = (this.plugin.settings.archivedRecords || {}) as Record<
+      string,
+      Record<string, Record<string, any>>
+    >;
     const archived = archivedRaw && !Array.isArray(archivedRaw) ? archivedRaw : {};
 
     // Build dimension list from archived records, but order using dimensions metadata when available
@@ -541,21 +541,25 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
     for (const d of this.plugin.settings.dimensions) {
       orderByDim[d.name] = d.order ?? Number.MAX_SAFE_INTEGER;
     }
-    const dimEntries = Object.keys(archived).map((name) => ({
-      name,
-      order: orderByDim[name] ?? Number.MAX_SAFE_INTEGER,
-    })).sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
+    const dimEntries = Object.keys(archived)
+      .map((name) => ({
+        name,
+        order: orderByDim[name] ?? Number.MAX_SAFE_INTEGER,
+      }))
+      .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
 
     let archiveHasAny = false;
     dimEntries.forEach(({ name: dimName, order }) => {
       const catMap = archived[dimName] || {};
-      const catNames = Object.keys(catMap).filter((c) => Object.keys(catMap[c] || {}).length > 0).sort();
+      const catNames = Object.keys(catMap)
+        .filter((c) => Object.keys(catMap[c] || {}).length > 0)
+        .sort();
       if (catNames.length === 0) return;
       archiveHasAny = true;
 
       const dimDiv = containerEl.createDiv({ cls: "dimension-setting" });
       const headerDiv = dimDiv.createDiv({ cls: "dimension-header gc-row" });
-      const dimMeta = this.plugin.settings.dimensions.find(d => d.name === dimName);
+      const dimMeta = this.plugin.settings.dimensions.find((d) => d.name === dimName);
       if (dimMeta) headerDiv.createSpan({ text: `${dimMeta.order}. ` });
       headerDiv.createEl("b", { text: dimName });
       headerDiv.createDiv({ cls: "gc-spacer" });
@@ -569,17 +573,19 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
         if (ids.length > 0) {
           idsWrap.createSpan({ text: " " });
           ids.forEach((pid, idx) => {
-            const wrap = idsWrap.createSpan({ cls: 'gc-id-chip' });
+            const wrap = idsWrap.createSpan({ cls: "gc-id-chip" });
             wrap.createSpan({ cls: ["gc-id-tag", idHueClass(pid)], text: pid });
 
-            const actions = wrap.createSpan({ cls: 'gc-id-actions' });
-            const delBtn = actions.createEl('button', { cls: ['gc-icon-button', 'clickable-icon'] });
-            delBtn.setAttr('aria-label', `Delete ${pid}`);
-            delBtn.setAttr('title', `Delete ${pid}`);
+            const actions = wrap.createSpan({ cls: "gc-id-actions" });
+            const delBtn = actions.createEl("button", {
+              cls: ["gc-icon-button", "clickable-icon"],
+            });
+            delBtn.setAttr("aria-label", `Delete ${pid}`);
+            delBtn.setAttr("title", `Delete ${pid}`);
             try {
-              setIcon(delBtn, 'trash');
+              setIcon(delBtn, "trash");
             } catch {
-              delBtn.setText('Del');
+              delBtn.setText("Del");
             }
             delBtn.onclick = async (ev: MouseEvent) => {
               ev.stopPropagation();
@@ -588,7 +594,7 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
               this.display();
             };
 
-            if (idx < ids.length - 1) idsWrap.createSpan({ text: ' ' });
+            if (idx < ids.length - 1) idsWrap.createSpan({ text: " " });
           });
         }
         item.createDiv({ cls: "gc-spacer" });
@@ -599,7 +605,6 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
       const hint = containerEl.createDiv({ cls: "setting-item" });
       hint.createSpan({ text: "No archived projects yet." });
     }
-
 
     // AI section
     new Setting(containerEl).setName("AI Module").setHeading();
@@ -625,59 +630,59 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
           mcpServers: [],
         };
       }
-      if (this.plugin.settings.ai.apiKeySecretName == null) this.plugin.settings.ai.apiKeySecretName = "";
+      if (this.plugin.settings.ai.apiKeySecretName == null)
+        this.plugin.settings.ai.apiKeySecretName = "";
       if (this.plugin.settings.ai.model == null) {
         this.plugin.settings.ai.model = aiDefaults[this.plugin.settings.ai.provider].model;
       }
       if (this.plugin.settings.ai.baseUrl == null) {
         this.plugin.settings.ai.baseUrl = aiDefaults[this.plugin.settings.ai.provider].baseUrl;
       }
-      if (this.plugin.settings.ai.strictExecution == null) this.plugin.settings.ai.strictExecution = false;
+      if (this.plugin.settings.ai.strictExecution == null)
+        this.plugin.settings.ai.strictExecution = false;
       if (this.plugin.settings.ai.memoryLimit == null) this.plugin.settings.ai.memoryLimit = 10;
-      if (this.plugin.settings.ai.mixedOfferText == null) this.plugin.settings.ai.mixedOfferText = defaultMixedOfferText;
-      if (!Array.isArray(this.plugin.settings.ai.mcpServers)) this.plugin.settings.ai.mcpServers = [];
+      if (this.plugin.settings.ai.mixedOfferText == null)
+        this.plugin.settings.ai.mixedOfferText = defaultMixedOfferText;
+      if (!Array.isArray(this.plugin.settings.ai.mcpServers))
+        this.plugin.settings.ai.mcpServers = [];
       return this.plugin.settings.ai;
     };
 
     const ai = ensureAiSettings();
 
-    new Setting(containerEl)
-      .setName("Enable AI module")
-      .addToggle((toggle) => {
-        toggle.setValue(Boolean(ai.enabled));
-        toggle.onChange(async (value) => {
-          const next = ensureAiSettings();
-          next.enabled = value;
-          await this.plugin.saveSettings();
-          await (this.plugin as any).toggleAiView?.(value);
-        });
+    new Setting(containerEl).setName("Enable AI module").addToggle((toggle) => {
+      toggle.setValue(Boolean(ai.enabled));
+      toggle.onChange(async (value) => {
+        const next = ensureAiSettings();
+        next.enabled = value;
+        await this.plugin.saveSettings();
+        await (this.plugin as any).toggleAiView?.(value);
       });
+    });
 
-    new Setting(containerEl)
-      .setName("Provider")
-      .addDropdown((dropdown) => {
-        dropdown.addOption("openai", "openai");
-        dropdown.addOption("anthropic", "anthropic");
-        dropdown.addOption("ollama", "ollama");
-        dropdown.setValue(ai.provider || "openai");
-        dropdown.onChange(async (value) => {
-          const next = ensureAiSettings();
-          const provider = value as AIProvider;
-          next.provider = provider;
-          const currentBaseUrl = next.baseUrl || "";
-          const currentModel = next.model || "";
-          const knownBaseUrls = Object.values(aiDefaults).map((d) => d.baseUrl);
-          const knownModels = Object.values(aiDefaults).map((d) => d.model);
-          if (!currentBaseUrl || knownBaseUrls.includes(currentBaseUrl)) {
-            next.baseUrl = aiDefaults[provider].baseUrl;
-          }
-          if (!currentModel || knownModels.includes(currentModel)) {
-            next.model = aiDefaults[provider].model;
-          }
-          await this.plugin.saveSettings();
-          this.display();
-        });
+    new Setting(containerEl).setName("Provider").addDropdown((dropdown) => {
+      dropdown.addOption("openai", "openai");
+      dropdown.addOption("anthropic", "anthropic");
+      dropdown.addOption("ollama", "ollama");
+      dropdown.setValue(ai.provider || "openai");
+      dropdown.onChange(async (value) => {
+        const next = ensureAiSettings();
+        const provider = value as AIProvider;
+        next.provider = provider;
+        const currentBaseUrl = next.baseUrl || "";
+        const currentModel = next.model || "";
+        const knownBaseUrls = Object.values(aiDefaults).map((d) => d.baseUrl);
+        const knownModels = Object.values(aiDefaults).map((d) => d.model);
+        if (!currentBaseUrl || knownBaseUrls.includes(currentBaseUrl)) {
+          next.baseUrl = aiDefaults[provider].baseUrl;
+        }
+        if (!currentModel || knownModels.includes(currentModel)) {
+          next.model = aiDefaults[provider].model;
+        }
+        await this.plugin.saveSettings();
+        this.display();
       });
+    });
 
     const apiKeySetting = new Setting(containerEl)
       .setName("API key")
@@ -706,78 +711,72 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
       });
     }
 
-    new Setting(containerEl)
-      .setName("Model")
-      .addText((text) => {
-        const provider = ai.provider || "openai";
-        text.setPlaceholder(aiDefaults[provider].model);
-        text.setValue(ai.model || aiDefaults[provider].model);
-        text.onChange(async (value) => {
-          const next = ensureAiSettings();
-          const fallback = aiDefaults[next.provider || "openai"].model;
-          next.model = value.trim() || fallback;
-          await this.plugin.saveSettings();
-        });
+    new Setting(containerEl).setName("Model").addText((text) => {
+      const provider = ai.provider || "openai";
+      text.setPlaceholder(aiDefaults[provider].model);
+      text.setValue(ai.model || aiDefaults[provider].model);
+      text.onChange(async (value) => {
+        const next = ensureAiSettings();
+        const fallback = aiDefaults[next.provider || "openai"].model;
+        next.model = value.trim() || fallback;
+        await this.plugin.saveSettings();
       });
+    });
 
-    new Setting(containerEl)
-      .setName("Base URL")
-      .addText((text) => {
-        const provider = ai.provider || "openai";
-        text.setPlaceholder(aiDefaults[provider].baseUrl);
-        text.setValue(ai.baseUrl || aiDefaults[provider].baseUrl);
-        text.onChange(async (value) => {
-          const next = ensureAiSettings();
-          const fallback = aiDefaults[next.provider || "openai"].baseUrl;
-          next.baseUrl = value.trim() || fallback;
-          await this.plugin.saveSettings();
-        });
+    new Setting(containerEl).setName("Base URL").addText((text) => {
+      const provider = ai.provider || "openai";
+      text.setPlaceholder(aiDefaults[provider].baseUrl);
+      text.setValue(ai.baseUrl || aiDefaults[provider].baseUrl);
+      text.onChange(async (value) => {
+        const next = ensureAiSettings();
+        const fallback = aiDefaults[next.provider || "openai"].baseUrl;
+        next.baseUrl = value.trim() || fallback;
+        await this.plugin.saveSettings();
       });
+    });
 
-    new Setting(containerEl)
-      .setName("Strict execution mode")
-      .addToggle((toggle) => {
-        toggle.setValue(Boolean(ai.strictExecution));
-        toggle.onChange(async (value) => {
-          const next = ensureAiSettings();
-          next.strictExecution = value;
-          await this.plugin.saveSettings();
-        });
+    new Setting(containerEl).setName("Strict execution mode").addToggle((toggle) => {
+      toggle.setValue(Boolean(ai.strictExecution));
+      toggle.onChange(async (value) => {
+        const next = ensureAiSettings();
+        next.strictExecution = value;
+        await this.plugin.saveSettings();
       });
+    });
 
-    new Setting(containerEl)
-      .setName("Conversation memory (messages)")
-      .addText((text) => {
-        text.inputEl.type = "number";
-        text.inputEl.min = "0";
-        text.inputEl.max = "50";
-        text.setValue(String(ai.memoryLimit ?? 10));
-        text.onChange(async (value) => {
-          const next = ensureAiSettings();
-          const memory = Number(value);
-          next.memoryLimit = Number.isFinite(memory) ? Math.max(0, Math.min(50, memory)) : 10;
-          await this.plugin.saveSettings();
-          text.setValue(String(next.memoryLimit));
-        });
+    new Setting(containerEl).setName("Conversation memory (messages)").addText((text) => {
+      text.inputEl.type = "number";
+      text.inputEl.min = "0";
+      text.inputEl.max = "50";
+      text.setValue(String(ai.memoryLimit ?? 10));
+      text.onChange(async (value) => {
+        const next = ensureAiSettings();
+        const memory = Number(value);
+        next.memoryLimit = Number.isFinite(memory) ? Math.max(0, Math.min(50, memory)) : 10;
+        await this.plugin.saveSettings();
+        text.setValue(String(next.memoryLimit));
       });
+    });
 
-    new Setting(containerEl)
-      .setName("Mixed intent offer text")
-      .addTextArea((text) => {
-        text.setPlaceholder(defaultMixedOfferText);
-        text.setValue(ai.mixedOfferText || "");
-        text.onChange(async (value) => {
-          const next = ensureAiSettings();
-          next.mixedOfferText = value.trim();
-          await this.plugin.saveSettings();
-        });
+    new Setting(containerEl).setName("Mixed intent offer text").addTextArea((text) => {
+      text.setPlaceholder(defaultMixedOfferText);
+      text.setValue(ai.mixedOfferText || "");
+      text.onChange(async (value) => {
+        const next = ensureAiSettings();
+        next.mixedOfferText = value.trim();
+        await this.plugin.saveSettings();
       });
+    });
 
     new Setting(containerEl)
       .setName("MCP servers (JSON array)")
-      .setDesc("Use apiKeySecretName per server. Legacy apiKey values are migrated to SecretStorage.")
+      .setDesc(
+        "Use apiKeySecretName per server. Legacy apiKey values are migrated to SecretStorage.",
+      )
       .addTextArea((text) => {
-        text.setPlaceholder('[{"name":"calendar","url":"http://localhost:3000","apiKeySecretName":"projectflow-mcp-calendar"}]');
+        text.setPlaceholder(
+          '[{"name":"calendar","url":"http://localhost:3000","apiKeySecretName":"projectflow-mcp-calendar"}]',
+        );
         text.setValue(JSON.stringify(ai.mcpServers || []));
         text.onChange(async (value) => {
           const next = ensureAiSettings();
@@ -791,6 +790,5 @@ export class ProjectFlowSettingTab extends PluginSettingTab {
           }
         });
       });
-
   }
 }

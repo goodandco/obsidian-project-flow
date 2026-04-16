@@ -20,7 +20,7 @@ describe("classifyIntent", () => {
   });
 
   it("parses valid intent JSON", async () => {
-    mocked.content = "{\"intent\":\"chat\",\"reason\":\"q\",\"confidence\":0.9}";
+    mocked.content = '{"intent":"chat","reason":"q","confidence":0.9}';
     const res = await classifyIntent("What is GTD?", {
       enabled: true,
       provider: "openai",

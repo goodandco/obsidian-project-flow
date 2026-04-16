@@ -2,7 +2,7 @@
 
 ## Logic Diagram
 
-Legend:  ╔══╗ = LLM call   ┌──┐ = logic / routing   → = data flow
+Legend: ╔══╗ = LLM call ┌──┐ = logic / routing → = data flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -64,25 +64,25 @@ Legend:  ╔══╗ = LLM call   ┌──┐ = logic / routing   → = data f
           │                        │
           │           ╔════════════▼═════════════════════════╗
           │           ║  LLM CALL #2 (action)                ║
-          │           ║  runPlanningStage()                  ║               
-          │           ║  up to 6 steps                       ║               
-          │           ║  safe tools: listDimensions,         ║               
-          │           ║  resolveProject, listProjects,       ║               
-          │           ║  listEntityTypes, etc.               ║               
-          │           ║  planner.ts                          ║               
-          │           ╚═════╤════════════════════════════════╝               
-          │                 │               ▲             │              
-          │            needsFollowup=true   │       needsFollowup=false 
-          │                 │               │             │             
-          │                 ▼               │             ▼             
-          │    ┌────────────────────────┐   │     ┌────────────────────────┐  
-          │    │  Save PendingPlan      │   │     │  Show plan to user     │  
-          │    │  status="clarifying"   │   │     │  Save PendingPlan      │  
-          │    │  Show question to user │   │     │  status="awaiting_     │  
-          │    │  Wait for next message │   │     │    confirmation"       │  
-          └───►│  → loops back here     │   │     │  Show confirm buttons  │  
-               └────────────────────────┘   │     └───────────┬────────────┘  
-                  ▲   user clarifies        │                 │             
+          │           ║  runPlanningStage()                  ║
+          │           ║  up to 6 steps                       ║
+          │           ║  safe tools: listDimensions,         ║
+          │           ║  resolveProject, listProjects,       ║
+          │           ║  listEntityTypes, etc.               ║
+          │           ║  planner.ts                          ║
+          │           ╚═════╤════════════════════════════════╝
+          │                 │               ▲             │
+          │            needsFollowup=true   │       needsFollowup=false
+          │                 │               │             │
+          │                 ▼               │             ▼
+          │    ┌────────────────────────┐   │     ┌────────────────────────┐
+          │    │  Save PendingPlan      │   │     │  Show plan to user     │
+          │    │  status="clarifying"   │   │     │  Save PendingPlan      │
+          │    │  Show question to user │   │     │  status="awaiting_     │
+          │    │  Wait for next message │   │     │    confirmation"       │
+          └───►│  → loops back here     │   │     │  Show confirm buttons  │
+               └────────────────────────┘   │     └───────────┬────────────┘
+                  ▲   user clarifies        │                 │
                   │  (re-runs planner) ────►┘                 │
                   │                User confirms ✓            │
                   │                                           │
@@ -127,15 +127,16 @@ Legend:  ╔══╗ = LLM call   ┌──┐ = logic / routing   → = data f
 
 ## LLM Calls Summary
 
-| Stage | LLM Calls | Tools? | Purpose |
-|---|---|---|---|
-| Intent classification | 1 | No | Route to chat / action / mixed / unclear |
-| Planning stage | up to 6 steps | Yes (safe tools: `listDimensions`, `resolveProject`, etc.) | Generate plan, detect missing info, resolve dimensions |
-| Chat request | 1 streaming | No | Conversational answer |
-| Agent loop | N (max 6 steps) | Yes (full registry) | Execute actions via tools |
-| Specialized agent | N (own loop, max 5 steps) | Yes (scoped to project type) | Create entities |
+| Stage                 | LLM Calls                 | Tools?                                                     | Purpose                                                |
+| --------------------- | ------------------------- | ---------------------------------------------------------- | ------------------------------------------------------ |
+| Intent classification | 1                         | No                                                         | Route to chat / action / mixed / unclear               |
+| Planning stage        | up to 6 steps             | Yes (safe tools: `listDimensions`, `resolveProject`, etc.) | Generate plan, detect missing info, resolve dimensions |
+| Chat request          | 1 streaming               | No                                                         | Conversational answer                                  |
+| Agent loop            | N (max 6 steps)           | Yes (full registry)                                        | Execute actions via tools                              |
+| Specialized agent     | N (own loop, max 5 steps) | Yes (scoped to project type)                               | Create entities                                        |
 
 **State that persists across messages:**
+
 - `pendingPlan` — survives page reload (stored in `settings.ai.pendingPlan`), drives clarification/confirmation loops
 - `pendingMixedInput` — in-memory only, offers action after answering a mixed question
 - `projectContext` — in-memory, set after `resolveProject`/`createProject` succeeds, auto-injects `projectRef` into subsequent tool calls
@@ -146,38 +147,38 @@ Legend:  ╔══╗ = LLM call   ┌──┐ = logic / routing   → = data f
 
 ### HIGH Severity
 
-| # | Issue | Location | Impact |
-|---|---|---|---|
-| 1 | Redundant LLM call — classify then plan (2 sequential calls for every action) | `chat.ts:270`, `chat.ts:332` | ~1s extra latency per action request |
-| 2 | Full project index serialized into every system prompt | `prompts.ts:49` | 5–20 KB tokens per request for large vaults |
-| 3 | Tool registry rebuilt 2–3× per request | `chat.ts:96`, `chat.ts:312` | Redundant JSON serialization |
-| 4 | MCP tools fetched via HTTP on every action | `mcp/client.ts:11-29` | N network roundtrips per action |
-| 5 | Agent content accumulates on retry — duplicate UI text | `agent.ts:96` | Duplicated text shown to user |
-| 6 | No timeout on tool execution | `agent.ts` / `tool-executor.ts` | Potential infinite hang |
-| 7 | Conversation persist can lose data on plugin unload | `conversation.ts` | Silent data loss |
+| #   | Issue                                                                         | Location                        | Impact                                      |
+| --- | ----------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------- |
+| 1   | Redundant LLM call — classify then plan (2 sequential calls for every action) | `chat.ts:270`, `chat.ts:332`    | ~1s extra latency per action request        |
+| 2   | Full project index serialized into every system prompt                        | `prompts.ts:49`                 | 5–20 KB tokens per request for large vaults |
+| 3   | Tool registry rebuilt 2–3× per request                                        | `chat.ts:96`, `chat.ts:312`     | Redundant JSON serialization                |
+| 4   | MCP tools fetched via HTTP on every action                                    | `mcp/client.ts:11-29`           | N network roundtrips per action             |
+| 5   | Agent content accumulates on retry — duplicate UI text                        | `agent.ts:96`                   | Duplicated text shown to user               |
+| 6   | No timeout on tool execution                                                  | `agent.ts` / `tool-executor.ts` | Potential infinite hang                     |
+| 7   | Conversation persist can lose data on plugin unload                           | `conversation.ts`               | Silent data loss                            |
 
 ### MEDIUM Severity
 
-| # | Issue | Location | Impact |
-|---|---|---|---|
-| 8 | Entity requirements merged 3× per request | `prompts.ts:74-100` | Redundant recursive iteration |
-| 9 | Silent intent classification fallback | `intent.ts:46` | User unaware of LLM parse failures |
-| 10 | Hardcoded safe tools whitelist | `safety.ts:4-14` | New tools must be manually listed |
-| 11 | MCP tools auto-trusted if name contains `:` | `safety.ts:15` | Security concern |
-| 12 | Missing fields extraction parses error strings | `safety.ts:21` | Breaks silently if format changes |
-| 13 | Specialized agent message extraction assumes last = assistant | `specialized-agent.ts:55-59` | Returns wrong final message |
-| 14 | No conversation size limit | `conversation.ts` | Slow persist for long conversations |
-| 15 | Active project inference scans full index on every prompt | `context.ts:4-21` | O(n) per request |
+| #   | Issue                                                         | Location                     | Impact                              |
+| --- | ------------------------------------------------------------- | ---------------------------- | ----------------------------------- |
+| 8   | Entity requirements merged 3× per request                     | `prompts.ts:74-100`          | Redundant recursive iteration       |
+| 9   | Silent intent classification fallback                         | `intent.ts:46`               | User unaware of LLM parse failures  |
+| 10  | Hardcoded safe tools whitelist                                | `safety.ts:4-14`             | New tools must be manually listed   |
+| 11  | MCP tools auto-trusted if name contains `:`                   | `safety.ts:15`               | Security concern                    |
+| 12  | Missing fields extraction parses error strings                | `safety.ts:21`               | Breaks silently if format changes   |
+| 13  | Specialized agent message extraction assumes last = assistant | `specialized-agent.ts:55-59` | Returns wrong final message         |
+| 14  | No conversation size limit                                    | `conversation.ts`            | Slow persist for long conversations |
+| 15  | Active project inference scans full index on every prompt     | `context.ts:4-21`            | O(n) per request                    |
 
 ### LOW Severity
 
-| # | Issue | Location | Impact |
-|---|---|---|---|
-| 16 | Linear backoff, no jitter | `agent.ts:134` | Thundering herd on retry |
-| 17 | Anthropic `max_tokens` hardcoded to 1024 | `anthropic-client.ts:20` | May truncate complex responses |
-| 18 | Planner mutates input `messages` array | `planner.ts:98`, `planner.ts:108` | Subtle state aliasing |
-| 19 | Conversation window filtered 5+ times per request | `conversation.ts:89-95` | Minor array allocation overhead |
-| 20 | Tool results serialized twice (state + messages) | `agent.ts:164-178` | Duplication in memory |
+| #   | Issue                                             | Location                          | Impact                          |
+| --- | ------------------------------------------------- | --------------------------------- | ------------------------------- |
+| 16  | Linear backoff, no jitter                         | `agent.ts:134`                    | Thundering herd on retry        |
+| 17  | Anthropic `max_tokens` hardcoded to 1024          | `anthropic-client.ts:20`          | May truncate complex responses  |
+| 18  | Planner mutates input `messages` array            | `planner.ts:98`, `planner.ts:108` | Subtle state aliasing           |
+| 19  | Conversation window filtered 5+ times per request | `conversation.ts:89-95`           | Minor array allocation overhead |
+| 20  | Tool results serialized twice (state + messages)  | `agent.ts:164-178`                | Duplication in memory           |
 
 ---
 
@@ -190,6 +191,7 @@ Legend:  ╔══╗ = LLM call   ┌──┐ = logic / routing   → = data f
 **Approach**: Add an `intent` field to `PlanningResult` and extend the planner prompt to also classify intent, eliminating the separate classification call.
 
 **Files**:
+
 - `src/ai/domain/planner.ts` — Extend `PLANNER_PROMPT` (line 10) to include intent classification. Update `parsePlannerJson()` (line 119) to extract `intent` field.
 - `src/ai/types/planning.ts` — Add `intent?: Intent` and `confidence?: number` to `PlanningResult`.
 - `src/ai/handlers/chat.ts` — Rewrite `handleNewRequest()` (line 261). Call `runPlanningStage()` once with safe tools. Branch on `planResult.intent`:
@@ -211,6 +213,7 @@ Legend:  ╔══╗ = LLM call   ┌──┐ = logic / routing   → = data f
 **Approach**: Add a per-controller cache with TTL for MCP tools.
 
 **Files**:
+
 - `src/ai/handlers/chat.ts` — Add `private toolCache` to `AiChatController`. Add `private async getTools()` returning cached or freshly built tools. Invalidate on `clearConversation()`. Replace all 3 call sites with `this.getTools()`.
 - `src/ai/mcp/client.ts` — Add module-level cache keyed by server URL with 5-minute TTL.
 
@@ -225,6 +228,7 @@ Legend:  ╔══╗ = LLM call   ┌──┐ = logic / routing   → = data f
 **Approach**: Replace the index dump with a `searchProjects` tool the LLM can call on demand.
 
 **Files**:
+
 - `src/ai/domain/prompts.ts` — Remove `JSON.stringify(projectIndex)`. Replace with: `"To find projects, use the searchProjects tool. There are N projects in the vault."`. Keep active project + chat project context inline (single entries).
 - `src/ai/adapters/registry.ts` — Add `searchProjects` tool: `{ query, limit? }` → delegates to `findProjectMatches()`.
 - `src/ai/domain/safety.ts` — Add `"searchProjects"` to `safeNames` set.

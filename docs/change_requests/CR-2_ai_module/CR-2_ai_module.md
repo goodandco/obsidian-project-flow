@@ -8,6 +8,7 @@ The AI Module provides a chat-based user interface (right panel in Obsidian) and
 The AI agent operates in **tool-only mode**: it cannot access the vault or filesystem directly and can only perform actions through ProjectFlow Core APIs and registered tools (including future MCP servers).
 
 ProjectFlow Core remains the single authority for:
+
 - project resolution
 - entity creation
 - template rendering
@@ -46,13 +47,16 @@ No separate daemon or secondary plugin is introduced at this stage.
 Add configurable LLM support in ProjectFlow settings:
 
 Initial:
+
 - OpenAI API
 
 Planned:
+
 - Anthropic
 - OpenAI-compatible endpoints (e.g. Ollama)
 
 Settings include:
+
 - provider
 - API key
 - base URL (for local / compatible providers)
@@ -128,6 +132,7 @@ This CR includes architectural support for MCP but does not require implementing
 Built-in templates shipped with ProjectFlow define automation-safe zones using standardized AI markers (HTML comments such as `<!-- AI:NOTES -->`, `<!-- AI:ACTIONS -->`).
 
 User and project-level templates:
+
 - may override or remove markers freely
 - are not required to follow a standardized layout
 
@@ -267,6 +272,7 @@ The agent only sees this unified tool registry.
 ### 5. Incremental Delivery
 
 Phase 1:
+
 - Chat UI
 - OpenAI integration
 - Core tools
@@ -274,11 +280,13 @@ Phase 1:
 - Simple flows (e.g. “add this to project”)
 
 Phase 2:
+
 - Anthropic / Ollama support
 - Improved context handling
 - Multi-step agent loops
 
 Phase 3:
+
 - MCP integrations
 - Advanced workflows
 - Collaboration-oriented features

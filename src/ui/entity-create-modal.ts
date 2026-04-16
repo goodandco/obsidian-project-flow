@@ -16,9 +16,7 @@ function hueClass(id: string): string {
 }
 
 function titleCase(s: string): string {
-  return s
-    .replace(/[._-]/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return s.replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function inferFieldType(key: string): "text" | "textarea" | "date" {
@@ -99,7 +97,7 @@ export class EntityCreateModal extends Modal {
     const parentFolderKeys = new Set(
       Object.entries(et.fields ?? {})
         .filter(([, s]) => s.role === "parentFolder")
-        .map(([k]) => k)
+        .map(([k]) => k),
     );
 
     // Build field list: title first, then other required fields, then described fields
@@ -109,9 +107,7 @@ export class EntityCreateModal extends Modal {
     const allFieldKeys = [
       "title",
       ...requiredFields.filter((k) => k !== "title"),
-      ...describedFields.filter(
-        (k) => k !== "title" && !requiredFields.includes(k),
-      ),
+      ...describedFields.filter((k) => k !== "title" && !requiredFields.includes(k)),
     ];
     // Dedupe and exclude parentFolder keys
     const seen = new Set<string>();
@@ -128,7 +124,11 @@ export class EntityCreateModal extends Modal {
     for (const key of fieldKeys) {
       // Reference fields get a dropdown populated with existing entities
       const fieldSchema = et.fields?.[key];
-      if (fieldSchema?.type === "reference" && fieldSchema.refersTo?.kind === "entity" && fieldSchema.refersTo.entityType) {
+      if (
+        fieldSchema?.type === "reference" &&
+        fieldSchema.refersTo?.kind === "entity" &&
+        fieldSchema.refersTo.entityType
+      ) {
         this.renderReferencePicker(body, key, fieldSchema);
         continue;
       }
@@ -318,7 +318,9 @@ export class EntityCreateModal extends Modal {
         }
         hidden.value = folders[0];
       }
-      folderSelect.addEventListener("change", () => { hidden.value = folderSelect.value; });
+      folderSelect.addEventListener("change", () => {
+        hidden.value = folderSelect.value;
+      });
     };
 
     typeSelect.addEventListener("change", () => refresh(typeSelect.value));

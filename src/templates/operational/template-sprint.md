@@ -16,4 +16,3 @@ tags:
 
 TABLE TaskType as Type, StoryPoints as SP, StartedAt as Started, FinishedAt as Finished FROM #$_PROJECT_TAG AND #type/task WHERE contains(Sprint, this.file.link)
 ```
-

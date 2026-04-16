@@ -98,7 +98,10 @@ function makeController() {
 }
 
 describe("golden conversation fixtures", () => {
-  const fixturesPath = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures/intent-conversations.json");
+  const fixturesPath = resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    "fixtures/intent-conversations.json",
+  );
   const fixtures = JSON.parse(readFileSync(fixturesPath, "utf8"));
 
   beforeEach(() => {
@@ -117,7 +120,11 @@ describe("golden conversation fixtures", () => {
       const { controller } = makeController();
       for (const step of fixture.steps) {
         if (step.intent) {
-          mocked.classifyIntent.mockResolvedValueOnce({ intent: step.intent, reason: "", confidence: 1 });
+          mocked.classifyIntent.mockResolvedValueOnce({
+            intent: step.intent,
+            reason: "",
+            confidence: 1,
+          });
         }
         if (step.chatReply) {
           mocked.chatContent = step.chatReply;

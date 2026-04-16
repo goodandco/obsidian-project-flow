@@ -4,14 +4,14 @@
 export type TemplateVars = Record<string, string | number | boolean | null | undefined>;
 
 function toStringValue(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'object') return String(value);
+  if (value === null || value === undefined) return "";
+  if (typeof value === "object") return String(value);
   return String(value);
 }
 
 // Replace tokens in a single pass for both syntaxes. Case-sensitive variable keys.
 export function processTemplate(template: string, vars: TemplateVars): string {
-  if (!template || typeof template !== 'string') return '';
+  if (!template || typeof template !== "string") return "";
   let result = template;
 
   // 1) Legacy $_VAR tokens
@@ -26,7 +26,7 @@ export function processTemplate(template: string, vars: TemplateVars): string {
   // 2) Modern ${VAR} tokens (not JS template eval; plain literal replacement)
   for (const [key, raw] of Object.entries(vars)) {
     const value = toStringValue(raw);
-    const pattern = new RegExp(`\\$\\{${escapeRegExp(key)}\\}`, 'g');
+    const pattern = new RegExp(`\\$\\{${escapeRegExp(key)}\\}`, "g");
     result = result.replace(pattern, value);
   }
 
@@ -34,5 +34,5 @@ export function processTemplate(template: string, vars: TemplateVars): string {
 }
 
 function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

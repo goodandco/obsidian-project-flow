@@ -8,7 +8,7 @@ Compares against [CR-4_chatbot_flow_analysis.md](CR-4_chatbot_flow_analysis.md) 
 
 ## Logic Diagram (AFTER)
 
-Legend:  ╔══╗ = LLM call   ┌──┐ = logic / routing   → = data flow
+Legend: ╔══╗ = LLM call ┌──┐ = logic / routing → = data flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -122,12 +122,12 @@ Legend:  ╔══╗ = LLM call   ┌──┐ = logic / routing   → = data f
 
 ## LLM Calls Summary (AFTER)
 
-| Stage | LLM Calls | Tools? | Purpose |
-|---|---|---|---|
-| Classify + plan (combined) | up to 6 steps | Yes (safe tools: `listDimensions`, `resolveProject`, etc.) | Classify intent AND generate plan in one call |
-| Chat request | 1 streaming | No | Conversational answer |
-| Agent loop | N (max 6 steps) | Yes (full registry) | Execute actions via tools |
-| Specialized agent | N (own loop, max 5 steps) | Yes (scoped to project type) | Create entities |
+| Stage                      | LLM Calls                 | Tools?                                                     | Purpose                                       |
+| -------------------------- | ------------------------- | ---------------------------------------------------------- | --------------------------------------------- |
+| Classify + plan (combined) | up to 6 steps             | Yes (safe tools: `listDimensions`, `resolveProject`, etc.) | Classify intent AND generate plan in one call |
+| Chat request               | 1 streaming               | No                                                         | Conversational answer                         |
+| Agent loop                 | N (max 6 steps)           | Yes (full registry)                                        | Execute actions via tools                     |
+| Specialized agent          | N (own loop, max 5 steps) | Yes (scoped to project type)                               | Create entities                               |
 
 **Action path before agent loop: 1 call — was 2**
 
@@ -135,15 +135,15 @@ Legend:  ╔══╗ = LLM call   ┌──┐ = logic / routing   → = data f
 
 ## What Changed
 
-| | BEFORE | AFTER |
-|---|---|---|
-| `handleNewRequest()` calls | `classifyIntent()` → branch → `handleActionRequest()` → `runPlanningStage()` | `runPlanningStage()` → branch on `planResult.intent` |
-| LLM calls for action request | 2 (classify + plan sequentially) | 1 (classify + plan in one call) |
-| `classifyIntent()` | Called every new request | Removed from main flow (still exported) |
-| `handleMixedRequest()` | Private method | Removed — logic inlined in `handleNewRequest()` |
-| `handleActionRequest()` | Called from `handleNewRequest()` for action | Only called from `handleMixedFollowup()` |
-| `PLANNER_PROMPT` | Plan generation only | Extended with intent classification rules |
-| `PlanningResult` | `{ needsFollowup, question, plan, context, fields }` | `+ intent?, confidence?` |
+|                              | BEFORE                                                                       | AFTER                                                |
+| ---------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `handleNewRequest()` calls   | `classifyIntent()` → branch → `handleActionRequest()` → `runPlanningStage()` | `runPlanningStage()` → branch on `planResult.intent` |
+| LLM calls for action request | 2 (classify + plan sequentially)                                             | 1 (classify + plan in one call)                      |
+| `classifyIntent()`           | Called every new request                                                     | Removed from main flow (still exported)              |
+| `handleMixedRequest()`       | Private method                                                               | Removed — logic inlined in `handleNewRequest()`      |
+| `handleActionRequest()`      | Called from `handleNewRequest()` for action                                  | Only called from `handleMixedFollowup()`             |
+| `PLANNER_PROMPT`             | Plan generation only                                                         | Extended with intent classification rules            |
+| `PlanningResult`             | `{ needsFollowup, question, plan, context, fields }`                         | `+ intent?, confidence?`                             |
 
 ## Files Changed
 

@@ -36,7 +36,10 @@ export function createCoreApi(plugin: IProjectFlowPlugin): ProjectFlowApi {
     ...patchingHandlers,
     wrapError: (err: unknown) => {
       const apiErr = toApiError(err);
-      return { ok: false, error: { code: apiErr.code, message: apiErr.message, details: apiErr.details } };
+      return {
+        ok: false,
+        error: { code: apiErr.code, message: apiErr.message, details: apiErr.details },
+      };
     },
   };
 }

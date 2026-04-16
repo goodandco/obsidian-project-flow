@@ -1,10 +1,4 @@
-export type JSONSchema7TypeName =
-  | "string"
-  | "number"
-  | "integer"
-  | "boolean"
-  | "object"
-  | "array";
+export type JSONSchema7TypeName = "string" | "number" | "integer" | "boolean" | "object" | "array";
 
 export interface JSONSchema7 {
   type?: JSONSchema7TypeName | JSONSchema7TypeName[];

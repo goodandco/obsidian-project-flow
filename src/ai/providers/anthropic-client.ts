@@ -67,12 +67,14 @@ export async function* streamAnthropicMessages(
       yield { type: "content", delta: block.text };
     }
     if (block.type === "tool_use") {
-      const toolCalls: ToolCallDelta[] = [{
-        index: 0,
-        id: block.id,
-        name: block.name,
-        arguments: JSON.stringify(block.input ?? {}),
-      }];
+      const toolCalls: ToolCallDelta[] = [
+        {
+          index: 0,
+          id: block.id,
+          name: block.name,
+          arguments: JSON.stringify(block.input ?? {}),
+        },
+      ];
       yield { type: "tool_call_delta", toolCalls };
     }
   }
@@ -81,7 +83,10 @@ export async function* streamAnthropicMessages(
   yield { type: "done" };
 }
 
-function toAnthropicMessages(messages: ChatMessage[]): { system: string; anthropicMessages: any[] } {
+function toAnthropicMessages(messages: ChatMessage[]): {
+  system: string;
+  anthropicMessages: any[];
+} {
   let system = "";
   const out: any[] = [];
 
@@ -113,15 +118,16 @@ function toAnthropicMessages(messages: ChatMessage[]): { system: string; anthrop
     if (msg.role === "tool") {
       out.push({
         role: "user",
-        content: [{
-          type: "tool_result",
-          tool_use_id: msg.toolCallId || msg.name || "tool",
-          content: msg.content,
-        }],
+        content: [
+          {
+            type: "tool_result",
+            tool_use_id: msg.toolCallId || msg.name || "tool",
+            content: msg.content,
+          },
+        ],
       });
     }
   }
 
   return { system, anthropicMessages: out };
 }
-

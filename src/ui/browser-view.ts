@@ -109,9 +109,7 @@ export class ProjectFlowBrowserView extends ItemView {
 
     for (const dim of dims) {
       const tab = row.createEl("button", {
-        cls:
-          "pf-browser-dim-tab" +
-          (this.activeDimension === dim.name ? " active" : ""),
+        cls: "pf-browser-dim-tab" + (this.activeDimension === dim.name ? " active" : ""),
         text: dim.name,
       });
       tab.addEventListener("click", () => {
@@ -144,9 +142,7 @@ export class ProjectFlowBrowserView extends ItemView {
 
     for (const cat of dim.categories) {
       const chip = row.createSpan({
-        cls:
-          "pf-browser-cat-chip" +
-          (this.activeCategory === cat ? " active" : ""),
+        cls: "pf-browser-cat-chip" + (this.activeCategory === cat ? " active" : ""),
         text: cat,
       });
       chip.addEventListener("click", () => {
@@ -168,8 +164,7 @@ export class ProjectFlowBrowserView extends ItemView {
     const row = root.createDiv({ cls: "pf-browser-type-filter" });
 
     const allSeg = row.createEl("button", {
-      cls:
-        "pf-browser-type-seg" + (this.activeProjectType === null ? " active" : ""),
+      cls: "pf-browser-type-seg" + (this.activeProjectType === null ? " active" : ""),
       text: "All",
     });
     allSeg.addEventListener("click", () => {
@@ -180,9 +175,7 @@ export class ProjectFlowBrowserView extends ItemView {
 
     for (const id of typeIds) {
       const seg = row.createEl("button", {
-        cls:
-          "pf-browser-type-seg" +
-          (this.activeProjectType === id ? " active" : ""),
+        cls: "pf-browser-type-seg" + (this.activeProjectType === id ? " active" : ""),
         text: allTypes[id].name,
       });
       seg.addEventListener("click", () => {
@@ -238,10 +231,8 @@ export class ProjectFlowBrowserView extends ItemView {
     const unpinned = allProjects.filter((entry) => {
       if (pinnedIds.has(entry.projectId)) return false;
 
-      if (this.activeDimension !== null && entry.dimension !== this.activeDimension)
-        return false;
-      if (this.activeCategory !== null && entry.category !== this.activeCategory)
-        return false;
+      if (this.activeDimension !== null && entry.dimension !== this.activeDimension) return false;
+      if (this.activeCategory !== null && entry.category !== this.activeCategory) return false;
 
       if (this.activeProjectType !== null) {
         const rec = records[entry.dimension]?.[entry.category]?.[entry.projectId];
@@ -250,8 +241,7 @@ export class ProjectFlowBrowserView extends ItemView {
 
       if (filterValue) {
         if (filterMode === "name") {
-          if (!entry.projectName.toLowerCase().includes(filterValue.toLowerCase()))
-            return false;
+          if (!entry.projectName.toLowerCase().includes(filterValue.toLowerCase())) return false;
         } else if (filterMode === "tag") {
           if (!entry.projectTag.includes(filterValue)) return false;
         } else if (filterMode === "id") {
@@ -452,12 +442,8 @@ export class ProjectFlowBrowserView extends ItemView {
       btn.createSpan({ text: "+ " + (et.name ?? et.id).toLowerCase() });
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        new EntityCreateModal(
-          this.plugin.app,
-          this.plugin,
-          entry,
-          et.id,
-          () => this.render(),
+        new EntityCreateModal(this.plugin.app, this.plugin, entry, et.id, () =>
+          this.render(),
         ).open();
       });
     }

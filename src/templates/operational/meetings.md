@@ -11,18 +11,18 @@ tags:
 
 ```dataviewjs
 
-const {  
-  Project: CProject,  
-  file: {  
-    path,  
-    link  
-  }  
-} = dv.current();  
+const {
+  Project: CProject,
+  file: {
+    path,
+    link
+  }
+} = dv.current();
 
 const CAT_LIMIT = 15;
 const map = {};
 
-const meetings = dv.pages('#type/meeting AND #$_PROJECT_TAG')  
+const meetings = dv.pages('#type/meeting AND #$_PROJECT_TAG')
   .where(b => b.DateTime && !dv.func.contains(b.file.name.toLowerCase(), "template"))
   .sort(p => p['DateTime'], 'desc')
   .slice(0, 50);
@@ -35,7 +35,7 @@ for (const meeting of meetings) {
   }
   if (map[meeting.MeetingType].length <= CAT_LIMIT) {
     map[meeting.MeetingType].push(meeting);
-  }  
+  }
 }
 
 for (const type in map) {

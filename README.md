@@ -48,6 +48,7 @@ Templates are resolved in three layers (highest priority first):
 3. Built-in plugin templates (fallback)
 
 `entityTypes` define:
+
 - which template to use
 - target folder
 - filename rules
@@ -96,11 +97,13 @@ You can:
 Each dimension contains one or more categories, for example:
 
 Business:
+
 - R&D
 - Jobs
 - OpenSource
 
 Personal:
+
 - Writing
 - Reading
 - Sports
@@ -312,6 +315,7 @@ The agent will translate your request into structured tool calls executed by Pro
 ## Roadmap (High Level)
 
 Phase 1:
+
 - Chat UI
 - OpenAI integration
 - Core tools
@@ -319,11 +323,13 @@ Phase 1:
 - Simple flows
 
 Phase 2:
+
 - Anthropic / Ollama support
 - Improved context handling
 - Multi-step agent loops
 
 Phase 3:
+
 - MCP integrations
 - Advanced workflows
 - Collaboration-oriented features

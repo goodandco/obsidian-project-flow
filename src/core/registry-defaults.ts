@@ -33,14 +33,16 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         filenameRule: "${PROJECT_ID}-${taskIndex}-${title}",
         patchMarkers: ["AI:CONTENT", "AI:ACTIONS"],
         fields: {
-          title:       { type: "string", required: true, role: "title" },
+          title: { type: "string", required: true, role: "title" },
           description: { type: "string", required: true },
-          taskIndex:   { type: "number", role: "index" },
+          taskIndex: { type: "number", role: "index" },
           sprint: {
-            type: "reference", required: true,
+            type: "reference",
+            required: true,
             refersTo: { kind: "entity", entityType: "sprint" },
             description: "The sprint this task belongs to.",
-            resolveHint: "Call listProjectFiles with subfolder='Work/Sprints'; use the filename without .md.",
+            resolveHint:
+              "Call listProjectFiles with subfolder='Work/Sprints'; use the filename without .md.",
           },
         },
       },
@@ -119,10 +121,13 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         patchMarkers: ["AI:CONTENT", "AI:ACTIONS"],
         fields: {
           title: {
-            type: "string", required: true, role: "title",
-            description: "Short sprint identifier only — e.g. '1', '2', 'Q1 2024', 'March Week 1'. Do NOT include the project name or the word 'Sprint'.",
+            type: "string",
+            required: true,
+            role: "title",
+            description:
+              "Short sprint identifier only — e.g. '1', '2', 'Q1 2024', 'March Week 1'. Do NOT include the project name or the word 'Sprint'.",
           },
-          startedAt:  { type: "date", default: "today" },
+          startedAt: { type: "date", default: "today" },
           finishedAt: { type: "date", default: "today+14d" },
         },
       },
@@ -176,11 +181,7 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
     id: "learning",
     name: "Course / Learning",
     description: "Structured progression for courses, certifications, or self-learning.",
-    folderStructure: [
-      "Overview",
-      "Modules",
-      "References",
-    ],
+    folderStructure: ["Overview", "Modules", "References"],
     initialNotes: [
       { fileName: "${PROJECT_FULL_NAME}.md", template: "learning/project.md" },
       { fileName: "${PROJECT_NAME} Modules.md", template: "learning/modules.md" },
@@ -214,11 +215,15 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         fields: {
           title: { type: "string", required: true, role: "title" },
           parentFolder: {
-            type: "reference", required: true, role: "parentFolder",
+            type: "reference",
+            required: true,
+            role: "parentFolder",
             refersTo: { kind: "entity", entityType: "$dynamic" },
             allowedParents: ["module", "project"],
-            description: "Parent entity for this lesson. Pick 'module' to nest inside a module folder, or 'project' for root level.",
-            resolveHint: "Pick an entity type from allowedParents. For 'module', call listProjectFiles with subfolder='Modules' and use the folder path of the chosen module. Use '' for project root. The system automatically appends /Lessons/{title}.",
+            description:
+              "Parent entity for this lesson. Pick 'module' to nest inside a module folder, or 'project' for root level.",
+            resolveHint:
+              "Pick an entity type from allowedParents. For 'module', call listProjectFiles with subfolder='Modules' and use the folder path of the chosen module. Use '' for project root. The system automatically appends /Lessons/{title}.",
           },
         },
       },
@@ -232,11 +237,15 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         fields: {
           title: { type: "string", required: true, role: "title" },
           parentFolder: {
-            type: "reference", required: true, role: "parentFolder",
+            type: "reference",
+            required: true,
+            role: "parentFolder",
             refersTo: { kind: "entity", entityType: "$dynamic" },
             allowedParents: ["module", "lesson", "project", "assignment", "review"],
-            description: "Parent entity for this note. Pick the entity type that best contextualises the note.",
-            resolveHint: "Pick an entity type from allowedParents, call listProjectFiles to find entities of that type, then return its folder path relative to the project root. Use '' for project root.",
+            description:
+              "Parent entity for this note. Pick the entity type that best contextualises the note.",
+            resolveHint:
+              "Pick an entity type from allowedParents, call listProjectFiles to find entities of that type, then return its folder path relative to the project root. Use '' for project root.",
           },
         },
       },
@@ -250,11 +259,14 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         fields: {
           title: { type: "string", required: true, role: "title" },
           parentFolder: {
-            type: "reference", required: true, role: "parentFolder",
+            type: "reference",
+            required: true,
+            role: "parentFolder",
             refersTo: { kind: "entity", entityType: "$dynamic" },
             allowedParents: ["module", "lesson", "project"],
             description: "Parent entity for this assignment.",
-            resolveHint: "Pick an entity type from allowedParents, call listProjectFiles to find entities of that type, then return its folder path relative to the project root. Use '' for project root.",
+            resolveHint:
+              "Pick an entity type from allowedParents, call listProjectFiles to find entities of that type, then return its folder path relative to the project root. Use '' for project root.",
           },
         },
       },
@@ -268,11 +280,14 @@ export const DEFAULT_PROJECT_TYPES: ProjectTypesRegistry = {
         fields: {
           title: { type: "string", required: true, role: "title" },
           parentFolder: {
-            type: "reference", required: true, role: "parentFolder",
+            type: "reference",
+            required: true,
+            role: "parentFolder",
             refersTo: { kind: "entity", entityType: "$dynamic" },
             allowedParents: ["project", "module", "lesson", "assignment"],
             description: "Parent entity for this review.",
-            resolveHint: "Pick an entity type from allowedParents, call listProjectFiles to find entities of that type, then return its folder path relative to the project root. Use '' for project root.",
+            resolveHint:
+              "Pick an entity type from allowedParents, call listProjectFiles to find entities of that type, then return its folder path relative to the project root. Use '' for project root.",
           },
         },
       },

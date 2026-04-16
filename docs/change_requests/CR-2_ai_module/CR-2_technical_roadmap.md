@@ -18,6 +18,7 @@ Each phase is decomposed into concrete engineering stages.
 Establish chat UX and verify ProjectFlow Core integration.
 
 **Deliverables**
+
 - `enableAI` toggle in ProjectFlow settings
 - Right-panel Chat View (only active when AI is enabled)
 - Message input + history
@@ -27,6 +28,7 @@ Establish chat UX and verify ProjectFlow Core integration.
   - render human-readable response
 
 **Exit**
+
 - AI can be enabled/disabled
 - Chat resolves projects via Core
 - Friendly text output (“Project not found.” / project details)
@@ -39,6 +41,7 @@ Establish chat UX and verify ProjectFlow Core integration.
 Introduce real natural language input.
 
 **Deliverables**
+
 - OpenAI client
 - Settings:
   - API key
@@ -53,6 +56,7 @@ Introduce real natural language input.
   - `I'm going to create a project with tag ${input}`
 
 **Exit**
+
 - User input goes through OpenAI
 - Assistant replies appear in chat
 
@@ -64,6 +68,7 @@ Introduce real natural language input.
 Enable tool-only automation.
 
 **Deliverables**
+
 - Tool registry exposing ProjectFlow Core:
   - resolveProject
   - listEntityTypes
@@ -76,6 +81,7 @@ Enable tool-only automation.
 - Executor applying tool calls sequentially
 
 **Exit**
+
 - LLM produces structured tool calls
 - ProjectFlow executes them via Core
 - No direct markdown access
@@ -88,10 +94,12 @@ Enable tool-only automation.
 Deliver initial user value.
 
 **Examples**
+
 - “add this to problog”
 - create task from selection
 
 **Exit**
+
 - Natural language creates entities
 - Chat confirms results
 - Tool usage is shown in chat without requiring user confirmation
@@ -107,6 +115,7 @@ Deliver initial user value.
 ### Stage 2.1 – Context & Resolution Improvements
 
 **Deliverables**
+
 - Better fuzzy project resolution
 - Richer context:
   - selection
@@ -115,6 +124,7 @@ Deliver initial user value.
 - Friendly error messages
 
 **Exit**
+
 - Ambiguous references handled correctly
 - Errors are understandable
 
@@ -123,11 +133,13 @@ Deliver initial user value.
 ### Stage 2.2 – Multi-Step Agent Loop
 
 **Deliverables**
+
 - Tool → LLM → tool feedback loop
 - Support for multiple actions per request
 - Partial failure handling
 
 **Exit**
+
 - Complex workflows complete reliably
 
 ---
@@ -135,12 +147,14 @@ Deliver initial user value.
 ### Stage 2.3 – Provider Expansion
 
 **Deliverables**
+
 - Provider abstraction layer
 - Anthropic integration
 - Ollama via OpenAI-compatible endpoint
 - UI for provider + model selection
 
 **Exit**
+
 - Same flows run on OpenAI, Anthropic, Ollama
 
 ---
@@ -154,11 +168,13 @@ Deliver initial user value.
 ### Stage 3.1 – MCP Tool Support
 
 **Deliverables**
+
 - MCP client integration
 - Unified tool registry (ProjectFlow + MCP)
 - MCP server configuration support (no examples or mocks)
 
 **Exit**
+
 - Agent can call MCP and ProjectFlow tools in same flow
 
 ---
@@ -166,12 +182,14 @@ Deliver initial user value.
 ### Stage 3.2 – Workflow Hardening
 
 **Deliverables**
+
 - Conversation memory (local)
 - Retry strategies
 - Optional strict execution mode
 - Tool execution logging
 
 **Exit**
+
 - Core workflows feel stable for daily use
 
 ---
@@ -179,6 +197,7 @@ Deliver initial user value.
 ### Stage 3.3 – Collaboration Preparation (Future)
 
 **Potential Deliverables**
+
 - Shared vault conventions
 - Role-based tool restrictions
 - Policy hooks

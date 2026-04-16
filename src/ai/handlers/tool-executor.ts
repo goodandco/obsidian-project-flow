@@ -28,7 +28,11 @@ export async function executeToolCalls(
       const result = await tool.handler(call.arguments);
       results.push({ toolName: call.name, ok: true, result });
     } catch (err: any) {
-      results.push({ toolName: call.name, ok: false, error: err?.message || "Tool execution failed" });
+      results.push({
+        toolName: call.name,
+        ok: false,
+        error: err?.message || "Tool execution failed",
+      });
     }
   }
 

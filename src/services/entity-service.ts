@@ -45,7 +45,9 @@ export async function createEntity(
     ...(resolved.record.variables as any),
     ...resolveFieldDefaults(entityType, wrappedFields),
     ...(wrappedFields || {}),
-    ...(nextIndex !== null && entityType.indexField ? { [entityType.indexField]: String(nextIndex) } : {}),
+    ...(nextIndex !== null && entityType.indexField
+      ? { [entityType.indexField]: String(nextIndex) }
+      : {}),
   };
 
   // Derive `parent` wiki-link from the parentFolder role field so templates can use ${parent}
@@ -53,7 +55,10 @@ export async function createEntity(
     const entityFields: Record<string, any> = entityType.fields ?? {};
     let parentFolderKey: string | undefined;
     for (const k of Object.keys(entityFields)) {
-      if (entityFields[k]?.role === "parentFolder") { parentFolderKey = k; break; }
+      if (entityFields[k]?.role === "parentFolder") {
+        parentFolderKey = k;
+        break;
+      }
     }
     if (parentFolderKey !== undefined) {
       const folderVal = String(variables[parentFolderKey] ?? "");
@@ -85,7 +90,7 @@ export async function createEntity(
 
   let relativeTarget = processTemplate(entityType.targetFolder, variables);
   // Normalize: strip leading slashes (from empty ${parentFolder}) and collapse double slashes
-  relativeTarget = relativeTarget.replace(/^\/+/, '').replace(/\/\/+/g, '/');
+  relativeTarget = relativeTarget.replace(/^\/+/, "").replace(/\/\/+/g, "/");
   if (!isSafeRelativePath(relativeTarget)) {
     throw new Error("Unsafe targetFolder path.");
   }
@@ -104,9 +109,7 @@ export async function createEntity(
 
   const filenameTemplate = entityType.filenameRule || "Untitled";
   const resolvedName = processTemplate(filenameTemplate, variables);
-  const normalizedName = resolvedName.endsWith(".md")
-    ? resolvedName.slice(0, -3)
-    : resolvedName;
+  const normalizedName = resolvedName.endsWith(".md") ? resolvedName.slice(0, -3) : resolvedName;
   const fileName = sanitizeFileName(normalizedName);
   const filePath = sanitizePath(`${folderPath}/${fileName}.md`);
 
@@ -143,10 +146,7 @@ export async function createEntity(
 export function isAllowedWritePath(path: string, settings: ProjectFlowSettings): boolean {
   const projectsRoot = settings.projectsRoot || "1. Projects";
   const archiveRoot = settings.archiveRoot || "4. Archive";
-  return (
-    isPathWithinRoot(path, projectsRoot) ||
-    isPathWithinRoot(path, archiveRoot)
-  );
+  return isPathWithinRoot(path, projectsRoot) || isPathWithinRoot(path, archiveRoot);
 }
 
 function wrapReferenceFields(
@@ -239,16 +239,18 @@ async function resolveTemplatePath(
     ? templateName.slice(templateName.lastIndexOf("/") + 1)
     : templateName;
 
-  const tryScopes = (scopes: TemplateScope[]) => scopes.map((scope) => {
-    if (scope === "project") return { scope, path: sanitizePath(`${projectDir}/${templateBasename}`) };
-    if (scope === "vault") return { scope, path: sanitizePath(`${vaultDir}/${templateName}`) };
-    return { scope, path: `${builtinDir}/${templateName}` };
-  });
+  const tryScopes = (scopes: TemplateScope[]) =>
+    scopes.map((scope) => {
+      if (scope === "project")
+        return { scope, path: sanitizePath(`${projectDir}/${templateBasename}`) };
+      if (scope === "vault") return { scope, path: sanitizePath(`${vaultDir}/${templateName}`) };
+      return { scope, path: `${builtinDir}/${templateName}` };
+    });
 
   const preferredScopes: TemplateScope[] = entityType.templateScope
     ? ([entityType.templateScope, "builtin"] as TemplateScope[]).filter(
-      (v, i, arr) => arr.indexOf(v) === i,
-    )
+        (v, i, arr) => arr.indexOf(v) === i,
+      )
     : (["project", "vault", "builtin"] as TemplateScope[]);
 
   for (const candidate of tryScopes(preferredScopes)) {
@@ -268,7 +270,9 @@ async function computeNextIndex(
   const adapter: any = (plugin.app.vault as any).adapter;
   // Resolve the target folder without index variable (it won't appear in folder path normally)
   const relativeTarget = processTemplate(entityType.targetFolder, {});
-  const folderPath = sanitizePath(relativeTarget ? `${projectPath}/${relativeTarget}` : projectPath);
+  const folderPath = sanitizePath(
+    relativeTarget ? `${projectPath}/${relativeTarget}` : projectPath,
+  );
   try {
     const listing = await adapter.list(folderPath);
     const files: string[] = listing?.files ?? [];
@@ -284,7 +288,10 @@ async function computeNextIndex(
  *   "today"     → yyyy-mm-dd of the current date
  *   "today+Nd"  → yyyy-mm-dd of today + N days
  */
-function resolveFieldDefaults(entityType: EntityType, providedFields?: Record<string, any> | undefined): Record<string, string> {
+function resolveFieldDefaults(
+  entityType: EntityType,
+  providedFields?: Record<string, any> | undefined,
+): Record<string, string> {
   if (!entityType.fieldDefaults) return {};
   const now = new Date();
   const fmt = (d: Date) => {
@@ -308,7 +315,10 @@ function resolveFieldDefaults(entityType: EntityType, providedFields?: Record<st
   // First pass: resolve all "today"-based defaults, skipping user-provided fields.
   const result: Record<string, string> = {};
   for (const [field, expr] of Object.entries(entityType.fieldDefaults)) {
-    const userVal = providedFields?.[field] ?? providedFields?.[field.toLowerCase()] ?? providedFields?.[field.toUpperCase()];
+    const userVal =
+      providedFields?.[field] ??
+      providedFields?.[field.toLowerCase()] ??
+      providedFields?.[field.toUpperCase()];
     if (userVal != null) continue; // user provided — skip default
     if (expr === "today") {
       result[field] = fmt(now);
@@ -335,7 +345,10 @@ function resolveFieldDefaults(entityType: EntityType, providedFields?: Record<st
     for (const [sibling, siblingExpr] of Object.entries(entityType.fieldDefaults)) {
       if (sibling === field) continue;
       if (siblingExpr !== "today") continue;
-      const siblingUserVal = providedFields?.[sibling] ?? providedFields?.[sibling.toLowerCase()] ?? providedFields?.[sibling.toUpperCase()];
+      const siblingUserVal =
+        providedFields?.[sibling] ??
+        providedFields?.[sibling.toLowerCase()] ??
+        providedFields?.[sibling.toUpperCase()];
       if (siblingUserVal == null) continue;
       const base = parseDate(String(siblingUserVal));
       if (!base) continue;

@@ -33,9 +33,9 @@ The LLM retains full project awareness on demand. The planner calls `listProject
 
 ## Files to Modify
 
-| File | Change |
-|---|---|
-| `src/ai/domain/prompts.ts` | Remove line 49 (`Project index snapshot`) |
+| File                          | Change                                            |
+| ----------------------------- | ------------------------------------------------- |
+| `src/ai/domain/prompts.ts`    | Remove line 49 (`Project index snapshot`)         |
 | `src/ai/adapters/registry.ts` | Add `listProjects` tool to `createToolRegistry()` |
 
 No changes to `safety.ts` (already has `"listProjects"`), `resolve-service.ts`, or `api/handlers/projects.ts`.
@@ -81,13 +81,13 @@ Add the `listProjects` tool after `resolveProject` (after line 50). It uses `api
 
 ```typescript
 interface ProjectIndexEntry {
-  fullName: string;      // e.g. "Work.Client.my-project"
-  projectId: string;     // e.g. "my-project"
-  projectTag: string;    // e.g. "project/my-project"
-  path: string;          // vault-relative folder path
-  dimension: string;     // e.g. "Work"
-  category: string;      // e.g. "Client"
-  projectName: string;   // e.g. "My Project"
+  fullName: string; // e.g. "Work.Client.my-project"
+  projectId: string; // e.g. "my-project"
+  projectTag: string; // e.g. "project/my-project"
+  path: string; // vault-relative folder path
+  dimension: string; // e.g. "Work"
+  category: string; // e.g. "Client"
+  projectName: string; // e.g. "My Project"
   parent: string | null;
 }
 ```
@@ -111,22 +111,22 @@ If either is set, the LLM typically does not need to call `listProjects` at all.
 
 ## Token Impact
 
-| Scenario | Before | After |
-|---|---|---|
-| 10 projects | ~3–6 KB every request | 0 KB in prompt; tool result ~1 KB on demand |
+| Scenario    | Before                  | After                                       |
+| ----------- | ----------------------- | ------------------------------------------- |
+| 10 projects | ~3–6 KB every request   | 0 KB in prompt; tool result ~1 KB on demand |
 | 50 projects | ~15–30 KB every request | 0 KB in prompt; tool result ~5 KB on demand |
-| 0 projects | ~50 bytes (`"(none)"`) | 0 KB |
+| 0 projects  | ~50 bytes (`"(none)"`)  | 0 KB                                        |
 
 ---
 
 ## Behaviour After the Change
 
-| User request | AI behaviour |
-|---|---|
+| User request                         | AI behaviour                                                            |
+| ------------------------------------ | ----------------------------------------------------------------------- |
 | "Create a task in my active project" | Uses `Chat project context` from prompt — no `listProjects` call needed |
-| "Create a task in the Work project" | Planner calls `listProjects` to find the right tag, then proceeds |
-| "What projects do I have?" | Chat handler responds; may call `listProjects` in agent loop |
-| `resolveProject` by known tag | Works as before — `resolveProject` tool is unchanged |
+| "Create a task in the Work project"  | Planner calls `listProjects` to find the right tag, then proceeds       |
+| "What projects do I have?"           | Chat handler responds; may call `listProjects` in agent loop            |
+| `resolveProject` by known tag        | Works as before — `resolveProject` tool is unchanged                    |
 
 ---
 

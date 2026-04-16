@@ -11,41 +11,40 @@ tags:
 
 ## Sprints
 
-
 ```dataviewjs
-const getList = (pages, sort="desc") => pages  
-  .where(b => dv.func.contains(b.Project, dv.current().Project) && 
+const getList = (pages, sort="desc") => pages
+  .where(b => dv.func.contains(b.Project, dv.current().Project) &&
   //dv.func.contains(b.Parent, dv.current().file.link) &&
-  !dv.func.contains(b.file.name.toLowerCase(), "template"))  
-  .sort(p => p.StartedAt, sort);  
-const f = (d) => moment(new Date(d))  
+  !dv.func.contains(b.file.name.toLowerCase(), "template"))
+  .sort(p => p.StartedAt, sort);
+const f = (d) => moment(new Date(d))
   .format("YYYY-MM-DD");
-  
+
 const sprints = getList(
   dv.pages("#type/sprint and #$_PROJECT_TAG"),
   "desc"
-);  
+);
 const tasks = getList(
   dv.pages("#type/task and #$_PROJECT_TAG"),
   "desc"
-);  
+);
 
 let allStoryPoints = 0;
 let allStories = 0;
 let allBugs = 0;
 const sprintsCount = sprints.length;
 
-for (const s of sprints) {  
-  const activeSuffix = dv.func.contains(s.Status, "Active")  
-    ? " - **Active** - "  
-    : "";  
+for (const s of sprints) {
+  const activeSuffix = dv.func.contains(s.Status, "Active")
+    ? " - **Active** - "
+    : "";
   let sp = 0;
-    
-  dv.header(3, `${s.file.link}${activeSuffix} (${f(s.StartedAt)} - ${f(s.FinishedAt)})`);  
-  
-  const filtered = tasks  
+
+  dv.header(3, `${s.file.link}${activeSuffix} (${f(s.StartedAt)} - ${f(s.FinishedAt)})`);
+
+  const filtered = tasks
     .filter((t) => dv.func.contains(t.Sprint, s.file.link))
-    .sort((t) => [t.StartedAt, t.file.name], 'desc')  
+    .sort((t) => [t.StartedAt, t.file.name], 'desc')
     .map(t =>  {
       if (!isNaN(Number(t.StoryPoints))) {
         sp += Number(t.StoryPoints);
@@ -53,12 +52,12 @@ for (const s of sprints) {
       } else {
         allBugs += 1;
       }
-      
+
       return [t.file.link, t.Status, t.TaskType, t.StoryPoints, t.StartedAt, t.FinishedAt];
-    });  
+    });
   allStoryPoints += sp;
-  dv.table(["File", "Status", "Type", `SP (${sp})`, "Start", "End"], filtered);  
-  dv.el("p", "---");  
+  dv.table(["File", "Status", "Type", `SP (${sp})`, "Start", "End"], filtered);
+  dv.el("p", "---");
 }
 
 dv.el("p", `Sprints: ${sprints.length}. Stories: ${allStories}. Story points: ${allStoryPoints}. Avg SP per sprint: ${sprintsCount > 0 ? Math.round(allStoryPoints / sprintsCount, 2) : 0}. Bugs: ${allBugs}`)
@@ -68,14 +67,13 @@ dv.el("p", `Sprints: ${sprints.length}. Stories: ${allStories}. Story points: ${
 
 ## Proposals
 
-
 ```dataview
 
 TABLE Status, Date FROM #type/proposal AND #$_PROJECT_TAG WHERE !contains(lower(file.name), "template") SORT Status DESC
 
 ```
 
-##  Ideas
+## Ideas
 
 ```dataview
 
@@ -83,8 +81,7 @@ TABLE Status, Date FROM #type/idea AND #$_PROJECT_TAG WHERE !contains(lower(file
 
 ```
 
-
 ## Journal
+
 <!-- ai:journal -->
 <!-- /ai:journal -->
-

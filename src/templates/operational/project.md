@@ -16,16 +16,17 @@ tags:
   - $_PROJECT_TAG
 Deadline: ""
 ---
+
 ---
 
 ## Main info
+
 <!-- ai:main-info -->
 <!-- /ai:main-info -->
 
-
->[!Links]+
+> [!Links]+
+>
 > - some link
-
 
 ```dataview
 
@@ -39,11 +40,8 @@ SORT Date ASC
 ---
 
 ## Journal
+
 <!-- ai:journal -->
 <!-- /ai:journal -->
 
-
-
 ---
-
-

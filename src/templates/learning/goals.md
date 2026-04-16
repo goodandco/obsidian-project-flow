@@ -9,8 +9,10 @@ tags:
 ---
 
 ## Learning Objectives
+
 <!-- ai:content -->
 <!-- /ai:content -->
 
 ## Success Criteria
+
 - [ ] Criterion 1

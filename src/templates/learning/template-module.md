@@ -12,14 +12,14 @@ tags:
 ---
 
 ## Learning Objectives
+
 <!-- ai:objectives -->
 <!-- /ai:objectives -->
 
-
 ## Content
+
 <!-- ai:content -->
 <!-- /ai:content -->
-
 
 ---
 
@@ -59,5 +59,6 @@ dv.table(['Review', 'Date'], reviews);
 ---
 
 ## Summary
+
 <!-- ai:summary -->
 <!-- /ai:summary -->

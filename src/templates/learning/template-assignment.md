@@ -11,12 +11,14 @@ tags:
 ---
 
 ## Description
+
 <!-- ai:content -->
 <!-- /ai:content -->
 
 ---
 
 ## Requirements
+
 <!-- ai:requirements -->
 <!-- /ai:requirements -->
 
@@ -26,10 +28,10 @@ tags:
 
 ## Working Space
 
-
 ---
 
 ## Submission
+
 <!-- ai:submission -->
 <!-- /ai:submission -->
 

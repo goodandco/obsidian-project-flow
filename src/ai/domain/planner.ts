@@ -31,7 +31,7 @@ const PLANNER_PROMPT = [
   "  Step 5: Only set needsFollowup=false (and populate fields) after the user has explicitly provided both id and tag.",
   "  EXCEPTION: If the user has explicitly used phrases such as 'generate', 'auto-generate', 'make up', 'choose for me', 'pick for me', or equivalent for id and/or tag, you MAY generate those values and proceed without asking.",
   "  This rule applies even if you think you can infer the values from context. Always ask unless the exception applies.",
-  "Format text in `question` and `plan` keys as markdown"
+  "Format text in `question` and `plan` keys as markdown",
 ].join("\n");
 
 export async function runPlanningStage(options: {
@@ -112,9 +112,7 @@ async function runPlannerLoop(options: {
     const results = await executeToolCalls(toolCalls, options.tools);
     for (let i = 0; i < results.length; i += 1) {
       const res = results[i];
-      const payload = res.ok
-        ? { ok: true, result: res.result }
-        : { ok: false, error: res.error };
+      const payload = res.ok ? { ok: true, result: res.result } : { ok: false, error: res.error };
       options.messages.push({
         role: "tool",
         name: res.toolName,

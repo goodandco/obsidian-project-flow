@@ -15,12 +15,12 @@ Because every link in this chain is fire-and-forget, calling `view.onClose()` st
 
 ### Data loss scenarios
 
-| Scenario | Why data is lost |
-|---|---|
-| Obsidian quit / plugin disable | `onunload()` → `detachLeavesOfType()` → `onClose()` resolves before disk write finishes |
-| User appends message then immediately closes | 400ms timer pending; `flushConversation()` starts write but caller doesn't wait |
-| Plugin crash / forced reload | Timer never fires, no flush triggered at all |
-| `writeNow()` filesystem error | Error silently swallowed by `catch {}`; no retry, no signal |
+| Scenario                                     | Why data is lost                                                                        |
+| -------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Obsidian quit / plugin disable               | `onunload()` → `detachLeavesOfType()` → `onClose()` resolves before disk write finishes |
+| User appends message then immediately closes | 400ms timer pending; `flushConversation()` starts write but caller doesn't wait         |
+| Plugin crash / forced reload                 | Timer never fires, no flush triggered at all                                            |
+| `writeNow()` filesystem error                | Error silently swallowed by `catch {}`; no retry, no signal                             |
 
 ---
 
@@ -72,11 +72,11 @@ Make each layer properly `async` and `await` the layer below it. This is a three
 
 ### Files to Modify
 
-| File | Change |
-|---|---|
+| File                            | Change                                                                        |
+| ------------------------------- | ----------------------------------------------------------------------------- |
 | `src/ai/domain/conversation.ts` | `flushConversation()` → `async`, returns `Promise<void>`, awaits `writeNow()` |
-| `src/ai/handlers/chat.ts` | `onClose()` → `async`, returns `Promise<void>`, awaits `flushConversation()` |
-| `src/ai/adapters/view.ts` | `onClose()` awaits `controller.onClose()` |
+| `src/ai/handlers/chat.ts`       | `onClose()` → `async`, returns `Promise<void>`, awaits `flushConversation()`  |
+| `src/ai/adapters/view.ts`       | `onClose()` awaits `controller.onClose()`                                     |
 
 ---
 
@@ -197,11 +197,11 @@ All three callers of `resetController()` (`handleNewConversation`, `selectConver
 
 ## Scope Summary
 
-| File | Lines changed | Type of change |
-|---|---|---|
-| `conversation.ts` | ~3 | `void` → `async Promise<void>`, `void this.writeNow()` → `await this.writeNow()` |
-| `chat.ts` | ~3 | `void` → `async Promise<void>`, `this.state.flush()` → `await this.state.flush()` |
-| `view.ts` | ~8 | `this.controller?.onClose()` → `await this.controller?.onClose()`, `resetController()` goes async |
+| File              | Lines changed | Type of change                                                                                    |
+| ----------------- | ------------- | ------------------------------------------------------------------------------------------------- |
+| `conversation.ts` | ~3            | `void` → `async Promise<void>`, `void this.writeNow()` → `await this.writeNow()`                  |
+| `chat.ts`         | ~3            | `void` → `async Promise<void>`, `this.state.flush()` → `await this.state.flush()`                 |
+| `view.ts`         | ~8            | `this.controller?.onClose()` → `await this.controller?.onClose()`, `resetController()` goes async |
 
 ---
 

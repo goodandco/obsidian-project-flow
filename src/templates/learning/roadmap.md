@@ -9,9 +9,11 @@ tags:
 ---
 
 ## Timeline
+
 <!-- ai:content -->
 <!-- /ai:content -->
 
 ## Milestones
+
 - [ ] Milestone 1
 - [ ] Milestone 2

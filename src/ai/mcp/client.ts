@@ -8,7 +8,9 @@ interface MCPToolDescriptor {
   inputSchema?: JSONSchema7;
 }
 
-export async function fetchMcpTools(servers: MCPServerConfig[]): Promise<Array<{ server: MCPServerConfig; tools: MCPToolDescriptor[] }>> {
+export async function fetchMcpTools(
+  servers: MCPServerConfig[],
+): Promise<Array<{ server: MCPServerConfig; tools: MCPToolDescriptor[] }>> {
   const results: Array<{ server: MCPServerConfig; tools: MCPToolDescriptor[] }> = [];
   for (const server of servers) {
     try {

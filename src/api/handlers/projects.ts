@@ -1,9 +1,23 @@
-import type { IProjectFlowPlugin, ProjectIndexEntry, ProjectType, ProjectTypesRegistry } from "../../interfaces";
+import type {
+  IProjectFlowPlugin,
+  ProjectIndexEntry,
+  ProjectType,
+  ProjectTypesRegistry,
+} from "../../interfaces";
 import type { CreateProjectRequest, CreateProjectResult, ProjectRef } from "../types";
 import { mergeProjectTypes } from "../../core/registry-merge";
 import { createProject } from "../../services/project-service";
-import { listProjects, resolveArchivedProject, resolveProject } from "../../services/resolve-service";
-import { cleanArchivedGraph, ensureProjectGraph, getChildren, getParents } from "../../core/project-graph";
+import {
+  listProjects,
+  resolveArchivedProject,
+  resolveProject,
+} from "../../services/resolve-service";
+import {
+  cleanArchivedGraph,
+  ensureProjectGraph,
+  getChildren,
+  getParents,
+} from "../../core/project-graph";
 import { validateCreateProjectRequest, validateProjectRef } from "../validators";
 
 export function createProjectHandlers(plugin: IProjectFlowPlugin) {
@@ -53,10 +67,7 @@ export function createProjectHandlers(plugin: IProjectFlowPlugin) {
         plugin.settings.projectRecords,
         plugin.settings.archivedRecords,
       );
-      plugin.settings.projectGraph = cleanArchivedGraph(
-        graph,
-        plugin.settings.archivedRecords,
-      );
+      plugin.settings.projectGraph = cleanArchivedGraph(graph, plugin.settings.archivedRecords);
       await plugin.saveData(plugin.settings);
       return { ok: true };
     },

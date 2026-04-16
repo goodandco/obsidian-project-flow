@@ -5,7 +5,7 @@ export function buildToolCallsFromDeltas(
   accumulator: Map<number, ToolCall>,
 ): void {
   for (const delta of deltas) {
-    const current = accumulator.get(delta.index) || { name: "", arguments: {} } as ToolCall;
+    const current = accumulator.get(delta.index) || ({ name: "", arguments: {} } as ToolCall);
     if (delta.id) current.id = delta.id;
     if (delta.name) current.name = delta.name;
     if (typeof delta.arguments === "string") {

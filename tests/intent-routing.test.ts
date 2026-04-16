@@ -113,7 +113,9 @@ describe("intent routing", () => {
     mocked.classifyIntent.mockResolvedValue({ intent: "chat", reason: "", confidence: 1 });
     await controller.handleSend("Hi");
     const ui = (controller as any).ui as FakeUi;
-    expect(ui.messages.some((m) => m.role === "assistant" && m.content.includes("Hello there."))).toBe(true);
+    expect(
+      ui.messages.some((m) => m.role === "assistant" && m.content.includes("Hello there.")),
+    ).toBe(true);
   });
 
   it("routes action intent to planner flow", async () => {
@@ -130,6 +132,8 @@ describe("intent routing", () => {
     mocked.classifyIntent.mockResolvedValue({ intent: "unclear", reason: "", confidence: 0.4 });
     await controller.handleSend("Maybe");
     const ui = (controller as any).ui as FakeUi;
-    expect(ui.messages.some((m) => m.content.includes("Could you clarify what you'd like me to do?"))).toBe(true);
+    expect(
+      ui.messages.some((m) => m.content.includes("Could you clarify what you'd like me to do?")),
+    ).toBe(true);
   });
 });

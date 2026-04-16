@@ -8,6 +8,7 @@ contributions will be licensed under the GNU Affero General Public License v3.0.
 ProjectFlow may offer commercial licenses in the future.
 
 Please:
+
 - keep changes focused
 - follow existing code style
 - document new features

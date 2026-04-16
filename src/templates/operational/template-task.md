@@ -16,11 +16,9 @@ StoryPoints:
 ---
 
 ## Description
+
 <!-- ai:description -->
 <!-- /ai:description -->
-
-
-
 
 ---
 
@@ -48,10 +46,9 @@ dv.header(2, 'Questions');
 dv.table(['File', 'Status'],  questions);
 ```
 
-
 ---
 
 ## Notes
+
 <!-- ai:notes -->
 <!-- /ai:notes -->
-

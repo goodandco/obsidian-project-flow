@@ -10,18 +10,19 @@ tags:
 ---
 
 ## Content
+
 <!-- ai:content -->
 <!-- /ai:content -->
-
 
 ---
 
 ## Summary
+
 <!-- ai:summary -->
 <!-- /ai:summary -->
-
 
 ---
 
 ## Related
+
 - [[]]

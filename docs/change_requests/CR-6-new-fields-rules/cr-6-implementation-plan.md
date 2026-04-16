@@ -3,6 +3,7 @@
 ## Context
 
 Entity types currently use three separate flat mechanisms to describe their fields:
+
 - `requiredFields: string[]`
 - `indexField: string`
 - `fieldDescriptions: Record<string, string>`
@@ -13,15 +14,15 @@ This forces the AI agent to mentally join them and provides no place for type in
 
 ## Files to Modify
 
-| File | Change |
-|---|---|
-| `src/interfaces.ts` | Add `EntityFieldSchema`, add `fields?` to `EntityType` |
-| `src/core/registry-defaults.ts` | Migrate `task` and `lesson` to use `fields` |
-| `src/core/registry-merge.ts` | Add bidirectional normalization pass |
-| `src/core/settings-schema.ts` | Bump schema version 15 → 16 |
-| `src/ai/adapters/registry.ts` | Read from `fields` to build tool schemas |
-| `src/ai/domain/prompts.ts` | Read from `fields` for prompt context, update learning instructions |
-| `src/ui/entity-create-modal.ts` | Parent type selector + folder picker for `parentFolder` fields |
+| File                            | Change                                                              |
+| ------------------------------- | ------------------------------------------------------------------- |
+| `src/interfaces.ts`             | Add `EntityFieldSchema`, add `fields?` to `EntityType`              |
+| `src/core/registry-defaults.ts` | Migrate `task` and `lesson` to use `fields`                         |
+| `src/core/registry-merge.ts`    | Add bidirectional normalization pass                                |
+| `src/core/settings-schema.ts`   | Bump schema version 15 → 16                                         |
+| `src/ai/adapters/registry.ts`   | Read from `fields` to build tool schemas                            |
+| `src/ai/domain/prompts.ts`      | Read from `fields` for prompt context, update learning instructions |
+| `src/ui/entity-create-modal.ts` | Parent type selector + folder picker for `parentFolder` fields      |
 
 **No new files needed.**
 
@@ -72,6 +73,7 @@ All 16 built-in entity types are migrated to `fields`. Remove `requiredFields`, 
 ### Operational entities
 
 **`task`** (from CR spec, with `${module}` fix — actually keep as spec states):
+
 ```ts
 fields: {
   title:       { type: "string", required: true, role: "title" },
@@ -87,6 +89,7 @@ fields: {
 ```
 
 **`meeting.planning`, `meeting.refinement`, `meeting.retro`, `meeting.demo`, `meeting.daily`, `meeting.knowledge`** (all identical):
+
 ```ts
 fields: {
   title: { type: "string", required: true, role: "title" }
@@ -94,6 +97,7 @@ fields: {
 ```
 
 **`sprint`** — migrate `fieldDescriptions.title` and `fieldDefaults` into `fields`:
+
 ```ts
 fields: {
   title: {
@@ -106,6 +110,7 @@ fields: {
 ```
 
 **`idea`**:
+
 ```ts
 fields: {
   title: { type: "string", required: true, role: "title" }
@@ -113,6 +118,7 @@ fields: {
 ```
 
 **`reference` (operational)**:
+
 ```ts
 fields: {
   title: { type: "string", required: true, role: "title" }
@@ -122,6 +128,7 @@ fields: {
 ### Learning entities
 
 **`module`**:
+
 ```ts
 fields: {
   title: { type: "string", required: true, role: "title" }
@@ -129,6 +136,7 @@ fields: {
 ```
 
 **`lesson`** — keep `targetFolder` as `${parentFolder}/Lessons/${title}` (no change). `parentFolder` must point to a **module** folder or the project root:
+
 ```ts
 // targetFolder stays: "${parentFolder}/Lessons/${title}"
 fields: {
@@ -142,6 +150,7 @@ fields: {
 ```
 
 **`note`** — `parentFolder` can point to a module, lesson, project root, assignment, or review folder:
+
 ```ts
 fields: {
   title: { type: "string", required: true, role: "title" },
@@ -154,6 +163,7 @@ fields: {
 ```
 
 **`assignment`** — `parentFolder` can point to a module, lesson, or project root:
+
 ```ts
 fields: {
   title: { type: "string", required: true, role: "title" },
@@ -166,6 +176,7 @@ fields: {
 ```
 
 **`review`** — `parentFolder` can point to a project root, module, lesson, or assignment folder:
+
 ```ts
 fields: {
   title: { type: "string", required: true, role: "title" },
@@ -178,6 +189,7 @@ fields: {
 ```
 
 **`reference` (learning)**:
+
 ```ts
 fields: {
   title: { type: "string", required: true, role: "title" }
@@ -193,6 +205,7 @@ Add a `normalizeEntityType()` helper and call it inside `mergeEntityTypes()`.
 **No forward pass needed.** All built-in entity types are migrated to `fields` in Step 2. There are no real user-defined legacy types to synthesize from.
 
 **Backward pass only** (fields → legacy): derive legacy properties so existing consumers (`entity-service`, `entity-create-modal`) continue working without changes:
+
 - Skip `role: "index"` fields — auto-generated, excluded from `requiredFields`
 - `role: "parentFolder"` fields **are included** in `requiredFields` — the agent must pass the value; exclusion from the user-facing planner summary is handled separately by `AGENT_RESOLVED_FIELDS` in `prompts.ts`
 - Collect keys where `required: true` → set `requiredFields`
@@ -212,7 +225,10 @@ function normalizeEntityType(et: EntityType): EntityType {
     let indexField: string | undefined;
 
     for (const [key, schema] of Object.entries(out.fields)) {
-      if (schema.role === "index") { indexField = key; continue; }
+      if (schema.role === "index") {
+        indexField = key;
+        continue;
+      }
       // parentFolder (role: "parentFolder") IS included in requiredFields —
       // the agent must supply it; the planner filters it via AGENT_RESOLVED_FIELDS
       if (schema.required) requiredFields.push(key);
@@ -222,8 +238,10 @@ function normalizeEntityType(et: EntityType): EntityType {
 
     if (!out.requiredFields) out.requiredFields = requiredFields;
     if (!out.indexField && indexField) out.indexField = indexField;
-    if (!out.fieldDescriptions && Object.keys(fieldDescriptions).length > 0) out.fieldDescriptions = fieldDescriptions;
-    if (!out.fieldDefaults && Object.keys(fieldDefaults).length > 0) out.fieldDefaults = fieldDefaults;
+    if (!out.fieldDescriptions && Object.keys(fieldDescriptions).length > 0)
+      out.fieldDescriptions = fieldDescriptions;
+    if (!out.fieldDefaults && Object.keys(fieldDefaults).length > 0)
+      out.fieldDefaults = fieldDefaults;
   }
 
   return out;
@@ -253,7 +271,7 @@ Add a v16 block in `migrateSettings()`:
 
 Replace the `requiredFields`-based tool schema builder with a `fields`-based one.
 
-Also **remove the `module` entry from `FIELD_DESCRIPTIONS`** — its description (*"last segment of parentFolder"*) is stale and conflicts with the new model. Migrated entity types carry their own field-level `description`, so the fallback is no longer needed for `module`.
+Also **remove the `module` entry from `FIELD_DESCRIPTIONS`** — its description (_"last segment of parentFolder"_) is stale and conflicts with the new model. Migrated entity types carry their own field-level `description`, so the fallback is no longer needed for `module`.
 
 ```ts
 // All migrated entity types use fields; legacy fallback kept for any user-defined types
@@ -381,13 +399,13 @@ When `"project"` is selected, `parentFolder` resolves to `""` (empty string), wh
 
 Map `allowedParents` string values to human-readable dropdown labels:
 
-| `allowedParents` value | Displayed label |
-|---|---|
-| `"project"` | `Project (root level)` |
-| `"module"` | `Module` |
-| `"lesson"` | `Lesson` |
-| `"assignment"` | `Assignment` |
-| `"review"` | `Review` |
+| `allowedParents` value | Displayed label        |
+| ---------------------- | ---------------------- |
+| `"project"`            | `Project (root level)` |
+| `"module"`             | `Module`               |
+| `"lesson"`             | `Lesson`               |
+| `"assignment"`         | `Assignment`           |
+| `"review"`             | `Review`               |
 
 ---
 
@@ -555,7 +573,7 @@ Before the loop over `fieldKeys`, filter out `parentFolder` keys that have `role
 const parentFolderKeys = new Set(
   Object.entries(et.fields ?? {})
     .filter(([, s]) => s.role === "parentFolder")
-    .map(([k]) => k)
+    .map(([k]) => k),
 );
 // In the loop:
 const fieldKeys = deduped.filter((k) => !parentFolderKeys.has(k));

@@ -12,7 +12,10 @@ function normalizeEntityType(et: EntityType): EntityType {
     let indexField: string | undefined;
 
     for (const [key, schema] of Object.entries(out.fields)) {
-      if (schema.role === "index") { indexField = key; continue; }
+      if (schema.role === "index") {
+        indexField = key;
+        continue;
+      }
       // parentFolder (role: "parentFolder") IS included in requiredFields —
       // the agent must supply it; the planner filters it via AGENT_RESOLVED_FIELDS
       if (schema.required) requiredFields.push(key);
@@ -22,8 +25,10 @@ function normalizeEntityType(et: EntityType): EntityType {
 
     if (!out.requiredFields) out.requiredFields = requiredFields;
     if (!out.indexField && indexField) out.indexField = indexField;
-    if (!out.fieldDescriptions && Object.keys(fieldDescriptions).length > 0) out.fieldDescriptions = fieldDescriptions;
-    if (!out.fieldDefaults && Object.keys(fieldDefaults).length > 0) out.fieldDefaults = fieldDefaults;
+    if (!out.fieldDescriptions && Object.keys(fieldDescriptions).length > 0)
+      out.fieldDescriptions = fieldDescriptions;
+    if (!out.fieldDefaults && Object.keys(fieldDefaults).length > 0)
+      out.fieldDefaults = fieldDefaults;
   }
 
   return out;
@@ -58,9 +63,7 @@ export function mergeEntityTypes(
   return merged;
 }
 
-export function mergeProjectTypes(
-  userTypes?: ProjectTypesRegistry,
-): ProjectTypesRegistry {
+export function mergeProjectTypes(userTypes?: ProjectTypesRegistry): ProjectTypesRegistry {
   const merged: ProjectTypesRegistry = {};
 
   // Start with defaults

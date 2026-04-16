@@ -19,7 +19,7 @@ const INTENT_PROMPT = [
   "mixed: user asks a question AND requests an action in the same message.",
   "unclear: not enough information to decide.",
   "Respond ONLY with valid JSON:",
-  "{\"intent\":\"...\",\"reason\":\"...\",\"confidence\":0.0}",
+  '{"intent":"...","reason":"...","confidence":0.0}',
   "Do not include markdown.",
 ].join("\n");
 
@@ -57,9 +57,10 @@ function parseIntentJson(raw: string): IntentResult | null {
     const obj = JSON.parse(slice);
     const intent = normalizeIntent(obj.intent);
     if (!intent) return null;
-    const confidence = typeof obj.confidence === "number" && obj.confidence >= 0 && obj.confidence <= 1
-      ? obj.confidence
-      : 0;
+    const confidence =
+      typeof obj.confidence === "number" && obj.confidence >= 0 && obj.confidence <= 1
+        ? obj.confidence
+        : 0;
     return {
       intent,
       reason: typeof obj.reason === "string" ? obj.reason : "",
@@ -73,7 +74,12 @@ function parseIntentJson(raw: string): IntentResult | null {
 function normalizeIntent(value: unknown): Intent | null {
   if (typeof value !== "string") return null;
   const normalized = value.trim().toLowerCase();
-  if (normalized === "chat" || normalized === "action" || normalized === "mixed" || normalized === "unclear") {
+  if (
+    normalized === "chat" ||
+    normalized === "action" ||
+    normalized === "mixed" ||
+    normalized === "unclear"
+  ) {
     return normalized;
   }
   return null;

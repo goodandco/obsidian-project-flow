@@ -13,9 +13,9 @@ export async function deleteProjectById(
   >;
   const projectData = projectRecords[dimension][category][projectId];
 
-  const {SafeFileManager} = await import("./file-manager");
+  const { SafeFileManager } = await import("./file-manager");
   const fm = new SafeFileManager(plugin.app);
-  const {sanitizePath} = await import("../core/path-sanitizer");
+  const { sanitizePath } = await import("../core/path-sanitizer");
   const projectDir = sanitizePath(projectData.variables.PROJECT_PATH);
   const templatesDir = sanitizePath(`Templates/${projectData.info.name}_Templates`);
 
@@ -31,8 +31,10 @@ export async function deleteProjectById(
         if (Object.keys(projectRecords[dimension]).length === 0) delete projectRecords[dimension];
       }
       try {
-        const { ensureProjectIndex, removeFromProjectIndex, toIndexEntry } = await import("../core/project-index");
-        const { ensureProjectGraph, removeProjectFromGraph } = await import("../core/project-graph");
+        const { ensureProjectIndex, removeFromProjectIndex, toIndexEntry } =
+          await import("../core/project-index");
+        const { ensureProjectGraph, removeProjectFromGraph } =
+          await import("../core/project-graph");
         const { index } = ensureProjectIndex(plugin.settings.projectIndex, projectRecords);
         plugin.settings.projectIndex = removeFromProjectIndex(
           index,
@@ -94,15 +96,20 @@ export async function archiveProjectByPromptInfo(
     const year = projectRecord.variables.YEAR;
     const dim = projectRecord.variables.DIMENSION || projectRecord.info.dimension;
     const cat = projectRecord.info.category;
-    const parent = (projectRecord.info.parent && projectRecord.info.parent.trim().length > 0) ? projectRecord.info.parent.trim() : null;
+    const parent =
+      projectRecord.info.parent && projectRecord.info.parent.trim().length > 0
+        ? projectRecord.info.parent.trim()
+        : null;
     const baseName = projectRecord.info.name;
-    const newArchivedName = parent ? `${year}.${dim}.${cat}.${parent}.${baseName}` : `${year}.${dim}.${cat}.${baseName}`;
+    const newArchivedName = parent
+      ? `${year}.${dim}.${cat}.${parent}.${baseName}`
+      : `${year}.${dim}.${cat}.${baseName}`;
     const destProjectDir = sanitizePath(`${archiveRoot}/${newArchivedName}`);
 
     const parentOf = (p: string) => {
-      const parts = p.split('/').filter(Boolean);
+      const parts = p.split("/").filter(Boolean);
       parts.pop();
-      return parts.join('/');
+      return parts.join("/");
     };
     await fm.ensureFolder(parentOf(destProjectDir));
 
@@ -119,9 +126,13 @@ export async function archiveProjectByPromptInfo(
       if (await adapter.exists(srcTemplatesDir)) {
         const destTemplatesParent = sanitizePath(`${destProjectDir}/Templates`);
         await fm.ensureFolder(destTemplatesParent);
-        const destTemplatesDir = sanitizePath(`${destTemplatesParent}/${projectRecord.info.name}_Templates`);
+        const destTemplatesDir = sanitizePath(
+          `${destTemplatesParent}/${projectRecord.info.name}_Templates`,
+        );
         if (await adapter.exists(destTemplatesDir)) {
-          const altDir = sanitizePath(`${destTemplatesParent}/${projectRecord.info.name}_Templates_archived`);
+          const altDir = sanitizePath(
+            `${destTemplatesParent}/${projectRecord.info.name}_Templates_archived`,
+          );
           await adapter.rename(srcTemplatesDir, altDir);
         } else {
           await adapter.rename(srcTemplatesDir, destTemplatesDir);
@@ -132,15 +143,24 @@ export async function archiveProjectByPromptInfo(
     }
 
     try {
-      const active = plugin.settings.projectRecords as Record<string, Record<string, Record<string, ProjectRecord>>>;
+      const active = plugin.settings.projectRecords as Record<
+        string,
+        Record<string, Record<string, ProjectRecord>>
+      >;
       if (!plugin.settings.archivedRecords || Array.isArray(plugin.settings.archivedRecords)) {
-        (plugin.settings as any).archivedRecords = (plugin.settings.archivedRecords && Array.isArray(plugin.settings.archivedRecords)) ? {} : (plugin.settings.archivedRecords || {});
+        (plugin.settings as any).archivedRecords =
+          plugin.settings.archivedRecords && Array.isArray(plugin.settings.archivedRecords)
+            ? {}
+            : plugin.settings.archivedRecords || {};
       }
-      const archived = plugin.settings.archivedRecords as Record<string, Record<string, Record<string, ProjectRecord>>>;
+      const archived = plugin.settings.archivedRecords as Record<
+        string,
+        Record<string, Record<string, ProjectRecord>>
+      >;
       archived[dimension] = archived[dimension] || {};
       archived[dimension][category] = archived[dimension][category] || {};
       archived[dimension][category][projectId] = projectRecord;
-      
+
       if (active?.[dimension]?.[category]?.[projectId]) {
         delete active[dimension][category][projectId];
         if (Object.keys(active[dimension][category]).length === 0) {
@@ -151,18 +171,16 @@ export async function archiveProjectByPromptInfo(
         }
       }
       try {
-        const { ensureProjectIndex, removeFromProjectIndex, toIndexEntry } = await import("../core/project-index");
-        const { ensureProjectGraph, removeProjectFromGraph, addProjectToGraph } = await import("../core/project-graph");
+        const { ensureProjectIndex, removeFromProjectIndex, toIndexEntry } =
+          await import("../core/project-index");
+        const { ensureProjectGraph, removeProjectFromGraph, addProjectToGraph } =
+          await import("../core/project-graph");
         const { index } = ensureProjectIndex(plugin.settings.projectIndex, active);
         plugin.settings.projectIndex = removeFromProjectIndex(
           index,
           toIndexEntry(projectRecord, projectId, dimension, category),
         );
-        const { graph } = ensureProjectGraph(
-          plugin.settings.projectGraph,
-          active,
-          archived,
-        );
+        const { graph } = ensureProjectGraph(plugin.settings.projectGraph, active, archived);
         plugin.settings.projectGraph = removeProjectFromGraph(
           graph,
           projectRecord.variables.PROJECT_FULL_NAME,
@@ -181,10 +199,10 @@ export async function archiveProjectByPromptInfo(
       console.warn("Failed to move project record to archive in settings:", e);
     }
 
-    return [true, "Project archived successfully." ];
+    return [true, "Project archived successfully."];
   } catch (e: any) {
     console.error("Archive failed:", e);
-    return [false, e?.message ?? "Failed to archive project." ];
+    return [false, e?.message ?? "Failed to archive project."];
   }
 }
 
@@ -195,7 +213,10 @@ export async function deleteArchivedProject(
   projectId: string,
 ): Promise<[boolean, string]> {
   try {
-    const archived = plugin.settings.archivedRecords as Record<string, Record<string, Record<string, ProjectRecord>>>;
+    const archived = plugin.settings.archivedRecords as Record<
+      string,
+      Record<string, Record<string, ProjectRecord>>
+    >;
     const rec = archived?.[dimension]?.[category]?.[projectId];
     if (!rec) {
       return [false, "Archived project not found."];
@@ -209,9 +230,12 @@ export async function deleteArchivedProject(
     const year = rec.variables.YEAR;
     const dim = rec.variables.DIMENSION || rec.info.dimension;
     const cat = rec.info.category;
-    const parent = (rec.info.parent && rec.info.parent.trim().length > 0) ? rec.info.parent.trim() : null;
+    const parent =
+      rec.info.parent && rec.info.parent.trim().length > 0 ? rec.info.parent.trim() : null;
     const baseName = rec.info.name;
-    const archivedName = parent ? `${year}.${dim}.${cat}.${parent}.${baseName}` : `${year}.${dim}.${cat}.${baseName}`;
+    const archivedName = parent
+      ? `${year}.${dim}.${cat}.${parent}.${baseName}`
+      : `${year}.${dim}.${cat}.${baseName}`;
     const archivedDir = sanitizePath(`${archiveRoot}/${archivedName}`);
 
     if (await adapter.exists(archivedDir)) {
@@ -229,7 +253,8 @@ export async function deleteArchivedProject(
         }
       }
       try {
-        const { ensureProjectGraph, removeProjectFromGraph } = await import("../core/project-graph");
+        const { ensureProjectGraph, removeProjectFromGraph } =
+          await import("../core/project-graph");
         const { graph } = ensureProjectGraph(
           plugin.settings.projectGraph,
           plugin.settings.projectRecords,

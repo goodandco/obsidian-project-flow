@@ -293,7 +293,8 @@ export class AiStateStore {
 
     const legacyMessages = (this.plugin.settings.ai?.conversation || []) as ChatMessage[];
     const legacyPending = this.plugin.settings.ai?.pendingPlan ?? null;
-    const shouldMigrate = this.data.conversations.length === 0 && (legacyMessages.length > 0 || legacyPending);
+    const shouldMigrate =
+      this.data.conversations.length === 0 && (legacyMessages.length > 0 || legacyPending);
 
     if (shouldMigrate) {
       const now = new Date().toISOString();
@@ -327,7 +328,8 @@ export class AiStateStore {
   private normalizeData(raw: any): AiConversationData {
     const data: AiConversationData = {
       schemaVersion: SCHEMA_VERSION,
-      activeConversationId: typeof raw?.activeConversationId === "string" ? raw.activeConversationId : undefined,
+      activeConversationId:
+        typeof raw?.activeConversationId === "string" ? raw.activeConversationId : undefined,
       conversations: [],
     };
     const items = Array.isArray(raw?.conversations) ? raw.conversations : [];
@@ -338,26 +340,28 @@ export class AiStateStore {
       if (seen.has(id)) continue;
       seen.add(id);
       const title = normalizeTitle(item.title);
-      const createdAt = typeof item.createdAt === "string" ? item.createdAt : new Date().toISOString();
+      const createdAt =
+        typeof item.createdAt === "string" ? item.createdAt : new Date().toISOString();
       const updatedAt = typeof item.updatedAt === "string" ? item.updatedAt : createdAt;
       const messages: ChatMessage[] = Array.isArray(item.messages)
         ? item.messages
-          .filter((m: any) => m && typeof m.content === "string" && isValidRole(m.role))
-          .map((m: any) => ({
-            role: m.role,
-            content: m.content,
-            name: typeof m.name === "string" ? m.name : undefined,
-            toolCallId: typeof m.toolCallId === "string" ? m.toolCallId : undefined,
-          }))
+            .filter((m: any) => m && typeof m.content === "string" && isValidRole(m.role))
+            .map((m: any) => ({
+              role: m.role,
+              content: m.content,
+              name: typeof m.name === "string" ? m.name : undefined,
+              toolCallId: typeof m.toolCallId === "string" ? m.toolCallId : undefined,
+            }))
         : [];
       const pendingPlan = item.pendingPlan ?? null;
-      const projectContext = item.projectContext && typeof item.projectContext === "object"
-        ? {
-          projectId: String(item.projectContext.projectId || ""),
-          projectTag: String(item.projectContext.projectTag || ""),
-          fullName: String(item.projectContext.fullName || ""),
-        }
-        : null;
+      const projectContext =
+        item.projectContext && typeof item.projectContext === "object"
+          ? {
+              projectId: String(item.projectContext.projectId || ""),
+              projectTag: String(item.projectContext.projectTag || ""),
+              fullName: String(item.projectContext.fullName || ""),
+            }
+          : null;
       data.conversations.push({
         id,
         title,

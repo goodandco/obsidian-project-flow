@@ -20,8 +20,11 @@ const projectRefSchema: JSONSchema7 = {
   additionalProperties: false,
 };
 
-
-export function createToolRegistry(plugin: ProjectFlowPlugin, ui: ChatUi, state: AiStateStore): ToolDefinition[] {
+export function createToolRegistry(
+  plugin: ProjectFlowPlugin,
+  ui: ChatUi,
+  state: AiStateStore,
+): ToolDefinition[] {
   const api = plugin.getApi();
   if (!api) return [];
 
@@ -41,7 +44,8 @@ export function createToolRegistry(plugin: ProjectFlowPlugin, ui: ChatUi, state:
     },
     {
       name: "listProjects",
-      description: "List all projects in the vault. Returns an array of entries with fullName, projectId, projectTag, dimension, category, projectName, and parent. Use this to find a project when you only know its name or need to browse available projects.",
+      description:
+        "List all projects in the vault. Returns an array of entries with fullName, projectId, projectTag, dimension, category, projectName, and parent. Use this to find a project when you only know its name or need to browse available projects.",
       schema: { type: "object", properties: {}, additionalProperties: false },
       handler: async () => api.listProjects(),
     },
@@ -53,7 +57,8 @@ export function createToolRegistry(plugin: ProjectFlowPlugin, ui: ChatUi, state:
     },
     {
       name: "listDimensions",
-      description: "List all configured vault dimensions and their categories. ALWAYS call this before createProject to discover valid dimension and category values. Never invent or guess these values.",
+      description:
+        "List all configured vault dimensions and their categories. ALWAYS call this before createProject to discover valid dimension and category values. Never invent or guess these values.",
       schema: { type: "object", properties: {}, additionalProperties: false },
       handler: async () => {
         return plugin.settings.dimensions.map((d) => ({
@@ -64,11 +69,15 @@ export function createToolRegistry(plugin: ProjectFlowPlugin, ui: ChatUi, state:
     },
     {
       name: "createDimension",
-      description: "Create a new vault dimension. Use this when the user wants to organise projects under a dimension that does not yet exist. After creation the new dimension is available for createProject.",
+      description:
+        "Create a new vault dimension. Use this when the user wants to organise projects under a dimension that does not yet exist. After creation the new dimension is available for createProject.",
       schema: {
         type: "object",
         properties: {
-          name: { type: "string", description: "Human-readable name for the new dimension (e.g. 'Work')." },
+          name: {
+            type: "string",
+            description: "Human-readable name for the new dimension (e.g. 'Work').",
+          },
         },
         required: ["name"],
         additionalProperties: false,
@@ -87,12 +96,19 @@ export function createToolRegistry(plugin: ProjectFlowPlugin, ui: ChatUi, state:
     },
     {
       name: "createCategory",
-      description: "Add a new category to an existing dimension. Use this when the user wants a category that does not yet exist inside a dimension.",
+      description:
+        "Add a new category to an existing dimension. Use this when the user wants a category that does not yet exist inside a dimension.",
       schema: {
         type: "object",
         properties: {
-          dimension: { type: "string", description: "The dimension name to add the category to (must already exist)." },
-          category: { type: "string", description: "The new category name to add (e.g. 'Client')." },
+          dimension: {
+            type: "string",
+            description: "The dimension name to add the category to (must already exist).",
+          },
+          category: {
+            type: "string",
+            description: "The new category name to add (e.g. 'Client').",
+          },
         },
         required: ["dimension", "category"],
         additionalProperties: false,
@@ -102,7 +118,10 @@ export function createToolRegistry(plugin: ProjectFlowPlugin, ui: ChatUi, state:
         const catName = (args.category as string).trim();
         if (!dimName || !catName) return { error: "Both dimension and category are required." };
         const dim = plugin.settings.dimensions.find((d) => d.name === dimName);
-        if (!dim) return { error: `Dimension "${dimName}" does not exist. Create it first with createDimension.` };
+        if (!dim)
+          return {
+            error: `Dimension "${dimName}" does not exist. Create it first with createDimension.`,
+          };
         if (dim.categories.includes(catName)) {
           return { error: `Category "${catName}" already exists in dimension "${dimName}".` };
         }
@@ -113,7 +132,8 @@ export function createToolRegistry(plugin: ProjectFlowPlugin, ui: ChatUi, state:
     },
     {
       name: "createProject",
-      description: "Create a project. IMPORTANT: You MUST call listDimensions first and use ONLY the dimension names and categories returned by that tool — never invent or guess them. Use projectTypeId to specify the structure (e.g., 'operational' for tasks/meetings, 'learning' for courses/lessons).",
+      description:
+        "Create a project. IMPORTANT: You MUST call listDimensions first and use ONLY the dimension names and categories returned by that tool — never invent or guess them. Use projectTypeId to specify the structure (e.g., 'operational' for tasks/meetings, 'learning' for courses/lessons).",
       schema: {
         type: "object",
         properties: {
@@ -121,8 +141,17 @@ export function createToolRegistry(plugin: ProjectFlowPlugin, ui: ChatUi, state:
           tag: { type: "string" },
           id: { type: "string" },
           year: { type: "string" },
-          dimension: { type: "string", minLength: 1, description: "MUST be a dimension name returned by listDimensions. Cannot be empty." },
-          category: { type: "string", minLength: 1, description: "MUST be a category from the chosen dimension, as returned by listDimensions. Cannot be empty." },
+          dimension: {
+            type: "string",
+            minLength: 1,
+            description: "MUST be a dimension name returned by listDimensions. Cannot be empty.",
+          },
+          category: {
+            type: "string",
+            minLength: 1,
+            description:
+              "MUST be a category from the chosen dimension, as returned by listDimensions. Cannot be empty.",
+          },
           parent: { type: "string" },
           projectTypeId: {
             type: "string",
@@ -137,12 +166,16 @@ export function createToolRegistry(plugin: ProjectFlowPlugin, ui: ChatUi, state:
     },
     {
       name: "delegateToProjectAssistant",
-      description: "Delegate actions to a specialized project assistant. Use this when the user wants to act on entities (e.g., create a task, add a lesson) within a project.",
+      description:
+        "Delegate actions to a specialized project assistant. Use this when the user wants to act on entities (e.g., create a task, add a lesson) within a project.",
       schema: {
         type: "object",
         properties: {
           projectRef: projectRefSchema,
-          instructions: { type: "string", description: "Clear instructions for the delegated assistant." },
+          instructions: {
+            type: "string",
+            description: "Clear instructions for the delegated assistant.",
+          },
         },
         required: ["projectRef", "instructions"],
         additionalProperties: false,
@@ -150,7 +183,7 @@ export function createToolRegistry(plugin: ProjectFlowPlugin, ui: ChatUi, state:
       handler: async (args) => {
         const { delegateToProjectAssistant } = await import("../handlers/specialized-agent");
         return delegateToProjectAssistant(plugin, ui, state, args as any);
-      }
+      },
     },
     {
       name: "patchMarker",
@@ -218,7 +251,8 @@ export function createToolRegistry(plugin: ProjectFlowPlugin, ui: ChatUi, state:
 const FIELD_DESCRIPTIONS: Record<string, string> = {
   title: "The name/title for this entity.",
   description: "A description of the entity.",
-  parentFolder: "FULL relative path from the project root to the parent folder. MUST match an existing folder exactly. ALWAYS call listProjectFiles first to discover the real path. Examples: '' (empty) = course root, 'Modules/Module 1 - Intro' = that module folder, 'Modules/Module 1 - Intro/Lessons/Lesson 1 - Intro' = that lesson folder. Never guess or construct this path manually.",
+  parentFolder:
+    "FULL relative path from the project root to the parent folder. MUST match an existing folder exactly. ALWAYS call listProjectFiles first to discover the real path. Examples: '' (empty) = course root, 'Modules/Module 1 - Intro' = that module folder, 'Modules/Module 1 - Intro/Lessons/Lesson 1 - Intro' = that lesson folder. Never guess or construct this path manually.",
 };
 
 export function createSpecializedToolRegistry(
@@ -229,7 +263,10 @@ export function createSpecializedToolRegistry(
 ): ToolDefinition[] {
   const api = plugin.getApi();
   if (!api) return [];
-  const entityTypes = mergeEntityTypes(mergeProjectTypes(plugin.settings.projectTypes), projectTypeId);
+  const entityTypes = mergeEntityTypes(
+    mergeProjectTypes(plugin.settings.projectTypes),
+    projectTypeId,
+  );
   const tools: ToolDefinition[] = [];
 
   for (const [entityTypeId, rawDef] of Object.entries(entityTypes)) {
@@ -284,17 +321,18 @@ export function createSpecializedToolRegistry(
             type: "object",
             properties: propFields,
             required,
-            additionalProperties: true
-          }
+            additionalProperties: true,
+          },
         },
         required: ["fields"],
         additionalProperties: false,
       },
-      handler: async (args) => api.createEntity({
-        projectRef: exactProjectRef,
-        entityTypeId,
-        fields: args.fields as Record<string, any>
-      })
+      handler: async (args) =>
+        api.createEntity({
+          projectRef: exactProjectRef,
+          entityTypeId,
+          fields: args.fields as Record<string, any>,
+        }),
     });
   }
 
@@ -302,13 +340,15 @@ export function createSpecializedToolRegistry(
   if (projectRecord) {
     tools.push({
       name: "listProjectFiles",
-      description: "List files and folders in the project directory. Use to discover existing modules and lessons before creating nested entities.",
+      description:
+        "List files and folders in the project directory. Use to discover existing modules and lessons before creating nested entities.",
       schema: {
         type: "object",
         properties: {
           subfolder: {
             type: "string",
-            description: "Relative subfolder path within the project (e.g., 'Modules'). Empty string or omit for project root.",
+            description:
+              "Relative subfolder path within the project (e.g., 'Modules'). Empty string or omit for project root.",
           },
         },
         additionalProperties: false,
@@ -338,7 +378,7 @@ export function createSpecializedToolRegistry(
         } catch {
           return { files: [], folders: [] };
         }
-      }
+      },
     });
   }
 

@@ -11,16 +11,19 @@ This document is a specification for implementing a new UI layer in the ProjectF
 ProjectFlow is an Obsidian plugin for structured project management. It organises projects into a hierarchical vault structure (dimensions → categories → projects → entities).
 
 **Current UI surface:**
+
 - 2 commands: Add Project, Remove Project (command palette only)
 - 1 settings tab: folders, dimensions/categories config, AI chat toggle
 - 1 right sidebar panel: AI chat (Anthropic / OpenAI / Ollama)
 
 **Core pain points being solved:**
+
 1. Entity management is invisible — users can only create entities via the AI chat or Templater commands. There is no direct interface.
 2. Project browsing doesn't exist — users navigate their vault manually.
 3. The AI chat is the only real interface. Power users and non-AI users have no alternative.
 
 **What is NOT changing:**
+
 - The right sidebar AI chat panel — leave it untouched
 - The existing settings tab structure (Folders, Dimensions sections) — only append to it
 - The Core API, services, registry system, template processor — UI must consume these, not replace them
@@ -43,6 +46,7 @@ Before planning any implementation, read the following files in the codebase:
 - `references/template-system.md` — two-template distinction (structural vs ephemeral), variable substitution, `ProjectVariables`
 
 **Non-negotiable rules:**
+
 - All settings changes must go through `migrateSettings()` — never read `data.json` raw
 - All vault mutations (create project, create entity) must go through Core API handlers
 - Never read `settings.projectTypes` or `settings.entityTypes` directly — always use registry merge functions
@@ -69,11 +73,13 @@ Project type management (wizard + settings section) is explicitly out of scope f
 A new Obsidian `ItemView` registered on the left sidebar. View type ID: `projectflow-browser`. This is the primary daily-use surface. It replaces the need to use commands or AI chat for both project navigation and entity creation.
 
 The sidebar has exactly three areas:
+
 1. **Filters** — dimension tabs, category chips, project type filter, search input
 2. **Project list** — paginated, with pinning and inline entity creation
 3. **Footer** — "New project" button only
 
 ### Visual reference
+
 See attached mockups: `sidebar-panel-mockup`, `projectflow_sidebar_v3`
 
 ---
@@ -81,12 +87,14 @@ See attached mockups: `sidebar-panel-mockup`, `projectflow_sidebar_v3`
 ### Filters
 
 **Dimension tabs**
+
 - Render one pill/tab per dimension from settings
 - Selecting a dimension filters the project list and replaces the category chips with those belonging to the selected dimension
 - "All" tab shows projects across all dimensions and clears the category filter
 - Source: `plugin.settings.dimensions` via `migrateSettings()`
 
 **Category filter chips**
+
 - Dimensions and categories are dependent — each dimension has its own unique set of categories
 - Always render only the categories belonging to the currently selected dimension
 - Selecting a different dimension replaces the category chip set entirely and resets selection to "All"
@@ -95,12 +103,14 @@ See attached mockups: `sidebar-panel-mockup`, `projectflow_sidebar_v3`
 - Source: categories nested within the selected dimension in settings
 
 **Project type filter**
+
 - Segmented control: "All" + one segment per project type (built-in first, then user-defined)
 - Filters project list by `projectType` field on the project record
 - Labels and accent colors sourced from `mergeProjectTypes(settings.projectTypes)`
 - The number of types is variable — if segments overflow the panel width, make the control horizontally scrollable with scroll-snap
 
 **Search / filter input**
+
 - A single text input supporting three filter modes:
   - **Default (no prefix):** filters by project name, case-insensitive substring match
   - **`tag:` prefix** (e.g. `tag:frontend`): filters projects by a specific tag value in the project's frontmatter
@@ -116,6 +126,7 @@ All four filters compose — the project list always reflects all active filters
 ### Project list
 
 **General rules**
+
 - Shows projects matching all active filters
 - Archived projects are never shown
 - Maximum **10 projects per page** (pinned projects are exempt)
@@ -123,12 +134,14 @@ All four filters compose — the project list always reflects all active filters
 - Page resets to 1 on any filter change; page state is in-memory only
 
 **Each project row shows:**
+
 - Project name
 - Project type badge (colored, sourced from project type registry)
 - Category label
 - Entity summary: count per entity type with colored type dots
 
 **Pinned projects**
+
 - Up to **5 projects** can be pinned
 - Pinned projects always appear at the top of the list above all unpinned results, regardless of active filters
 - Each pinned row shows a visible pin marker
@@ -147,15 +160,18 @@ Clicking a project row toggles an expansion area that appears directly below tha
 
 **Contents — creation buttons only**
 The expanded area contains:
+
 - A small muted label: "Create entity"
 - A row of `+` buttons, one per ephemeral template defined for that project's project type
 
 Each button shows:
+
 - A small colored icon badge (letter abbreviation, colored per entity type)
 - The button label: `+ {template name}` — e.g. `+ task`, `+ meeting demo`, `+ meeting daily`, `+ note`
 
 **Button source**
 The buttons are generated entirely from the ephemeral template definitions of the project's type. They are not hardcoded. The implementation must:
+
 1. Resolve the project's `projectType`
 2. Call `mergeProjectTypes(settings.projectTypes)` to get the full type definition
 3. Read the `ephemeralTemplates` array from that type definition
@@ -175,12 +191,14 @@ This means if a project type defines `task`, `meeting.demo`, `meeting.daily`, an
 ---
 
 ### Data sources
+
 - Dimensions and categories: `plugin.settings` via `migrateSettings()`
 - Projects: `listProjects()` from Core API (`handlers/projects.ts`)
 - Project types and ephemeral templates: `mergeProjectTypes(settings.projectTypes)`
 - Pinned project IDs: `plugin.settings.pinnedProjects` (new field — see Schema Changes)
 
 ### CSS
+
 Follow `references/conventions.md`. Use Obsidian CSS custom properties throughout. Do not hardcode hex colors.
 
 ---
@@ -192,6 +210,7 @@ Follow `references/conventions.md`. Use Obsidian CSS custom properties throughou
 A small `Modal` subclass triggered when the user clicks a `+` button in the inline entity creation area of the sidebar. The modal knows the project and the specific ephemeral template key at the moment of opening — it does not ask the user to select a type.
 
 ### Visual reference
+
 See attached mockup: `projectflow_sidebar_v3` (click any `+` button to see the popup)
 
 ---
@@ -199,6 +218,7 @@ See attached mockup: `projectflow_sidebar_v3` (click any `+` button to see the p
 ### Trigger and context
 
 When a `+` button is clicked:
+
 - The **project** is already known (the expanded project row)
 - The **ephemeral template key** is already known (the button that was clicked, e.g. `"task"`, `"meeting.demo"`)
 - The modal opens immediately with the correct title and fields — no type selection step
@@ -212,6 +232,7 @@ The modal title reads: `New {template name}` — e.g. "New task", "New meeting d
 The fields rendered in the popup are driven entirely by the ephemeral template's field schema as defined in the project type definition. This is the same field schema the AI agent uses when creating entities — the UI must read and respect the same structure.
 
 For each field defined in the ephemeral template:
+
 - Render the appropriate input type: text input, textarea, date picker, or select/dropdown
 - Use the field's label as the field label
 - Use the field's placeholder if defined
@@ -219,6 +240,7 @@ For each field defined in the ephemeral template:
 - Lay out fields in a two-column grid; fields marked `span: 2` (or equivalent) span the full width
 
 **Example field sets by template key** (these are illustrative — the actual fields come from the registry):
+
 - `task`: name (required, full-width), description (textarea, full-width), priority (select: P0–P3), due date, assignee, sprint
 - `meeting.demo`: name (required, full-width), date, attendees, demo scope (textarea, full-width)
 - `meeting.daily`: name (required, full-width), date, blockers (textarea, full-width)
@@ -271,6 +293,7 @@ This is exactly the same resolution path the AI agent uses — the UI is a direc
 A `Modal` subclass opened from the "New project" button in the sidebar footer.
 
 ### Visual reference
+
 See attached mockup: `create-project-modal`
 
 ---
@@ -278,6 +301,7 @@ See attached mockup: `create-project-modal`
 ### Fields
 
 **Project type selector — horizontal scrolling row**
+
 - One card per project type (built-in first, then user-defined), in a horizontally scrollable row
 - Fixed card width (~148px) so multiple cards are visible and scroll is discoverable
 - Right-edge fade hints at more cards; scroll-snap per card
@@ -286,26 +310,31 @@ See attached mockup: `create-project-modal`
 - Source: `mergeProjectTypes(settings.projectTypes)`
 
 **Project name** (required)
+
 - As the user types, Project ID and Project Tag both auto-derive a slug (lowercase, hyphens, alphanumeric)
 - Auto-derive stops per field as soon as that field is manually edited
 
 **Project ID** (required)
+
 - `#` prefix label fused to the left of the input (non-editable)
 - Must be unique across all projects — validated on submit
 - Used as the lookup key for the `id:` search filter
 - Format: lowercase alphanumeric and hyphens only
 
 **Project tag** (required)
+
 - `#` prefix label fused to the left of the input, colored with the active project type's color
 - Baked into all ephemeral templates at project creation — becomes the primary tag in Dataview queries
 - Used as the lookup value for the `tag:` search filter
 - Format: lowercase alphanumeric and hyphens only
 
 **Dimension** (required)
+
 - Dropdown populated from `plugin.settings.dimensions`
 - Changing dimension immediately replaces the Category dropdown
 
 **Category** (required)
+
 - Dropdown populated from categories of the selected dimension only
 - Always in sync with Dimension — changing dimension resets this to the first category of the new dimension
 
@@ -330,12 +359,14 @@ Updates on every project type selection change. Three subsections:
 ## Settings Schema Changes
 
 **New field: pinned projects**
+
 ```typescript
 // Added to the top-level settings object
 pinnedProjects: string[]   // array of project IDs, max length 5, default []
 ```
 
 Required steps:
+
 1. Increment `CURRENT_SETTINGS_SCHEMA_VERSION`
 2. Write migration in `settings-schema.ts`: add `pinnedProjects: []` for existing installs
 3. Update `migrateSettings()` to apply it
@@ -345,11 +376,13 @@ Required steps:
 ## Implementation Order (Recommended)
 
 **Phase 1 — Foundation**
+
 - Read all reference files listed in Architecture Constraints
 - Add `pinnedProjects: string[]` to settings schema with migration
 - Register `projectflow-browser` ItemView as an empty shell; confirm it appears in the left sidebar
 
 **Phase 2 — Sidebar: filters + project list (read-only)**
+
 - Dimension tabs, category chips (dimension-dependent), project type filter
 - Project list: fetch via `listProjects()`, render rows, exclude archived
 - Pagination: 10 unpinned projects per page, reset on filter change
@@ -357,18 +390,21 @@ Required steps:
 - Project rows render but clicking does nothing yet
 
 **Phase 3 — Sidebar: pinning**
+
 - Pin/unpin via hover icon or right-click context menu
 - Persist to `settings.pinnedProjects` via `plugin.saveSettings()`
 - Pinned rows at top of list with pin marker, outside pagination
 - Enforce max 5; silently remove stale pins on load
 
 **Phase 4 — Inline entity creation area**
+
 - Clicking a project row toggles expansion area below it; only one open at a time
 - Read the project's type, resolve ephemeral templates via `mergeProjectTypes()`
 - Render one `+` button per ephemeral template entry (name + colored icon badge)
 - Buttons are data-driven — no hardcoded entity types
 
 **Phase 5 — Entity creation popup**
+
 - Modal opens on `+` button click, pre-loaded with project + template key context
 - Render fields dynamically from the template's field schema (same schema the AI uses)
 - Two-column grid layout; full-width fields for name, description, textarea fields
@@ -376,6 +412,7 @@ Required steps:
 - Inline name validation before submit
 
 **Phase 6 — Project creation modal**
+
 - Horizontal scrolling type selector with color-reactive selected state
 - Name → auto-slug to ID and tag (stop per field on manual edit)
 - Dimension + category with dependency (changing dimension resets category)

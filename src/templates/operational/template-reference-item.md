@@ -9,27 +9,27 @@ tags:
 ---
 
 ## Context
+
 <!-- ai:context -->
 <!-- /ai:context -->
-
 
 Information about this topic.
 
 ---
 
 ## Summary
+
 <!-- ai:summary -->
 <!-- /ai:summary -->
-
 
 Summary of the topic.
 
 ---
 
 ## Related
+
 <!-- ai:related -->
 <!-- /ai:related -->
-
 
 Some links:
 

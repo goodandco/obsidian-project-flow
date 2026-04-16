@@ -10,20 +10,21 @@ tags:
 ---
 
 ## What I Learned
+
 <!-- ai:content -->
 <!-- /ai:content -->
-
 
 ---
 
 ## Reflection
+
 <!-- ai:reflection -->
 <!-- /ai:reflection -->
-
 
 ---
 
 ## Action Items
+
 <!-- ai:actions -->
 <!-- /ai:actions -->
 

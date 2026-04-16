@@ -1,3 +1,3 @@
-import {ProjectFlowPlugin} from "./src/plugin";
+import { ProjectFlowPlugin } from "./src/plugin";
 
 export default ProjectFlowPlugin;

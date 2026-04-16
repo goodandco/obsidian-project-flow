@@ -52,13 +52,14 @@ export async function buildSystemPrompt(
 function getProjectTypeSummary(plugin: ProjectFlowPlugin): string {
   try {
     const types = mergeProjectTypes(plugin.settings.projectTypes);
-    const summary = Object.values(types).map((t: any) => `${t.id}: ${t.name} (${t.description || "No description"})`).join("; ");
+    const summary = Object.values(types)
+      .map((t: any) => `${t.id}: ${t.name} (${t.description || "No description"})`)
+      .join("; ");
     return summary || "(none)";
   } catch {
     return "(unavailable)";
   }
 }
-
 
 function getSelection(plugin: ProjectFlowPlugin): string {
   const editor = (plugin.app.workspace as any).activeEditor?.editor;
@@ -107,7 +108,7 @@ export function getEntityRequirementsSummary(plugin: ProjectFlowPlugin): string 
 
 export async function buildSpecializedSystemPrompt(
   plugin: ProjectFlowPlugin,
-  projectRecord: ProjectRecord
+  projectRecord: ProjectRecord,
 ): Promise<string> {
   const projectTypeId = projectRecord.info.projectTypeId || "operational";
   const entityRequirements = getEntityRequirementsSummaryForProject(plugin, projectTypeId);
@@ -160,8 +161,14 @@ export async function buildSpecializedSystemPrompt(
   return lines.join("\n");
 }
 
-function getEntityRequirementsSummaryForProject(plugin: ProjectFlowPlugin, projectTypeId: string): string {
-  const registry = mergeEntityTypes(mergeProjectTypes(plugin.settings.projectTypes), projectTypeId) as Record<string, any>;
+function getEntityRequirementsSummaryForProject(
+  plugin: ProjectFlowPlugin,
+  projectTypeId: string,
+): string {
+  const registry = mergeEntityTypes(
+    mergeProjectTypes(plugin.settings.projectTypes),
+    projectTypeId,
+  ) as Record<string, any>;
   const typeSummary: Record<string, Record<string, string>> = {};
   for (const [id, def] of Object.entries(registry)) {
     if (!def?.fields) continue;

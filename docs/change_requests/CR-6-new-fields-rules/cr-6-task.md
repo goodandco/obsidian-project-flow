@@ -28,25 +28,25 @@ Add to `src/interfaces.ts`:
 interface EntityFieldSchema {
   // Core type
   type: "string" | "number" | "boolean" | "date" | "reference";
-  required?: boolean;                  // replaces requiredFields membership
+  required?: boolean; // replaces requiredFields membership
 
   // Value constraints
-  enum?: string[];                     // allowed values
+  enum?: string[]; // allowed values
   default?: string | number | boolean;
 
   // Special roles
-  role?: "title" | "index" | "parentFolder";  // replaces indexField
+  role?: "title" | "index" | "parentFolder"; // replaces indexField
 
   // AI / UI hints
-  description?: string;                // replaces fieldDescriptions entry
+  description?: string; // replaces fieldDescriptions entry
   example?: string;
 
   // For type: "reference" — what this field points to
   refersTo?: {
     kind: "entity" | "project" | "folder";
-    entityType?: string;               // required when kind === "entity"
+    entityType?: string; // required when kind === "entity"
   };
-  resolveHint?: string;                // fallback prose hint for AI when refersTo is insufficient
+  resolveHint?: string; // fallback prose hint for AI when refersTo is insufficient
 }
 ```
 
@@ -57,7 +57,7 @@ interface EntityTypeDefinition {
   id: string;
   name: string;
   templatePath: string;
-  targetFolder: string;               // ${VAR} template — vars must match field keys
+  targetFolder: string; // ${VAR} template — vars must match field keys
   filenameRule: string;
   patchMarkers?: string[];
   childFolders?: string[];
@@ -163,14 +163,14 @@ In `src/ai/` (planner and specialized agent system prompt construction):
 
 ### Affected files
 
-| File | Change |
-|---|---|
-| `src/interfaces.ts` | Add `EntityFieldSchema`, update `EntityTypeDefinition` |
-| `src/core/registry-defaults.ts` | Migrate built-in entity types to `fields` |
-| `src/core/registry-merge.ts` | Add normalization pass (legacy → `fields`) |
-| `src/core/settings-schema.ts` | Bump schema version, add migration step |
-| `src/ai/` | Read `fields` when building agent system prompts |
-| `references/entity-and-project-types.md` | Document new schema |
+| File                                     | Change                                                 |
+| ---------------------------------------- | ------------------------------------------------------ |
+| `src/interfaces.ts`                      | Add `EntityFieldSchema`, update `EntityTypeDefinition` |
+| `src/core/registry-defaults.ts`          | Migrate built-in entity types to `fields`              |
+| `src/core/registry-merge.ts`             | Add normalization pass (legacy → `fields`)             |
+| `src/core/settings-schema.ts`            | Bump schema version, add migration step                |
+| `src/ai/`                                | Read `fields` when building agent system prompts       |
+| `references/entity-and-project-types.md` | Document new schema                                    |
 
 ---
 

@@ -3,6 +3,7 @@
 ## Context
 
 ProjectFlow currently has no direct UI for project navigation or entity creation — users rely on the AI chat or command palette. CR-5 adds a left sidebar `ItemView` (`projectflow-browser`) that provides:
+
 1. A filtered, searchable project browser
 2. Inline entity creation buttons per project (driven by `projectEntities` from the project type registry)
 3. An entity creation popup (Modal) driven by entity field schema
@@ -30,32 +31,35 @@ This is purely additive UI — no changes to Core API, services, or the right-si
 
 ## Critical Files
 
-| File | Change |
-|------|--------|
-| `src/interfaces.ts` | Add `pinnedProjects?: string[]` to `ProjectFlowSettings` |
-| `src/core/settings-schema.ts` | Bump version to 14, add migration |
-| `src/plugin.ts` | Register `BROWSER_VIEW_TYPE`, activate on load, update `onunload` |
-| `src/ui/browser-view.ts` | **New** — main `ItemView` |
-| `src/ui/entity-create-modal.ts` | **New** — entity creation `Modal` |
-| `src/ui/project-create-modal.ts` | **New** — project creation `Modal` |
-| `styles.css` | Append all new CSS (`.pf-browser-*` prefix) |
+| File                             | Change                                                            |
+| -------------------------------- | ----------------------------------------------------------------- |
+| `src/interfaces.ts`              | Add `pinnedProjects?: string[]` to `ProjectFlowSettings`          |
+| `src/core/settings-schema.ts`    | Bump version to 14, add migration                                 |
+| `src/plugin.ts`                  | Register `BROWSER_VIEW_TYPE`, activate on load, update `onunload` |
+| `src/ui/browser-view.ts`         | **New** — main `ItemView`                                         |
+| `src/ui/entity-create-modal.ts`  | **New** — entity creation `Modal`                                 |
+| `src/ui/project-create-modal.ts` | **New** — project creation `Modal`                                |
+| `styles.css`                     | Append all new CSS (`.pf-browser-*` prefix)                       |
 
 ---
 
 ## Phase 1 — Foundation (Settings + View Shell)
 
 ### 1.1 Settings schema
+
 - `src/interfaces.ts`: add `pinnedProjects?: string[]` to `ProjectFlowSettings`
 - `src/core/settings-schema.ts`:
   - `CURRENT_SETTINGS_SCHEMA_VERSION = 14`
   - New migration block: `if (!s.schemaVersion || s.schemaVersion < 14) { s.pinnedProjects = (input as any)?.pinnedProjects ?? []; }`
 
 ### 1.2 Browser view shell
+
 - Create `src/ui/browser-view.ts`:
   ```ts
   export const BROWSER_VIEW_TYPE = "projectflow-browser";
   export class ProjectFlowBrowserView extends ItemView { ... }
   ```
+
   - `getViewType()` → `BROWSER_VIEW_TYPE`
   - `getDisplayText()` → `"ProjectFlow"`
   - `getIcon()` → `"layout-list"`
@@ -63,6 +67,7 @@ This is purely additive UI — no changes to Core API, services, or the right-si
   - `onClose()` → cleans up
 
 ### 1.3 Plugin registration
+
 - `src/plugin.ts`:
   - Import `BROWSER_VIEW_TYPE`, `ProjectFlowBrowserView`
   - `this.registerView(BROWSER_VIEW_TYPE, leaf => new ProjectFlowBrowserView(leaf, this))`
@@ -75,6 +80,7 @@ This is purely additive UI — no changes to Core API, services, or the right-si
 ## Phase 2 — Filters + Project List (read-only)
 
 All state is in-memory on `ProjectFlowBrowserView` instance:
+
 ```ts
 private activeDimension: string | null = null;   // null = "All"
 private activeCategory: string | null = null;
@@ -84,39 +90,47 @@ private currentPage: number = 1;
 ```
 
 ### 2.1 Data loading
+
 - `getProjectList()`: reads `plugin.settings.projectRecords` (triple-nested map), flattens to `ProjectRecord[]`, enriches via `plugin.settings.projectIndex.byId` to get `ProjectIndexEntry` fields
 - Archived detection: skip any `projectId` that appears in `archivedRecords`
 - Entity counts: for each project, count vault files under `projectVariables.PROJECT_PATH + '/' + entityType.targetFolder` using `plugin.app.vault.getFiles().filter(f => f.path.startsWith(...))`; grouped by entity type
 
 ### 2.2 Dimension tabs
+
 - Source: `plugin.settings.dimensions.sort((a,b) => a.order - b.order)`
 - Render "All" pill + one pill per dimension
 - Click → sets `activeDimension`, resets `activeCategory`, `currentPage`, re-renders
 
 ### 2.3 Category chips
+
 - Source: categories of `activeDimension`; if `activeDimension == null` → hide chip row
 - "All" chip + one per category; single-select
 - Click → sets `activeCategory`, resets `currentPage`, re-renders
 
 ### 2.4 Project type filter
+
 - Source: `mergeProjectTypes(plugin.settings.projectTypes)` — keys ordered: built-in first (`operational`, `learning`), then user-defined
 - "All" segment + one per project type (use `projectType.name`)
 - If > 4 types: make row `overflow-x: auto; scroll-snap-type: x mandatory`
 - Click → sets `activeProjectType`, resets `currentPage`, re-renders
 
 ### 2.5 Search input
+
 - Detect prefix: `tag:` → filter by `projectRecord.info.tag.includes(value)`; `id:` → filter by `projectId`; no prefix → filter by `projectName` case-insensitive
 - Show mode indicator label below input when `tag:` or `id:` prefix detected
 - `oninput` → set `searchQuery`, reset `currentPage`, re-render
 
 ### 2.6 Project rows
+
 Each row (`div.pf-browser-proj-row`):
+
 - Project name (bold, truncated)
 - Project type badge: abbreviation letters + bg/fg color from entity type color scheme
 - Category label (muted)
 - Entity summary: `<span class="pf-browser-e-dot" style="background:{color}"></span>{count}` per entity type that has files
 
 ### 2.7 Pagination
+
 - Separate pinned list (from `settings.pinnedProjects`) from unpinned filtered list
 - Pinned projects always shown at top (section label "Pinned"), not counted in pagination
 - Unpinned results: slice `[(page-1)*10 : page*10]`
@@ -158,6 +172,7 @@ Each row (`div.pf-browser-proj-row`):
 Constructor args: `(app, plugin, projectEntry: ProjectIndexEntry, entityTypeId: string)`
 
 ### Field rendering
+
 - Resolve entity type: `mergeEntityTypes(mergeProjectTypes(plugin.settings.projectTypes))[entityTypeId]`
 - Derive fields to show:
   - Always start with `title` (full-width, required, text)
@@ -170,6 +185,7 @@ Constructor args: `(app, plugin, projectEntry: ProjectIndexEntry, entityTypeId: 
 - `fieldDefaults` pre-populated: `"today"` → `new Date().toLocaleDateString('en-GB')`, `"today+Nd"` → computed
 
 ### Validation (client-side, before submit)
+
 - Collect all rendered input values into `formValues: Record<string, string>`
 - For each field in `entityType.requiredFields`:
   - If the rendered input for that field is empty → mark it invalid (add `.pf-ecm-field-error` class to the field wrapper, append inline `<span class="pf-ecm-error-msg">Required</span>` below the input)
@@ -178,6 +194,7 @@ Constructor args: `(app, plugin, projectEntry: ProjectIndexEntry, entityTypeId: 
 - On any input `oninput` → clear that field's error state immediately
 
 ### Submit
+
 1. Run client-side validation (above); abort if invalid
 2. Build `fields` from all non-empty input values (skip blanks for optional fields)
 3. `await plugin.coreApi.createEntity({ projectRef: { id: projectEntry.projectId }, entityTypeId, fields: formValues })`
@@ -185,6 +202,7 @@ Constructor args: `(app, plugin, projectEntry: ProjectIndexEntry, entityTypeId: 
 5. Failure (API throws) → catch error, show `<div class="pf-ecm-api-error">{error.message}</div>` at top of modal body, keep open
 
 ### Modal title
+
 `"New {entity.name.toLowerCase()}"` with colored icon badge matching sidebar button
 
 ---
@@ -196,6 +214,7 @@ Constructor args: `(app, plugin, projectEntry: ProjectIndexEntry, entityTypeId: 
 Constructor args: `(app, plugin, onCreated: () => void)`
 
 ### Type selector
+
 - Horizontal scrollable row of cards (~148px fixed width), scroll-snap
 - Source: `mergeProjectTypes(plugin.settings.projectTypes)` — built-ins first
 - Selected card: colored border + tinted background + name in type color
@@ -203,6 +222,7 @@ Constructor args: `(app, plugin, onCreated: () => void)`
 - Right fade hint via CSS gradient overlay
 
 ### Form fields
+
 - **Project name**: text input; `oninput` → if `idAutoDerive`, set ID slug; if `tagAutoDerive`, set tag slug
 - **Project ID**: text input with `#` prefix element; `oninput` → sets `idAutoDerive = false`
 - **Project tag**: text input with `#` prefix colored per selected type; `oninput` → sets `tagAutoDerive = false`
@@ -211,6 +231,7 @@ Constructor args: `(app, plugin, onCreated: () => void)`
 - **Category**: `<select>` from selected dimension's `categories`
 
 ### Live preview panel
+
 Updates on type card selection and name/ID changes:
 
 1. **Folder structure tree**: monospace block showing vault path using `projectsRoot + '/' + projectId + '/' + each folderStructure entry`
@@ -218,6 +239,7 @@ Updates on type card selection and name/ID changes:
 3. **Ephemeral templates** (entity types): row per `projectEntities` entry — icon badge + name + key `<code>` badge
 
 ### Submit
+
 1. Validate: name non-empty, ID non-empty, ID unique (`!plugin.settings.projectIndex.byId[id]`), tag non-empty
 2. `await plugin.coreApi.createProject({ name, id, tag, dimension, category, projectTypeId: selectedTypeId })`
 3. Success → `this.close()`, call `onCreated()` to refresh sidebar
@@ -230,6 +252,7 @@ Updates on type card selection and name/ID changes:
 Use Obsidian variables: `--background-primary`, `--background-secondary`, `--background-modifier-border`, `--text-normal`, `--text-muted`, `--text-faint`, `--interactive-accent`, `--radius-s`, `--radius-m`.
 
 Classes to add (all `.pf-browser-*` prefix):
+
 - `.pf-browser-view` — flex column, full height
 - `.pf-browser-header` — title + icon buttons row
 - `.pf-browser-dim-tabs` — flex wrap, gap 4px, padding, border-bottom

@@ -10,6 +10,5 @@ tags:
 
 ```dataview
 
-TABLE Email, Role FROM #person AND #$_PROJECT_TAG 
+TABLE Email, Role FROM #person AND #$_PROJECT_TAG
 ```
-

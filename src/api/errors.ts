@@ -1,8 +1,4 @@
-export type ApiErrorCode =
-  | "invalid_request"
-  | "validation_error"
-  | "not_found"
-  | "compat_error";
+export type ApiErrorCode = "invalid_request" | "validation_error" | "not_found" | "compat_error";
 
 export class ApiError extends Error {
   code: ApiErrorCode;

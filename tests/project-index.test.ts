@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { buildProjectIndex, ensureProjectIndex, PROJECT_INDEX_VERSION } from "../src/core/project-index";
+import {
+  buildProjectIndex,
+  ensureProjectIndex,
+  PROJECT_INDEX_VERSION,
+} from "../src/core/project-index";
 import type { ProjectRecord } from "../src/interfaces";
 
 function makeRecord(overrides: Partial<ProjectRecord> = {}): ProjectRecord {

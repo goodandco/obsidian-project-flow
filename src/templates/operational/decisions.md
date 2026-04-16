@@ -15,4 +15,3 @@ tags:
 
 TABLE Date, Status FROM #$_PROJECT_TAG AND #type/decision WHERE !contains(lower(file.name), "template") SORT Date
 ```
-

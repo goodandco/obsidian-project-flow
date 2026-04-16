@@ -9,9 +9,11 @@ tags:
 ---
 
 ## Resources
+
 <!-- ai:content -->
 <!-- /ai:content -->
 
->[!Links]+
+> [!Links]+
+>
 > - [Course Link]
 > - [Reference Materials]

@@ -10,12 +10,7 @@ import { executeToolCalls } from "./tool-executor";
 import { formatResult } from "../utils/format";
 import { delay } from "../utils/time";
 
-const PROJECT_REF_TOOLS = new Set([
-  "resolveProject",
-  "createEntity",
-  "getChildren",
-  "getParents",
-]);
+const PROJECT_REF_TOOLS = new Set(["resolveProject", "createEntity", "getChildren", "getParents"]);
 
 function applyProjectContextToToolCalls(
   toolCalls: ToolCall[],
@@ -162,9 +157,7 @@ export async function runAgentLoop(options: {
     const missingFields = extractMissingFields(results);
     for (let i = 0; i < results.length; i += 1) {
       const res = results[i];
-      const payload = res.ok
-        ? { ok: true, result: res.result }
-        : { ok: false, error: res.error };
+      const payload = res.ok ? { ok: true, result: res.result } : { ok: false, error: res.error };
       const msg = res.ok
         ? `Tool result (${res.toolName}): ${formatResult(res.result)}`
         : `Tool error (${res.toolName}): ${res.error}`;
@@ -196,8 +189,13 @@ export async function runAgentLoop(options: {
     }
     if (strict && results.some((r) => !r.ok)) {
       const failed = results.filter((r) => !r.ok);
-      const details = failed.map((r) => `**${r.toolName}**: ${r.error ?? "unknown error"}`).join("\n");
-      options.ui.appendMessage("assistant", `Strict mode: one or more tools failed. Previous successful actions may already be applied.\n\n${details}`);
+      const details = failed
+        .map((r) => `**${r.toolName}**: ${r.error ?? "unknown error"}`)
+        .join("\n");
+      options.ui.appendMessage(
+        "assistant",
+        `Strict mode: one or more tools failed. Previous successful actions may already be applied.\n\n${details}`,
+      );
       options.ui.showUsage(lastAssistantEl, totalUsage);
       return;
     }

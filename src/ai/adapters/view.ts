@@ -24,7 +24,11 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
   private resizeObserver: ResizeObserver | null = null;
   private isNarrow = false;
   private sidebarVisible = true;
-  private toolGroupStack: Array<{ body: HTMLDivElement; label: HTMLSpanElement; arrow: HTMLSpanElement } | null> = [];
+  private toolGroupStack: Array<{
+    body: HTMLDivElement;
+    label: HTMLSpanElement;
+    arrow: HTMLSpanElement;
+  } | null> = [];
   private typingIndicatorEl: HTMLDivElement | null = null;
   private newMessagesBadgeEl: HTMLDivElement | null = null;
   private handleScrollBound: (() => void) | null = null;
@@ -98,7 +102,10 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     badge.setText("↓ New messages");
     badge.onclick = () => {
       if (this.messageContainer) {
-        this.messageContainer.scrollTo({ top: this.messageContainer.scrollHeight, behavior: "smooth" });
+        this.messageContainer.scrollTo({
+          top: this.messageContainer.scrollHeight,
+          behavior: "smooth",
+        });
       }
       this.hideNewMessagesBadge();
     };
@@ -164,9 +171,8 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     if (!this.messageContainer) return null;
     const shouldScroll = this.shouldAutoScroll();
     const activeGroup = this.toolGroupStack[0] ?? null;
-    const container: HTMLElement = (role === "tool" && activeGroup)
-      ? activeGroup.body
-      : this.messageContainer;
+    const container: HTMLElement =
+      role === "tool" && activeGroup ? activeGroup.body : this.messageContainer;
     const item = container.createDiv({ cls: `pf-ai-message ${role}` });
     this.renderMessage(item, content);
     this.keepTypingIndicatorLast();
@@ -216,7 +222,10 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     const shouldScroll = this.shouldAutoScroll();
     this.renderMessage(el, content);
     if (shouldScroll) {
-      this.messageContainer?.scrollTo({ top: this.messageContainer.scrollHeight, behavior: "smooth" });
+      this.messageContainer?.scrollTo({
+        top: this.messageContainer.scrollHeight,
+        behavior: "smooth",
+      });
     } else {
       this.showNewMessagesBadge();
     }
@@ -225,7 +234,9 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
   showUsage(handle: MessageHandle, usage: { inputTokens: number; outputTokens: number }): void {
     if (!handle) return;
     const footer = handle.createEl("div", { cls: "pf-ai-token-usage" });
-    footer.setText(`↑ ${usage.inputTokens.toLocaleString()} · ↓ ${usage.outputTokens.toLocaleString()} tokens`);
+    footer.setText(
+      `↑ ${usage.inputTokens.toLocaleString()} · ↓ ${usage.outputTokens.toLocaleString()} tokens`,
+    );
   }
 
   appendConfirmationActions(): void {
@@ -514,7 +525,8 @@ export class ProjectFlowAIChatView extends ItemView implements ChatUi {
     const container = this.messageContainer;
     if (!container) return false;
     const threshold = 24;
-    const distanceFromBottom = container.scrollHeight - (container.scrollTop + container.clientHeight);
+    const distanceFromBottom =
+      container.scrollHeight - (container.scrollTop + container.clientHeight);
     return distanceFromBottom <= threshold;
   }
 

@@ -18,17 +18,18 @@ tags:
   - $_PROJECT_TAG
 Deadline: ""
 ---
+
 ---
 
 ## Course Overview
+
 <!-- ai:main-info -->
 <!-- /ai:main-info -->
 
-
->[!Links]+
+> [!Links]+
+>
 > - [Course Link]
 > - [Reference Materials]
-
 
 ```dataviewjs
 const sections = dv.pages('#type/section and #$_PROJECT_TAG')
@@ -66,8 +67,8 @@ dv.table(['Module', 'Status', 'Order', 'Started', 'Finished'], data);
 ---
 
 ## Journal
+
 <!-- ai:journal -->
 <!-- /ai:journal -->
 
 ---
-

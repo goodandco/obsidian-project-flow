@@ -1,5 +1,10 @@
 import { Plugin } from "obsidian";
-import { ProjectFlowSettings, type AIProvider, type AISettings, type MCPServerConfig } from "./interfaces";
+import {
+  ProjectFlowSettings,
+  type AIProvider,
+  type AISettings,
+  type MCPServerConfig,
+} from "./interfaces";
 import { DEFAULT_SETTINGS, ProjectFlowSettingTab } from "./settings-tab";
 import { showAddProjectPrompt } from "./commands/add-project";
 import { showRemoveProjectPrompt } from "./commands/remove-project";
@@ -56,7 +61,8 @@ export class ProjectFlowPlugin extends Plugin {
   async loadSettings() {
     const raw = await this.loadData();
     try {
-      const { migrateSettings, CURRENT_SETTINGS_SCHEMA_VERSION } = await import("./core/settings-schema");
+      const { migrateSettings, CURRENT_SETTINGS_SCHEMA_VERSION } =
+        await import("./core/settings-schema");
       const { DEFAULT_PROJECT_TYPES } = await import("./core/registry-defaults");
       const { ensureProjectIndex } = await import("./core/project-index");
       const { ensureProjectGraph } = await import("./core/project-graph");
@@ -68,7 +74,8 @@ export class ProjectFlowPlugin extends Plugin {
       if (ai) {
         if (ai.apiKey) {
           const provider = ai.provider || "openai";
-          const secretName = ai.apiKeySecretName?.trim() || this.getDefaultProviderSecretName(provider);
+          const secretName =
+            ai.apiKeySecretName?.trim() || this.getDefaultProviderSecretName(provider);
           await this.setSecret(secretName, ai.apiKey);
           ai.apiKeySecretName = secretName;
           delete ai.apiKey;
@@ -91,12 +98,18 @@ export class ProjectFlowPlugin extends Plugin {
         this.settings.projectTypes = DEFAULT_PROJECT_TYPES;
         changed = true;
       }
-      if (!this.settings.schemaVersion || this.settings.schemaVersion < CURRENT_SETTINGS_SCHEMA_VERSION) {
+      if (
+        !this.settings.schemaVersion ||
+        this.settings.schemaVersion < CURRENT_SETTINGS_SCHEMA_VERSION
+      ) {
         this.settings.schemaVersion = CURRENT_SETTINGS_SCHEMA_VERSION;
         changed = true;
       }
 
-      const { index, updated } = ensureProjectIndex(this.settings.projectIndex, this.settings.projectRecords);
+      const { index, updated } = ensureProjectIndex(
+        this.settings.projectIndex,
+        this.settings.projectRecords,
+      );
       if (updated) {
         this.settings.projectIndex = index;
         changed = true;
@@ -121,7 +134,8 @@ export class ProjectFlowPlugin extends Plugin {
       if (ai) {
         if (ai.apiKey) {
           const provider = ai.provider || "openai";
-          const secretName = ai.apiKeySecretName?.trim() || this.getDefaultProviderSecretName(provider);
+          const secretName =
+            ai.apiKeySecretName?.trim() || this.getDefaultProviderSecretName(provider);
           await this.setSecret(secretName, ai.apiKey);
           ai.apiKeySecretName = secretName;
           delete ai.apiKey;
@@ -228,8 +242,8 @@ export class ProjectFlowPlugin extends Plugin {
 
   async getResolvedAiSettings(): Promise<AISettings | null> {
     const ai = this.settings.ai;
-    console.log('getResolvedAISettings')
-    console.log(ai)
+    console.log("getResolvedAISettings");
+    console.log(ai);
     if (!ai) return null;
     const provider = ai.provider || "openai";
     const apiKey = await this.getAiApiKey(provider, ai.apiKeySecretName);

@@ -9,9 +9,10 @@ tags:
 ---
 
 ## References
+
 <!-- ai:content -->
 <!-- /ai:content -->
 
 | Title | Author | Link | Notes |
-|-------|--------|------|-------|
+| ----- | ------ | ---- | ----- |
 |       |        |      |       |

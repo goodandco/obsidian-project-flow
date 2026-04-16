@@ -13,14 +13,12 @@ export function resolveProject(
     ensureProjectIndex(plugin.settings.projectIndex, plugin.settings.projectRecords).index;
 
   const lookup = normalizeProjectRef(ref);
-  const value = (lookup.fullName || lookup.id || lookup.tag || '').replace(/^#/, '');
-  const entry =
-    index.byFullName[value] ||
-    index.byId[value] ||
-    index.byTag[value];
+  const value = (lookup.fullName || lookup.id || lookup.tag || "").replace(/^#/, "");
+  const entry = index.byFullName[value] || index.byId[value] || index.byTag[value];
   if (!entry) return null;
 
-  const record = plugin.settings.projectRecords?.[entry.dimension]?.[entry.category]?.[entry.projectId];
+  const record =
+    plugin.settings.projectRecords?.[entry.dimension]?.[entry.category]?.[entry.projectId];
   if (!record) return null;
   return { entry, record };
 }
@@ -47,9 +45,7 @@ export function resolveArchivedProject(
   };
 }
 
-export function listProjects(
-  plugin: IProjectFlowPlugin,
-): ProjectIndexEntry[] {
+export function listProjects(plugin: IProjectFlowPlugin): ProjectIndexEntry[] {
   const index =
     getProjectIndexCache() ||
     ensureProjectIndex(plugin.settings.projectIndex, plugin.settings.projectRecords).index;
@@ -79,7 +75,7 @@ function findRecordByRef(
     for (const projects of Object.values(categories)) {
       for (const record of Object.values(projects)) {
         if (!record) continue;
-        const value = (lookup.fullName || lookup.id || lookup.tag || '').replace(/^#/, '');
+        const value = (lookup.fullName || lookup.id || lookup.tag || "").replace(/^#/, "");
         if (
           record.variables.PROJECT_FULL_NAME === value ||
           record.info.id === value ||

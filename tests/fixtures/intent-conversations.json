@@ -43,10 +43,7 @@
       },
       {
         "user": "yes",
-        "expectAssistantContains": [
-          "Do it",
-          "Please confirm to proceed with these actions."
-        ]
+        "expectAssistantContains": ["Do it", "Please confirm to proceed with these actions."]
       }
     ]
   }

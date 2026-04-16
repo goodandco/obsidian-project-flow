@@ -9,6 +9,7 @@ tags:
 ---
 
 ## Assignments
+
 <!-- ai:assignments -->
 <!-- /ai:assignments -->
 
@@ -19,6 +20,7 @@ TABLE Status, DueDate FROM #type/assignment AND #$_PROJECT_TAG WHERE !contains(l
 ---
 
 ## Reviews
+
 <!-- ai:reviews -->
 <!-- /ai:reviews -->
 
@@ -29,6 +31,7 @@ TABLE Date FROM #type/review AND #$_PROJECT_TAG WHERE !contains(lower(file.name)
 ---
 
 ## Notes
+
 <!-- ai:notes -->
 <!-- /ai:notes -->
 

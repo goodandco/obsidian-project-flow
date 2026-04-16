@@ -12,16 +12,16 @@ tags:
 ---
 
 ## Key Concepts
+
 <!-- ai:content -->
 <!-- /ai:content -->
-
 
 ---
 
 ## Detailed Notes
+
 <!-- ai:notes -->
 <!-- /ai:notes -->
-
 
 ---
 
@@ -50,5 +50,6 @@ dv.table(['Review', 'Date'], reviews);
 ---
 
 ## Summary & Action Items
+
 <!-- ai:summary -->
 <!-- /ai:summary -->

@@ -128,9 +128,7 @@ export async function patchSectionInFile(
 
 function normalizeMarkerName(marker: string): string {
   const trimmed = marker.trim();
-  const stripped = trimmed
-    .replace(/^<!--\s*/, "")
-    .replace(/\s*(?:-->|>)\s*$/, "");
+  const stripped = trimmed.replace(/^<!--\s*/, "").replace(/\s*(?:-->|>)\s*$/, "");
   return stripped.replace(/^\/\s*/, "").trim();
 }
 

@@ -4,7 +4,10 @@ import { getNewProjectDetailsWithPrompt } from "../../utils/project-prompts";
 import { createProject } from "../../services/project-service";
 
 export async function showAddProjectPrompt(plugin: IProjectFlowPlugin) {
-  const [projectInfo, promptMessage] = await getNewProjectDetailsWithPrompt(plugin.app, plugin.settings);
+  const [projectInfo, promptMessage] = await getNewProjectDetailsWithPrompt(
+    plugin.app,
+    plugin.settings,
+  );
   if (projectInfo === null) {
     new Notice(promptMessage);
     return;

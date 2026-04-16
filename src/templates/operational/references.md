@@ -13,4 +13,3 @@ tags:
 
 TABLE FROM #$_PROJECT_TAG AND #type/reference WHERE !contains(lower(file.name), "template")
 ```
-

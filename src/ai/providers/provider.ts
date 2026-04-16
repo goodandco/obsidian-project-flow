@@ -25,9 +25,10 @@ export async function* streamProvider(
     return;
   }
 
-  const baseUrl = settings.provider === "ollama"
-    ? settings.baseUrl || "http://localhost:11434"
-    : settings.baseUrl || "https://api.openai.com";
+  const baseUrl =
+    settings.provider === "ollama"
+      ? settings.baseUrl || "http://localhost:11434"
+      : settings.baseUrl || "https://api.openai.com";
 
   if (!settings.apiKey && settings.provider !== "ollama") {
     throw new Error("OpenAI API key is missing");

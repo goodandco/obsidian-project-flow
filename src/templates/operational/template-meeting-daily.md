@@ -11,24 +11,23 @@ tags:
   - $_PROJECT_TAG
 ---
 
-## 🗓️ Agenda  
+## 🗓️ Agenda
+
 <!-- ai:agenda -->
 <!-- /ai:agenda -->
 
+Why is this meeting being held? Create a task over here
 
-Why is this meeting being held? Create a task over here   
-  
-## 📝 Discussion Notes  
+## 📝 Discussion Notes
+
 <!-- ai:discussion-notes -->
 <!-- /ai:discussion-notes -->
 
+Notes from the discussion
 
-Notes from the discussion  
-  
-## ✔️ Action Items  
+## ✔️ Action Items
+
 <!-- ai:action-items -->
 <!-- /ai:action-items -->
 
-
 - Tasks that needs to be completed.
-

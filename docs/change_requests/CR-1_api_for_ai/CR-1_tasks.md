@@ -1,6 +1,7 @@
 # CR-1 Tasks
 
 ## Phase 1: Core API + Index + Entity Types
+
 - T1: Audit current data model and identify source of projectRecords and path rules.
 - T2: Define projectIndex schema version; implement build and persist on plugin load.
 - T3: Add runtime cache for projectIndex; update resolveProject to use it.
@@ -17,18 +18,20 @@
 - T14: Update docs for API surface, entityTypes, and patching contract.
 
 ## Phase 2: Project Types (Blueprints)
+
 - T15: Define projectTypes builtins in code and merge strategy with data.json overrides.
 - T16: Update createProject to use projectTypes config.
 - T17: Add tests for projectTypes merge and createProject behavior.
 
 ## Phase 3: Relationships and Hardening
+
 - T18: Decide on projectGraph persistence vs runtime derivation; implement.
 - T19: Add listChildren/listParents helpers to core API if needed.
 - T20: Add schema migration and compatibility checks for future upgrades.
 
 ## Completion Criteria
+
 - All Phase 1 tasks done with green tests.
 - API surface is versioned and stable.
 - projectIndex is persisted and used for lookups.
 - entityTypes and patching work with safe defaults.
-

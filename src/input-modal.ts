@@ -1,5 +1,5 @@
 // Модал для текстового ввода
-import {Modal, App} from "obsidian";
+import { Modal, App } from "obsidian";
 
 export class InputPromptModal extends Modal {
   prompt: string;
@@ -12,13 +12,13 @@ export class InputPromptModal extends Modal {
   }
 
   onOpen() {
-    const {contentEl} = this;
-    contentEl.createEl('h2', {text: this.prompt});
+    const { contentEl } = this;
+    contentEl.createEl("h2", { text: this.prompt });
 
-    const input = contentEl.createEl('input', {type: 'text'});
+    const input = contentEl.createEl("input", { type: "text" });
     input.focus();
 
-    const submitButton = contentEl.createEl('button', {text: 'Submit'});
+    const submitButton = contentEl.createEl("button", { text: "Submit" });
     submitButton.onclick = () => {
       const value = input.value.trim();
       this.close();
@@ -27,7 +27,7 @@ export class InputPromptModal extends Modal {
   }
 
   onClose() {
-    const {contentEl} = this;
+    const { contentEl } = this;
     contentEl.empty();
   }
 }
