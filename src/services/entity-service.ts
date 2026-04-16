@@ -35,14 +35,16 @@ export async function createEntity(
   const normalizedFields = normalizeFieldAliases(req.fields);
   validateRequiredFields(entityType, normalizedFields);
 
+  const wrappedFields = wrapReferenceFields(entityType, normalizedFields);
+
   const nextIndex = entityType.indexField
     ? await computeNextIndex(plugin, entityType, resolved.record.variables.PROJECT_PATH)
     : null;
 
   const variables = {
     ...(resolved.record.variables as any),
-    ...resolveFieldDefaults(entityType, normalizedFields),
-    ...(normalizedFields || {}),
+    ...resolveFieldDefaults(entityType, wrappedFields),
+    ...(wrappedFields || {}),
     ...(nextIndex !== null && entityType.indexField ? { [entityType.indexField]: String(nextIndex) } : {}),
   };
 
@@ -113,7 +115,7 @@ export async function createEntity(
     }
   }
 
-  await patchFieldsIntoMarkers(plugin, filePath, normalizedFields);
+  await patchFieldsIntoMarkers(plugin, filePath, wrappedFields);
 
   return { path: filePath };
 }
@@ -125,6 +127,24 @@ export function isAllowedWritePath(path: string, settings: ProjectFlowSettings):
     isPathWithinRoot(path, projectsRoot) ||
     isPathWithinRoot(path, archiveRoot)
   );
+}
+
+function wrapReferenceFields(
+  entityType: EntityType,
+  fields?: Record<string, any>,
+): Record<string, any> | undefined {
+  if (!fields || !entityType.fields) return fields;
+  const out: Record<string, any> = { ...fields };
+  const entityFields: Record<string, any> = entityType.fields;
+  for (const key of Object.keys(entityFields)) {
+    const schema = entityFields[key];
+    if (schema.type !== "reference") continue;
+    const val = out[key];
+    if (val && typeof val === "string" && !val.startsWith("[[")) {
+      out[key] = `[[${val}]]`;
+    }
+  }
+  return out;
 }
 
 function validateRequiredFields(entityType: EntityType, fields?: Record<string, any>): void {

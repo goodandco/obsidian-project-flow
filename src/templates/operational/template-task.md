@@ -10,7 +10,7 @@ tags:
   - type/task
   - ${PROJECT_TAG}
 Parent: "[[${PROJECT_NAME} Work]]"
-Sprint: ${sprint}
+Sprint: "${sprint}"
 TaskType: ${taskType}
 StoryPoints:
 ---

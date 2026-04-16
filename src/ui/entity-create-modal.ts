@@ -125,6 +125,13 @@ export class EntityCreateModal extends Modal {
     const body = contentEl.createDiv({ cls: "pf-ecm-body" });
 
     for (const key of fieldKeys) {
+      // Reference fields get a dropdown populated with existing entities
+      const fieldSchema = et.fields?.[key];
+      if (fieldSchema?.type === "reference" && fieldSchema.refersTo?.kind === "entity" && fieldSchema.refersTo.entityType) {
+        this.renderReferencePicker(body, key, fieldSchema);
+        continue;
+      }
+
       const ftype = inferFieldType(key);
       const isRequired = key === "title" || requiredFields.includes(key);
       const fullWidth = isFullWidth(key, ftype);
@@ -188,6 +195,63 @@ export class EntityCreateModal extends Modal {
   onClose(): void {
     this.contentEl.empty();
     this.fieldInputs.clear();
+  }
+
+  private renderReferencePicker(
+    container: HTMLElement,
+    fieldKey: string,
+    schema: EntityFieldSchema,
+  ): void {
+    const refEntityTypeId = schema.refersTo!.entityType!;
+    const allTypes = mergeProjectTypes(this.plugin.settings.projectTypes);
+    const entityTypes = mergeEntityTypes(allTypes);
+    const refEntityType = entityTypes[refEntityTypeId];
+    const targetFolder = refEntityType?.targetFolder ?? "";
+
+    const projectPath = this.projectEntry.path;
+    const files: string[] = [];
+    if (projectPath && targetFolder) {
+      const prefix = `${projectPath}/${targetFolder}/`;
+      for (const f of this.plugin.app.vault.getAllLoadedFiles()) {
+        if ((f as any).children) continue; // skip TFolder
+        if (f.path.startsWith(prefix) && f.path.endsWith(".md")) {
+          files.push(f.name.replace(/\.md$/, ""));
+        }
+      }
+      files.sort();
+    }
+
+    const isRequired = schema.required ?? false;
+    const label = `${titleCase(fieldKey)}${isRequired ? " *" : ""}`;
+    const hint = schema.description ?? schema.resolveHint ?? "";
+
+    const wrapper = container.createDiv({ cls: "pf-ecm-field" });
+    const lbl = wrapper.createEl("label", { cls: "pf-ecm-label", text: label });
+    const select = wrapper.createEl("select", { cls: "pf-ecm-input" });
+    lbl.setAttribute("for", `pf-ecm-field-${fieldKey}`);
+    select.id = `pf-ecm-field-${fieldKey}`;
+
+    if (files.length === 0) {
+      const name = refEntityType?.name ?? refEntityTypeId;
+      select.createEl("option", { value: "", text: `(no ${name.toLowerCase()}s found)` });
+    } else {
+      select.createEl("option", { value: "", text: "— select —" });
+      for (const f of files) {
+        select.createEl("option", { value: f, text: f });
+      }
+    }
+
+    if (hint) {
+      wrapper.createEl("small", { cls: "pf-ecm-hint", text: hint });
+    }
+
+    select.addEventListener("change", () => {
+      wrapper.removeClass("pf-ecm-field-error");
+      const errSpan = wrapper.querySelector(".pf-ecm-error-msg");
+      if (errSpan) errSpan.remove();
+    });
+
+    this.fieldInputs.set(fieldKey, select);
   }
 
   private renderParentFolderPicker(
