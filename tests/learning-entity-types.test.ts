@@ -1,13 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { DEFAULT_ENTITY_TYPES } from "../src/core/registry-defaults";
+import { DEFAULT_PROJECT_TYPES } from "../src/core/registry-defaults";
 import { mergeEntityTypes } from "../src/core/registry-merge";
 
 describe("learning entity types", () => {
-  const learning = DEFAULT_ENTITY_TYPES.learning;
+  const learning = DEFAULT_PROJECT_TYPES.learning.projectEntities!;
 
-  it("defines five entity types", () => {
+  it("defines six entity types", () => {
     const keys = Object.keys(learning);
-    expect(keys).toEqual(["module", "lesson", "note", "assignment", "review"]);
+    expect(keys).toEqual(["module", "lesson", "note", "assignment", "review", "reference"]);
   });
 
   describe("module", () => {
@@ -22,7 +22,7 @@ describe("learning entity types", () => {
     });
 
     it("requires only title", () => {
-      expect(m.requiredFields).toEqual(["title"]);
+      expect(m.fields!.title.required).toBe(true);
     });
 
     it("has AI markers", () => {
@@ -40,8 +40,17 @@ describe("learning entity types", () => {
     });
 
     it("requires title and parentFolder", () => {
-      expect(l.requiredFields).toContain("title");
-      expect(l.requiredFields).toContain("parentFolder");
+      expect(l.fields!.title.required).toBe(true);
+      expect(l.fields!.parentFolder.required).toBe(true);
+    });
+
+    it("parentFolder is a $dynamic reference with allowedParents", () => {
+      const pf = l.fields!.parentFolder;
+      expect(pf.type).toBe("reference");
+      expect(pf.role).toBe("parentFolder");
+      expect((pf as any).refersTo?.entityType).toBe("$dynamic");
+      expect((pf as any).allowedParents).toContain("module");
+      expect((pf as any).allowedParents).toContain("project");
     });
 
     it("has childFolders for notes/assignments/reviews", () => {
@@ -57,8 +66,8 @@ describe("learning entity types", () => {
     });
 
     it("requires title and parentFolder", () => {
-      expect(n.requiredFields).toContain("title");
-      expect(n.requiredFields).toContain("parentFolder");
+      expect(n.fields!.title.required).toBe(true);
+      expect(n.fields!.parentFolder.required).toBe(true);
     });
 
     it("has no childFolders", () => {
@@ -74,8 +83,8 @@ describe("learning entity types", () => {
     });
 
     it("requires title and parentFolder", () => {
-      expect(a.requiredFields).toContain("title");
-      expect(a.requiredFields).toContain("parentFolder");
+      expect(a.fields!.title.required).toBe(true);
+      expect(a.fields!.parentFolder.required).toBe(true);
     });
 
     it("has submission-related markers", () => {
@@ -97,13 +106,26 @@ describe("learning entity types", () => {
     });
   });
 
+  describe("reference", () => {
+    const ref = learning.reference;
+
+    it("targets References folder", () => {
+      expect(ref.targetFolder).toBe("References");
+    });
+
+    it("requires title", () => {
+      expect(ref.fields!.title.required).toBe(true);
+    });
+  });
+
   it("mergeEntityTypes returns learning types for learning projectTypeId", () => {
-    const merged = mergeEntityTypes({}, "learning");
+    const merged = mergeEntityTypes(DEFAULT_PROJECT_TYPES, "learning");
     expect(merged).toHaveProperty("module");
     expect(merged).toHaveProperty("lesson");
     expect(merged).toHaveProperty("note");
     expect(merged).toHaveProperty("assignment");
     expect(merged).toHaveProperty("review");
+    expect(merged).toHaveProperty("reference");
     expect(merged).not.toHaveProperty("idea");
   });
 

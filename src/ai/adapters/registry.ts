@@ -5,7 +5,7 @@ import type { EntityType, ProjectRecord } from "../../interfaces";
 import type { ChatUi } from "../types/ui";
 import type { AiStateStore } from "../domain/conversation";
 import { fetchMcpTools, toMcpToolDefinitions } from "../mcp/client";
-import { mergeProjectTypes } from "../../core/registry-merge";
+import { mergeProjectTypes, mergeEntityTypes } from "../../core/registry-merge";
 import { sanitizePath } from "../../core/path-sanitizer";
 import { isSafeRelativePath, isPathWithinRoot } from "../../core/path-constraints";
 
@@ -229,9 +229,6 @@ export function createSpecializedToolRegistry(
 ): ToolDefinition[] {
   const api = plugin.getApi();
   if (!api) return [];
-  const { mergeEntityTypes } = require("../../core/registry-merge");
-
-  const { mergeProjectTypes } = require("../../core/registry-merge");
   const entityTypes = mergeEntityTypes(mergeProjectTypes(plugin.settings.projectTypes), projectTypeId);
   const tools: ToolDefinition[] = [];
 

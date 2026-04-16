@@ -1,6 +1,5 @@
 node_modules
 main.js
 dist
-scripts/build.test.mjs
 playwright-report
 e2e/*

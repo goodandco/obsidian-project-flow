@@ -85,6 +85,7 @@ export async function runAgentLoop(options: {
   const showAssistant = options.showAssistant !== false;
   const totalUsage = { inputTokens: 0, outputTokens: 0 };
   let lastAssistantEl: MessageHandle = null;
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     let assistantEl: MessageHandle = null;
     const toolUsageEls = new Map<string, MessageHandle>();

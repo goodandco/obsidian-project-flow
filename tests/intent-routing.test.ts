@@ -54,6 +54,7 @@ class FakeUi {
     this.messages = [];
   }
   setBusy() {}
+  showUsage() {}
 }
 
 class FakeState {
@@ -120,7 +121,7 @@ describe("intent routing", () => {
     mocked.classifyIntent.mockResolvedValue({ intent: "action", reason: "", confidence: 1 });
     await controller.handleSend("Create project");
     const ui = (controller as any).ui as FakeUi;
-    expect(ui.messages.some((m) => m.content.includes("Planned steps:"))).toBe(true);
+    expect(ui.messages.some((m) => m.content.includes("Do it"))).toBe(true);
     expect(ui.messages.some((m) => m.content.includes("Please confirm to proceed"))).toBe(true);
   });
 

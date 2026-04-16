@@ -57,6 +57,7 @@ class FakeUi {
     this.messages = [];
   }
   setBusy() {}
+  showUsage() {}
 }
 
 class FakeState {

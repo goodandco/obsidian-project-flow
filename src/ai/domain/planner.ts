@@ -92,6 +92,7 @@ async function runPlannerLoop(options: {
   }
   let content = "";
   const toolDefs = options.allowToolCalls ? options.tools : [];
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const toolCallsAccumulator = new Map<number, ToolCall>();
     content = "";

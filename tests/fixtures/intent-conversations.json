@@ -23,7 +23,7 @@
           "fields": { "title": "Q1 Roadmap" }
         },
         "expectAssistantContains": [
-          "Planned steps: Create project and add notes.",
+          "Create project and add notes.",
           "Please confirm to proceed with these actions."
         ]
       }
@@ -44,7 +44,7 @@
       {
         "user": "yes",
         "expectAssistantContains": [
-          "Planned steps:",
+          "Do it",
           "Please confirm to proceed with these actions."
         ]
       }
